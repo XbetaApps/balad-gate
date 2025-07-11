@@ -1,0 +1,136 @@
+/* ========== BAR ========= */
+.bar {
+  position: fixed;
+  top: 0;
+  inset-inline: 0;
+  height: 64px;                 /* 56–64 px هو المعيار المريح */
+  padding-inline: 24px 28px;    /* RTL ينعكس تلقائياً */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(17, 22, 28, 0.72);
+  backdrop-filter: blur(12px) saturate(135%);
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  font-family: var(--font-geist-sans, Arial, sans-serif);
+}
+
+/* ========== CIRCLE BUTTON ========= */
+.circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  transition: background 0.25s, transform 0.25s;
+}
+.circle:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: translateY(-2px);
+}
+.circle svg {
+  width: 24px;
+  height: 24px;
+  fill: #fff;
+  pointer-events: none;
+}
+
+/* Burger / Close */
+.burger svg { stroke: #fff; fill: none; width: 26px; height: 26px; }
+
+/* ========== LOGO ========= */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+.logo img { width: 48px; height: 48px; }
+.logo span {
+  font-family: "Lateef", serif;
+  font-size: 2.15rem;
+  color: #ffc940;        /* ذهبي مريح للتباين */
+  white-space: nowrap;
+}
+
+/* ========== LINKS (DESKTOP) ========= */
+.links { display: flex; gap: 44px; }
+.link  { font-weight: 600; color: #d4dbe6; text-decoration: none; }
+.link:hover,
+.link.active { color: #fff; }
+
+/* ========== SWITCH ========= */
+.switch {
+  position: relative;
+  width: 68px;
+  height: 30px;
+  cursor: pointer;
+}
+.track {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: #475569;
+  transition: background 0.35s;
+}
+.knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffbe0b
+    url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3e%3cpath d='M21 12.7A9 9 0 0 1 11.3 3 7 7 0 1 0 21 12.7z'/%3e%3c/svg%3e")
+    center/15px no-repeat;
+  transition: transform 0.35s, background 0.35s;
+}
+input:checked ~ .track { background: #facc15; }
+input:checked ~ .knob  {
+  transform: translateX(34px);
+  background: #fff
+    url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3e%3ccircle cx='12' cy='12' r='5'/%3e%3c/svg%3e")
+    center/14px no-repeat;
+}
+
+/* ========== ACTIONS ========= */
+.actions { display: flex; align-items: center; gap: 18px; }
+
+/* ========== DRAWER ========= */
+.drawer {
+  position: fixed;
+  top: 64px;
+  bottom: 0;
+  inset-inline-start: -280px;
+  width: 260px;
+  background: #0c1117;
+  padding: 26px;
+  box-shadow: 4px 0 9px rgba(0, 0, 0, 0.55);
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  overflow-y: auto;
+}
+.drawer.open { transform: translateX(280px); }
+.drawer a {
+  display: block;
+  padding-block: 16px;
+  font-weight: 600;
+  color: #e4e9f2;
+  text-decoration: none;
+  border-bottom: 1px solid #1b212b;
+}
+.drawer a:hover { color: #fff; }
+
+/* ========== MEDIA QUERIES ========= */
+@media (max-width: 991px) {
+  .links     { display: none; }
+  .logo span { display: none; }
+}
+@media (max-width: 420px) {
+  .switch { display: none; }
+}
+
