@@ -84,6 +84,7 @@ const navItems = {
   departments: "الأقسام",
   news: "الأخبار",
   weather: "الطقس",
+  car: "سيارات",
   money: "العملات",
   services: "الخدمات",
   auth: "تسجيل الدخول/التسجيل",
@@ -96,12 +97,14 @@ const pageKeys = [
   { key: "departments", href: "/departments" },
   { key: "news", href: "/news" },
   { key: "weather", href: "/weather" },
+  { key: "car", href: "/car" },
   { key: "money", href: "/money" },
   { key: "services", href: "/services" },
   { key: "auth", href: "/auth" },
   { key: "about", href: "/about" },
   { key: "contact", href: "/contact" },
 ];
+
 
 const linkFont = '"Tajawal", "Amiri", serif';
 
