@@ -1,2 +1,32 @@
 @import "tailwindcss";
 
+/* Smooth dark mode transitions */
+@layer base {
+  :root {
+    --color-primary: 59 130 246;
+    --color-secondary: 99 102 241;
+    --color-background: 255 255 255;
+    --color-text: 17 24 39;
+  }
+
+  .dark {
+    --color-primary: 96 165 250;
+    --color-secondary: 129 140 248;
+    --color-background: 17 24 39;
+    --color-text: 243 244 246;
+  }
+
+  html {
+    background-color: rgb(var(--color-background));
+    color: rgb(var(--color-text));
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  body {
+    background-color: inherit;
+    color: inherit;
+    min-height: 100vh;
+    transition: inherit;
+  }
+}
+

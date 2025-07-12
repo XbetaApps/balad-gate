@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useContext } from "react";
-import { useColorMode } from "./theme/ThemeProvider";
+import { useTheme } from "./theme/ThemeProvider";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname, useParams, useSearchParams } from "next/navigation";
@@ -24,7 +24,7 @@ import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
-import { styled, useTheme } from "@mui/material/styles";
+import { styled, useTheme as useMuiTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import Slide from "@mui/material/Slide";
 import useScrollTrigger from "@mui/material/useScrollTrigger";
@@ -82,7 +82,9 @@ function HideOnScroll({ children }) {
 const navItems = {
   home: "الرئيسية",
   departments: "الأقسام",
+  news: "الأخبار",
   weather: "الطقس",
+  money: "العملات",
   services: "الخدمات",
   auth: "تسجيل الدخول/التسجيل",
   about: "من نحن",
@@ -92,7 +94,9 @@ const navItems = {
 const pageKeys = [
   { key: "home", href: "/" },  // Root page
   { key: "departments", href: "/departments" },
+  { key: "news", href: "/news" },
   { key: "weather", href: "/weather" },
+  { key: "money", href: "/money" },
   { key: "services", href: "/services" },
   { key: "auth", href: "/auth" },
   { key: "about", href: "/about" },
@@ -102,16 +106,15 @@ const pageKeys = [
 const linkFont = '"Tajawal", "Amiri", serif';
 
 export default function ResponsiveAppBar() {
-  const { mode, toggleColorMode } = useColorMode();
+  const { mode, toggleColorMode, darkMode } = useTheme();
+  const muiTheme = useMuiTheme();
   const [mounted, setMounted] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const darkMode = mode === 'dark';
   const profileSrc = "/1111.png"; // Using existing image from public directory
 
   const router = useRouter();
   const pathname = usePathname() || "";
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down("md"));
 
   useEffect(() => {
     setMounted(true);

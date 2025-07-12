@@ -41,7 +41,7 @@ export default function RootLayout({ children }) {
           crossOrigin="anonymous"
         />
       </head>
-      <body className="min-h-screen bg-background font-sans antialiased">
+      <body className="min-h-screen font-sans antialiased bg-gray-50 dark:bg-gray-900">
         <CustomThemeProvider>
           <CssBaseline />
           <LayoutClient>
