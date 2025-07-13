@@ -30,13 +30,53 @@ export default function CustomThemeProvider({ children }) {
 
   // Initialize theme from localStorage or system preference
   useEffect(() => {
-    const savedMode = localStorage.getItem('colorMode');
-    if (savedMode) {
-      setMode(savedMode);
-    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setMode('dark');
+    // تأخير تنفيذ الكود حتى يتم تحميل الصفحة بالكامل
+    const initTheme = () => {
+      const savedMode = localStorage.getItem('colorMode');
+      const html = document.documentElement;
+      
+      if (savedMode) {
+        setMode(savedMode);
+        if (savedMode === 'dark') {
+          html.classList.add('dark');
+          html.style.backgroundColor = '#000';
+          document.body.style.backgroundColor = '#000';
+          document.body.style.color = '#fff';
+        } else {
+          html.classList.remove('dark');
+          html.style.backgroundColor = '#fff';
+          document.body.style.backgroundColor = '#fff';
+          document.body.style.color = '#000';
+        }
+        html.setAttribute('data-theme', savedMode);
+      } else {
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const initialMode = prefersDark ? 'dark' : 'light';
+        setMode(initialMode);
+        if (initialMode === 'dark') {
+          html.classList.add('dark');
+          html.style.backgroundColor = '#000';
+          document.body.style.backgroundColor = '#000';
+          document.body.style.color = '#fff';
+        } else {
+          html.classList.remove('dark');
+          html.style.backgroundColor = '#fff';
+          document.body.style.backgroundColor = '#fff';
+          document.body.style.color = '#000';
+        }
+        html.setAttribute('data-theme', initialMode);
+      }
+      
+      setMounted(true);
+    };
+    
+    // تأخير التنفيذ حتى يكتمل تحميل الصفحة
+    if (document.readyState === 'complete') {
+      initTheme();
+    } else {
+      window.addEventListener('load', initTheme);
+      return () => window.removeEventListener('load', initTheme);
     }
-    setMounted(true);
   }, []);
 
   const colorMode = useMemo(
@@ -45,13 +85,32 @@ export default function CustomThemeProvider({ children }) {
         setMode((prevMode) => {
           const newMode = prevMode === 'light' ? 'dark' : 'light';
           localStorage.setItem('colorMode', newMode);
-          // Dispatch custom event when theme changes
-          document.documentElement.setAttribute('data-theme', newMode);
-          document.dispatchEvent(new CustomEvent('themeChange', { detail: { mode: newMode } }));
+          
+          // تحديث الألوان وعناصر الصفحة
+          const html = document.documentElement;
+          if (newMode === 'dark') {
+            html.classList.add('dark');
+            html.style.backgroundColor = '#000';
+            document.body.style.backgroundColor = '#000';
+            document.body.style.color = '#fff';
+          } else {
+            html.classList.remove('dark');
+            html.style.backgroundColor = '#fff';
+            document.body.style.backgroundColor = '#fff';
+            document.body.style.color = '#000';
+          }
+          
+          html.setAttribute('data-theme', newMode);
+          
+          // إرسال حدث عند تغيير السمة
+          document.dispatchEvent(new CustomEvent('themeChange', { 
+            detail: { mode: newMode } 
+          }));
+          
           return newMode;
         });
       },
-      mode,
+      mode: mode,
       darkMode: mode === 'dark',
     }),
     [mode]

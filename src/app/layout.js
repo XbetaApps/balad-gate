@@ -25,6 +25,13 @@ export const metadata = {
   description: "بوابتك لخدمات ومعلومات المدينة",
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export default function RootLayout({ children }) {
   return (
     <html 
@@ -41,9 +48,8 @@ export default function RootLayout({ children }) {
           crossOrigin="anonymous"
         />
       </head>
-      <body className="min-h-screen font-sans antialiased bg-gray-50 dark:bg-gray-900">
+      <body className="min-h-screen font-sans antialiased bg-white dark:bg-gray-900 text-black dark:text-white transition-colors duration-300">
         <CustomThemeProvider>
-          <CssBaseline />
           <LayoutClient>
             <Navbar />
             <main className="pt-16">

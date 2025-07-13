@@ -81,27 +81,23 @@ function HideOnScroll({ children }) {
 /* Navigation items in Arabic */
 const navItems = {
   home: "الرئيسية",
-  departments: "الأقسام",
   news: "الأخبار",
   weather: "الطقس",
-  car: "سيارات",
+  car: "حالة الطرق",
   money: "العملات",
   services: "الخدمات",
   auth: "تسجيل الدخول/التسجيل",
-  about: "من نحن",
   contact: "اتصل بنا"
 };
 
 const pageKeys = [
   { key: "home", href: "/" },  // Root page
-  { key: "departments", href: "/departments" },
   { key: "news", href: "/news" },
   { key: "weather", href: "/weather" },
   { key: "car", href: "/car" },
   { key: "money", href: "/money" },
   { key: "services", href: "/services" },
   { key: "auth", href: "/auth" },
-  { key: "about", href: "/about" },
   { key: "contact", href: "/contact" },
 ];
 
