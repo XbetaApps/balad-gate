@@ -3,179 +3,125 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTheme } from './nav/theme/ThemeProvider';
-import { 
-  FaNewspaper, 
-  FaCloudSun, 
-  FaRoad, 
-  FaDollarSign,
-  FaStore,
-  FaHome,
-  FaCar,
-  FaUtensils,
-  FaBriefcase,
-  FaGraduationCap,
-  FaHospital,
-  FaClinicMedical,
-  FaTheaterMasks,
-  FaGlassCheers,
-  FaWrench,
-  FaHotel,
-  FaPills,
-  FaGasPump,
-  FaShoppingBag,
-  FaTruck,
-  FaRing,
-  FaTools,
-  FaGift,
-  FaCut,
-  FaDumbbell,
-  FaFutbol,
-  FaBook,
-  FaUtensilSpoon,
-  FaMobile,
-  FaPlane,
-  FaTshirt,
-  FaLaptop,
-  FaBaby,
-  FaBicycle,
-  FaBuilding,
-  FaCamera,
-  FaCoffee,
-  FaGamepad,
-  FaHeadphones,
-  FaHeart,
-  FaMusic,
-  FaPaw,
-  FaPlaneDeparture,
-  FaShoppingCart,
-  FaUmbrellaBeach,
-  FaWineGlassAlt
+import {
+  FaNewspaper, FaCloudSun, FaRoad, FaDollarSign, FaStore, FaHome,
+  FaCar, FaUtensils, FaBriefcase, FaGraduationCap, FaHospital,
+  FaClinicMedical, FaTheaterMasks, FaGlassCheers, FaWrench, FaHotel,
+  FaPills, FaGasPump, FaShoppingBag, FaTruck, FaRing, FaTools, FaGift,
+  FaCut, FaDumbbell, FaFutbol, FaBook, FaUtensilSpoon, FaMobile, FaPlane,
+  FaTshirt, FaLaptop, FaBaby, FaBicycle, FaBuilding, FaCamera, FaCoffee,
+  FaGamepad, FaHeadphones, FaHeart, FaInfoCircle, FaMusic, FaPaw, FaPlaneDeparture,
+  FaShoppingCart, FaSignInAlt, FaUmbrellaBeach, FaWineGlassAlt
 } from 'react-icons/fa';
 
 export default function HomePage() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { darkMode } = useTheme();
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
-    // Update time every minute
     const timer = setInterval(() => setTime(new Date()), 60000);
-    
-    // Check dark mode
-    const checkDarkMode = () => {
-      return document.documentElement.classList.contains('dark');
-    };
-    
-    setIsDarkMode(checkDarkMode());
-    
     return () => clearInterval(timer);
   }, []);
 
-  // Format time to 12-hour format
-  const formattedTime = time.toLocaleTimeString('ar-EG', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
-  });
-
-  const formattedDate = new Intl.DateTimeFormat('ar-EG', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  }).format(time);
-
-  // All cards with icons, colors and paths
   const allCards = [
-    { 
-      title: 'الطقس', 
-      icon: <FaCloudSun className="text-2xl" />, 
-      color: 'bg-cyan-500',
-      path: '/weather'
-    },
-    { 
-      title: 'عملات', 
-      icon: <FaDollarSign className="text-2xl" />, 
-      color: 'bg-green-500',
-      path: '/money'
-    },
-    { 
-      title: 'الأخبار', 
-      icon: <FaNewspaper className="text-2xl" />, 
-      color: 'bg-blue-500',
-      path: '/news'
-    },
-    { 
-      title: 'الطرق', 
-      icon: <FaRoad className="text-2xl" />, 
-      color: 'bg-amber-500',
-      path: '/car'
-    },
-    { 
-      title: 'المتاجر', 
-      icon: <FaStore className="text-2xl" />, 
-      color: 'bg-blue-600',
-      path: '#'
-    },
-    { title: 'عقارات', icon: <FaHome className="text-2xl" />, color: 'bg-green-600' },
-    { title: 'أراضي', icon: <FaBuilding className="text-2xl" />, color: 'bg-yellow-500' },
-    { title: 'سيارات', icon: <FaCar className="text-2xl" />, color: 'bg-red-500' },
-    { title: 'مطاعم', icon: <FaUtensils className="text-2xl" />, color: 'bg-purple-500' },
-    { title: 'فرص عمل', icon: <FaBriefcase className="text-2xl" />, color: 'bg-indigo-500' },
-    { title: 'دورات دراسية', icon: <FaGraduationCap className="text-2xl" />, color: 'bg-pink-500' },
-    { title: 'مستشفيات', icon: <FaHospital className="text-2xl" />, color: 'bg-red-600' },
-    { title: 'عيادات طبية', icon: <FaClinicMedical className="text-2xl" />, color: 'bg-pink-400' },
-    { title: 'أماكن ترفيهية', icon: <FaTheaterMasks className="text-2xl" />, color: 'bg-emerald-500' },
-    { title: 'فنادق', icon: <FaHotel className="text-2xl" />, color: 'bg-cyan-600' },
-    { title: 'صيدليات', icon: <FaPills className="text-2xl" />, color: 'bg-green-500' },
-    { title: 'محطات وقود', icon: <FaGasPump className="text-2xl" />, color: 'bg-yellow-600' },
-    { title: 'مراكز تجارية', icon: <FaShoppingBag className="text-2xl" />, color: 'bg-amber-400' },
-    { title: 'صالات أفراح', icon: <FaGlassCheers className="text-2xl" />, color: 'bg-pink-300' },
-    { title: 'خدمات توصيل', icon: <FaTruck className="text-2xl" />, color: 'bg-blue-400' },
-    { title: 'مجوهرات وذهب', icon: <FaRing className="text-2xl" />, color: 'bg-yellow-400' },
-    { title: 'أجهزة منزلية', icon: <FaTools className="text-2xl" />, color: 'bg-blue-400' },
-    { title: 'ملابس وأزياء', icon: <FaTshirt className="text-2xl" />, color: 'bg-pink-400' },
-    { title: 'صيانة سيارات', icon: <FaWrench className="text-2xl" />, color: 'bg-red-500' },
-    { title: 'هدايا وتحف', icon: <FaGift className="text-2xl" />, color: 'bg-red-400' },
-    { title: 'مراكز تجميل', icon: <FaCut className="text-2xl" />, color: 'bg-pink-500' },
-    { title: 'صالات رياضية', icon: <FaDumbbell className="text-2xl" />, color: 'bg-blue-500' },
-    { title: 'مكتبات وكتب', icon: <FaBook className="text-2xl" />, color: 'bg-amber-600' }
+    { title: 'تسجيل دخول', icon: FaSignInAlt, path: '/auth' },
+
+    { title: 'الطقس', icon: FaCloudSun, path: '/weather' },
+    { title: 'عملات', icon: FaDollarSign, path: '/money' },
+    { title: 'الأخبار', icon: FaNewspaper, path: '/news' },
+    { title: 'الطرق', icon: FaRoad, path: '/car' },
+    { title: 'المتاجر', icon: FaStore, path: '#' },
+    { title: 'عقارات', icon: FaHome },
+    { title: 'أراضي', icon: FaBuilding },
+    { title: 'سيارات', icon: FaCar },
+    { title: 'مطاعم', icon: FaUtensils },
+    { title: 'فرص عمل', icon: FaBriefcase },
+    { title: 'دورات دراسية', icon: FaGraduationCap },
+    { title: 'مستشفيات', icon: FaHospital },
+    { title: 'عيادات طبية', icon: FaClinicMedical },
+    { title: 'أماكن ترفيهية', icon: FaTheaterMasks },
+    { title: 'فنادق', icon: FaHotel },
+    { title: 'صيدليات', icon: FaPills },
+    { title: 'محطات وقود', icon: FaGasPump },
+    { title: 'مراكز تجارية', icon: FaShoppingBag },
+    { title: 'صالات أفراح', icon: FaGlassCheers },
+    { title: 'خدمات توصيل', icon: FaTruck },
+    { title: 'مجوهرات وذهب', icon: FaRing },
+    { title: 'أجهزة منزلية', icon: FaTools },
+    { title: 'ملابس وأزياء', icon: FaTshirt },
+    { title: 'صيانة سيارات', icon: FaWrench },
+    { title: 'هدايا وتحف', icon: FaGift },
+    { title: 'مراكز تجميل', icon: FaCut },
+    { title: 'صالات رياضية', icon: FaDumbbell },
+    { title: 'مكتبات وكتب', icon: FaBook },
+    { title: 'من نحن', icon: FaInfoCircle, path: '/about' },
+
   ];
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] p-4 transition-colors duration-300">
+    <div className="min-h-[calc(100vh-4rem)] p-4">
       <div className="w-full max-w-5xl mx-auto pt-6">
-        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-4">
-          {allCards.map((card, index) => (
-            <Link 
-              href={card.path || '#'} 
-              key={index}
-              className="group flex flex-col items-center transition-all duration-300 transform hover:scale-105"
-            >
-              <div className="relative">
-                {/* Circular background with gradient effect */}
+        <div className="mb-8 px-4">
+          <div className="relative max-w-4xl mx-auto">
+          <input
+  type="text"
+  dir="rtl"
+  placeholder="ابحث عن الخدمات والمحلات..."
+  className={`
+    w-full p-3 pr-12 rounded-full border outline-none transition-all duration-300
+    ${darkMode 
+      ? 'bg-[#001a33] text-white border-gray-700 hover:border-amber-500 focus:border-amber-500'
+      : 'bg-white text-black border-gray-300 hover:border-amber-400 focus:border-amber-400'}
+  `}
+/>
+
+            <button className={`
+              absolute left-3 top-1/2 transform -translate-y-1/2 
+              transition-colors duration-300
+              ${darkMode 
+                ? 'text-gray-300 hover:text-amber-400' 
+                : 'text-gray-400 hover:text-amber-500'}
+            `}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Cards Grid */}
+        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-x-15 gap-y-3">
+          {allCards.map((card, index) => {
+            const IconComponent = card.icon;
+            return (
+              <Link
+                href={card.path || '#'}
+                key={index}
+                className="group flex flex-col items-center transition-all duration-300 transform hover:scale-105"
+              >
+                <div className="relative">
                 <div className={`
-                  w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center 
+                  w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center border
                   transition-all duration-300 group-hover:shadow-lg
-                  ${card.color}
+                  ${darkMode 
+                    ? 'bg-[#001a33] text-white border-gray-600 group-hover:border-amber-500' 
+                    : 'bg-white text-black border-amber-300 group-hover:border-amber-500'}
                 `}>
-                  <div className="text-2xl md:text-3xl text-black">
-                    {card.icon}
-                  </div>
-                  
-                  {/* Hover ring effect */}
-                  <div className="absolute inset-0 rounded-full border-2 border-transparent group-hover:border-amber-400 transition-all duration-300 pointer-events-none"></div>
+                  <IconComponent className="text-2xl md:text-3xl" />
                 </div>
-                
-                {/* Subtle shadow */}
-                <div className="absolute inset-0 rounded-full bg-black opacity-0 group-hover:opacity-5 transition-opacity duration-300"></div>
-              </div>
-              
-              {/* Label with smooth transition */}
-              <span className="mt-2 text-xs font-medium text-center text-gray-700 dark:text-gray-200 group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors duration-300 px-1">
-                {card.title}
-              </span>
-            </Link>
-          ))}
+
+                </div>
+                <span className={`
+                  mt-2 text-xs font-medium text-center transition-colors duration-300 px-1
+                  ${darkMode 
+                    ? 'text-white group-hover:text-amber-400' 
+                    : 'text-black group-hover:text-amber-500'}
+                `}>
+                  {card.title}
+                </span>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </div>

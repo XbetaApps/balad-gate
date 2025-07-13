@@ -28,85 +28,67 @@ export default function CustomThemeProvider({ children }) {
   const [mode, setMode] = useState('light');
   const [mounted, setMounted] = useState(false);
 
+  // Apply theme changes
+  const applyTheme = (themeMode) => {
+    const html = document.documentElement;
+    
+    if (themeMode === 'dark') {
+      html.classList.add('dark');
+      html.style.colorScheme = 'dark';
+      document.body.style.backgroundColor = '#121212';
+      document.body.style.color = '#ffffff';
+    } else {
+      html.classList.remove('dark');
+      html.style.colorScheme = 'light';
+      document.body.style.backgroundColor = '#ffffff';
+      document.body.style.color = '#000000';
+    }
+    
+    // Update the data-theme attribute for MUI
+    html.setAttribute('data-theme', themeMode);
+    
+    // Dispatch theme change event
+    document.dispatchEvent(new CustomEvent('themeChange', { 
+      detail: { mode: themeMode } 
+    }));
+  };
+
   // Initialize theme from localStorage or system preference
   useEffect(() => {
-    // تأخير تنفيذ الكود حتى يتم تحميل الصفحة بالكامل
-    const initTheme = () => {
-      const savedMode = localStorage.getItem('colorMode');
-      const html = document.documentElement;
-      
-      if (savedMode) {
-        setMode(savedMode);
-        if (savedMode === 'dark') {
-          html.classList.add('dark');
-          html.style.backgroundColor = '#000';
-          document.body.style.backgroundColor = '#000';
-          document.body.style.color = '#fff';
-        } else {
-          html.classList.remove('dark');
-          html.style.backgroundColor = '#fff';
-          document.body.style.backgroundColor = '#fff';
-          document.body.style.color = '#000';
-        }
-        html.setAttribute('data-theme', savedMode);
-      } else {
-        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const initialMode = prefersDark ? 'dark' : 'light';
-        setMode(initialMode);
-        if (initialMode === 'dark') {
-          html.classList.add('dark');
-          html.style.backgroundColor = '#000';
-          document.body.style.backgroundColor = '#000';
-          document.body.style.color = '#fff';
-        } else {
-          html.classList.remove('dark');
-          html.style.backgroundColor = '#fff';
-          document.body.style.backgroundColor = '#fff';
-          document.body.style.color = '#000';
-        }
-        html.setAttribute('data-theme', initialMode);
+    // Get saved theme or use system preference
+    const savedMode = localStorage.getItem('colorMode');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const initialMode = savedMode || (prefersDark ? 'dark' : 'light');
+    
+    // Apply initial theme
+    setMode(initialMode);
+    applyTheme(initialMode);
+    setMounted(true);
+    
+    // Listen for system theme changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      const newMode = mediaQuery.matches ? 'dark' : 'light';
+      if (!localStorage.getItem('colorMode')) {
+        setMode(newMode);
+        applyTheme(newMode);
       }
-      
-      setMounted(true);
     };
     
-    // تأخير التنفيذ حتى يكتمل تحميل الصفحة
-    if (document.readyState === 'complete') {
-      initTheme();
-    } else {
-      window.addEventListener('load', initTheme);
-      return () => window.removeEventListener('load', initTheme);
-    }
+    mediaQuery.addEventListener('change', handleChange);
+    
+    return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  const colorMode = useMemo(
+  const toggleColorMode = useMemo(
     () => ({
       toggleColorMode: () => {
         setMode((prevMode) => {
           const newMode = prevMode === 'light' ? 'dark' : 'light';
+          // Save preference
           localStorage.setItem('colorMode', newMode);
-          
-          // تحديث الألوان وعناصر الصفحة
-          const html = document.documentElement;
-          if (newMode === 'dark') {
-            html.classList.add('dark');
-            html.style.backgroundColor = '#000';
-            document.body.style.backgroundColor = '#000';
-            document.body.style.color = '#fff';
-          } else {
-            html.classList.remove('dark');
-            html.style.backgroundColor = '#fff';
-            document.body.style.backgroundColor = '#fff';
-            document.body.style.color = '#000';
-          }
-          
-          html.setAttribute('data-theme', newMode);
-          
-          // إرسال حدث عند تغيير السمة
-          document.dispatchEvent(new CustomEvent('themeChange', { 
-            detail: { mode: newMode } 
-          }));
-          
+          // Apply theme changes
+          applyTheme(newMode);
           return newMode;
         });
       },
@@ -116,20 +98,7 @@ export default function CustomThemeProvider({ children }) {
     [mode]
   );
 
-  // Set initial theme on mount and handle system theme changes
-  useEffect(() => {
-    const root = document.documentElement;
-    
-    // Update the data-theme attribute for MUI
-    root.setAttribute('data-theme', mode);
-    
-    // Update the class on the html element for Tailwind
-    if (mode === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [mode]);
+
 
   const theme = useMemo(() => getTheme(mode), [mode]);
 
@@ -138,7 +107,7 @@ export default function CustomThemeProvider({ children }) {
   }
 
   return (
-    <ColorModeContext.Provider value={colorMode}>
+    <ColorModeContext.Provider value={toggleColorMode}>
       <MUIThemeProvider theme={theme}>
         <CssBaseline enableColorScheme />
         {children}
