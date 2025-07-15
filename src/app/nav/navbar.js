@@ -87,7 +87,8 @@ const navItems = {
   money: "العملات",
   services: "الخدمات",
   auth: "تسجيل الدخول/التسجيل",
-  contact: "اتصل بنا"
+  contact: "اتصل بنا",
+  profile: "الملف الشخصي"
 };
 
 const pageKeys = [
@@ -99,6 +100,7 @@ const pageKeys = [
   { key: "services", href: "/services" },
   { key: "auth", href: "/auth" },
   { key: "contact", href: "/contact" },
+  { key: "profile", href: "/profile" },
 ];
 
 

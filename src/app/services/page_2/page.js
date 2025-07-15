@@ -15,7 +15,7 @@ const services = [
     title: 'متاجر',
     icon: <FaStore className="text-4xl" />,
     description: 'اكتشف أفضل المتاجر المحلية والعالمية في منطقتك',
-    color: 'from-blue-400 to-blue-400'
+    color: 'from-blue-500 to-blue-400'
   },
   {
     id: 'real-estate',

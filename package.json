@@ -13,8 +13,11 @@
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.2.0",
     "@mui/material": "^7.2.0",
+    "@prisma/client": "^6.11.1",
     "axios": "^1.10.0",
+    "bcryptjs": "^3.0.2",
     "framer-motion": "^12.23.3",
+    "jsonwebtoken": "^9.0.2",
     "next": "^15.3.5",
     "next-auth": "^5.0.0-beta.29",
     "next-intl": "^4.3.4",
@@ -33,6 +36,7 @@
     "@tailwindcss/typography": "^0.5.16",
     "eslint": "^9",
     "eslint-config-next": "15.3.5",
+    "prisma": "^6.11.1",
     "tailwindcss": "^4"
   }
 }

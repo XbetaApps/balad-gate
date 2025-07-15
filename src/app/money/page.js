@@ -61,6 +61,7 @@ export default function CurrencyPage() {
   const [targetCurrency, setTargetCurrency] = useState('EUR');
   const [convertedAmount, setConvertedAmount] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [referenceCurrency, setReferenceCurrency] = useState('USD'); // العملة المرجعية
   const [rates, setRates] = useState({...defaultRates});
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState('');
@@ -331,23 +332,31 @@ export default function CurrencyPage() {
         {/* Currency List */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-4">
-            <h2 className={`text-2xl font-bold mb-6 pb-2 border-b ${darkMode ? 'text-white border-gray-800' : 'text-black border-gray-200'}`}>
-              قائمة العملات
-            </h2>
-            <div className="relative w-64">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaSearch className="text-gray-700" />
+            <h2 className={`text-2xl font-bold mb-6 pb-2 border-b ${darkMode ? 'text-white border-gray-800' : 'text-black border-gray-200'}`}>قائمة العملات</h2>
+            <div className="flex gap-2 items-center">
+              <div className="relative w-64">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaSearch className="text-gray-700" />
+                </div>
+                <input
+                  type="text"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+                  placeholder="ابحث عن عملة..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
-              <input
-                type="text"
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
-                placeholder="ابحث عن عملة..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+              <select
+                className={`p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${darkMode ? 'border-gray-600 bg-gray-900 text-white' : 'border-gray-300 bg-white text-black'}`}
+                value={referenceCurrency}
+                onChange={e => setReferenceCurrency(e.target.value)}
+              >
+                {Object.entries(rates).map(([code, currency]) => (
+                  <option key={`ref-${code}`} value={code}>{code} - {currency.name}</option>
+                ))}
+              </select>
             </div>
           </div>
-          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredCurrencies.map(([code, currency]) => (
               <div 
@@ -392,8 +401,9 @@ export default function CurrencyPage() {
                         <span>0.00%</span>
                       )}
                     </p>
+                    {/* عرض السعر مقابل العملة المرجعية المختارة */}
                     <p className="text-xs text-black dark:text-gray-400">
-                      {formatNumber(1 / currency.rateToUSD)} USD
+                      {referenceCurrency === code ? '--' : `${formatNumber(rates[referenceCurrency] && rates[referenceCurrency].rateToUSD ? (currency.rateToUSD / rates[referenceCurrency].rateToUSD) : 0)} ${referenceCurrency}`}
                     </p>
                   </div>
                 </div>
