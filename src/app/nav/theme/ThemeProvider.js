@@ -34,18 +34,18 @@ export default function CustomThemeProvider({ children }) {
     
     if (themeMode === 'dark') {
       html.classList.add('dark');
+      html.setAttribute('data-theme', 'dark');
       html.style.colorScheme = 'dark';
       document.body.style.backgroundColor = '#121212';
-      document.body.style.color = '#ffffff';
     } else {
       html.classList.remove('dark');
+      html.setAttribute('data-theme', 'light');
       html.style.colorScheme = 'light';
       document.body.style.backgroundColor = '#ffffff';
-      document.body.style.color = '#000000';
     }
     
-    // Update the data-theme attribute for MUI
-    html.setAttribute('data-theme', themeMode);
+    // Remove any inline text colors to let Tailwind handle them
+    document.body.style.color = '';
     
     // Dispatch theme change event
     document.dispatchEvent(new CustomEvent('themeChange', { 
