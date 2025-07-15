@@ -15,6 +15,8 @@ import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import { keyframes } from '@emotion/react';
 import Container from "@mui/material/Container";
 import Avatar from "@mui/material/Avatar";
 import Tooltip from "@mui/material/Tooltip";
@@ -88,7 +90,7 @@ const navItems = {
   services: "الخدمات",
   auth: "تسجيل الدخول/التسجيل",
   contact: "اتصل بنا",
-  profile: "الملف الشخصي"
+
 };
 
 const pageKeys = [
@@ -100,7 +102,7 @@ const pageKeys = [
   { key: "services", href: "/services" },
   { key: "auth", href: "/auth" },
   { key: "contact", href: "/contact" },
-  { key: "profile", href: "/profile" },
+
 ];
 
 
@@ -330,10 +332,81 @@ export default function ResponsiveAppBar() {
                     {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
                   </IconButton>
                 </Tooltip>
-                <Tooltip title="Profile" arrow>
-                  <IconButton sx={{ p: 0 }}>
-                    <Avatar src={profileSrc} alt="Profile" sx={{ width: 40, height: 40 }} />
-                  </IconButton>
+                <Tooltip title="الملف الشخصي" arrow>
+                  <Box 
+                    component={Link}
+                    href="/profile"
+                    sx={{
+                      position: 'relative',
+                      width: '44px',
+                      height: '44px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '50%',
+                      marginRight: '8px',
+                      cursor: 'pointer',
+                      background: darkMode 
+                        ? 'linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(184, 134, 11, 0.3))' 
+                        : 'linear-gradient(135deg, rgba(0, 0, 0, 0.1), rgba(68, 68, 68, 0.1))',
+                      boxShadow: darkMode 
+                        ? '0 4px 15px rgba(0, 0, 0, 0.3)' 
+                        : '0 4px 15px rgba(0, 0, 0, 0.1)',
+                      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                      '&:hover': {
+                        transform: 'translateY(-2px) scale(1.05)',
+                        boxShadow: darkMode 
+                          ? '0 6px 20px rgba(0, 0, 0, 0.4)' 
+                          : '0 6px 20px rgba(0, 0, 0, 0.15)',
+                        '&::before': {
+                          opacity: 1,
+                          transform: 'scale(1.1)'
+                        }
+                      },
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        borderRadius: '50%',
+                        padding: '2px',
+                        background: darkMode 
+                          ? 'linear-gradient(135deg, #D4AF37, #FFD700)' 
+                          : 'linear-gradient(135deg, #333, #000)',
+                        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                        WebkitMaskComposite: 'xor',
+                        maskComposite: 'exclude',
+                        opacity: 0.7,
+                        transition: 'all 0.4s ease',
+                        pointerEvents: 'none'
+                      }
+                    }}
+                  >
+                    <PersonOutlineIcon 
+                      sx={{ 
+                        fontSize: '1.5rem',
+                        color: darkMode ? '#FFD700' : '#000',
+                        transition: 'all 0.3s ease',
+                        position: 'relative',
+                        zIndex: 1
+                      }} 
+                    />
+                    <Box 
+                      sx={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        borderRadius: '50%',
+                        background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.8) 0%, transparent 60%)',
+                        opacity: darkMode ? 0.15 : 0.1,
+                        pointerEvents: 'none'
+                      }}
+                    />
+                  </Box>
                 </Tooltip>
               </Box>
             </Toolbar>
