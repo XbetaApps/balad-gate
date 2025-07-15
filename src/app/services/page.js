@@ -70,158 +70,158 @@ export default function DepartmentsPage() {
   const services = [
     { 
       title: 'متاجر', 
-      icon: <FaStore className="text-4xl" />, 
+      icon: <FaStore className="text-4xl text-black" />, 
       link: '/services/page_2#stores',
       color: 'from-blue-400 to-blue-600'
     },
     { 
       title: 'عقارات', 
-      icon: <FaHome className="text-4xl" />, 
+      icon: <FaHome className="text-4xl text-black" />, 
       link: '/services/page_2#real-estate',
       color: 'from-green-400 to-green-600'
     },
     { 
       title: 'أراضي', 
-      icon: <FaMapMarkedAlt className="text-4xl" />, 
+      icon: <FaMapMarkedAlt className="text-4xl text-black" />, 
       link: '/services/page_2#lands',
       color: 'from-yellow-400 to-yellow-600'
     },
     { 
       title: 'سيارات', 
-      icon: <FaCar className="text-4xl" />, 
+      icon: <FaCar className="text-4xl text-black" />, 
       link: '/services/page_2#cars',
       color: 'from-red-400 to-red-600'
     },
     { 
       title: 'مطاعم', 
-      icon: <FaUtensils className="text-4xl" />, 
+      icon: <FaUtensils className="text-4xl text-black" />, 
       link: '/services/page_2#restaurants',
       color: 'from-purple-400 to-purple-600'
     },
     { 
       title: 'فرص عمل', 
-      icon: <FaBriefcase className="text-4xl" />, 
+      icon: <FaBriefcase className="text-4xl text-black" />, 
       link: '/services/page_2#jobs',
       color: 'from-indigo-400 to-indigo-600'
     },
     { 
       title: 'دورات دراسية', 
-      icon: <FaGraduationCap className="text-4xl" />,
-      link: '/services/page_2#courses',
+      icon: <FaGraduationCap className="text-4xl text-black" />,
+      link: '/services/page_2#education',
       color: 'from-pink-400 to-pink-600'
     },
     {
       title: 'مستشفيات',
-      icon: <FaHospital className="text-4xl" />,
+      icon: <FaHospital className="text-4xl text-black" />,
       link: '/services/page_2#hospitals',
       color: 'from-red-400 to-red-600'
     },
     {
       title: 'عيادات طبية',
-      icon: <FaClinicMedical className="text-4xl" />,
+      icon: <FaClinicMedical className="text-4xl text-black" />,
       link: '/services/page_2#clinics',
       color: 'from-teal-400 to-teal-600'
     },
     {
       title: 'أماكن ترفيهية',
-      icon: <FaTheaterMasks className="text-4xl" />,
+      icon: <FaTheaterMasks className="text-4xl text-black" />,
       link: '/services/page_2#entertainment',
       color: 'from-amber-400 to-amber-600'
     },
     {
       title: 'فنادق وشقق فندقية',
-      icon: <FaHotel className="text-4xl" />,
+      icon: <FaHotel className="text-4xl text-black" />,
       link: '/services/page_2#hotels',
       color: 'from-rose-400 to-rose-600',
       emoji: '🏨'
     },
     {
       title: 'صيدليات',
-      icon: <FaPills className="text-4xl" />,
+      icon: <FaPills className="text-4xl text-black" />,
       link: '/services/page_2#pharmacies',
       color: 'from-emerald-400 to-emerald-600',
       emoji: '💊'
     },
     {
       title: 'محطات وقود',
-      icon: <FaGasPump className="text-4xl" />,
+      icon: <FaGasPump className="text-4xl text-black" />,
       link: '/services/page_2#gas-stations',
       color: 'from-orange-400 to-orange-600',
       emoji: '⛽'
     },
     {
       title: 'مراكز تجارية',
-      icon: <FaShoppingBag className="text-4xl" />,
-      link: '/services/page_2#malls',
+      icon: <FaShoppingBag className="text-4xl text-black" />,
+      link: '/services/page_2#shopping',
       color: 'from-sky-400 to-sky-600',
       emoji: '🛍️'
     },
     {
       title: 'صالات أفراح',
-      icon: <FaGift className="text-4xl" />,
+      icon: <FaGift className="text-4xl text-black" />,
       link: '/services/page_2#wedding-halls',
       color: 'from-fuchsia-400 to-fuchsia-600',
       emoji: '🎉'
     },
     {
       title: 'خدمات التوصيل',
-      icon: <FaTruck className="text-4xl" />,
+      icon: <FaTruck className="text-4xl text-black" />,
       link: '/services/page_2#delivery',
       color: 'from-amber-400 to-amber-600',
       emoji: '🚚'
     },
     {
       title: 'مجوهرات وذهب',
-      icon: <FaRing className="text-4xl" />,
+      icon: <FaRing className="text-4xl text-black" />,
       link: '/services/page_2#jewelry',
       color: 'from-yellow-400 to-yellow-600',
       emoji: '💍'
     },
     {
       title: 'أجهزة منزلية',
-      icon: <FaHome className="text-4xl" />,
+      icon: <FaGlassCheers className="text-4xl text-black" />,
       link: '/services/page_2#home-appliances',
       color: 'from-blue-400 to-blue-600',
       emoji: '🏠'
     },
     {
       title: 'ملابس وأزياء',
-      icon: <FaTshirt className="text-4xl" />,
+      icon: <FaTshirt className="text-4xl text-black" />,
       link: '/services/page_2#fashion',
       color: 'from-pink-400 to-pink-600',
       emoji: '👕'
     },
     {
       title: 'صيانة سيارات',
-      icon: <FaTools className="text-4xl" />,
+      icon: <FaTools className="text-4xl text-black" />,
       link: '/services/page_2#car-maintenance',
       color: 'from-gray-400 to-gray-600',
       emoji: '🔧'
     },
     {
       title: 'هدايا وتحف' ,
-      icon: <FaGift className="text-4xl" />,
+      icon: <FaGift className="text-4xl text-black" />,
       link: '/services/page_2#gifts',
       color: 'from-pink-400 to-pink-600',
       emoji: '🎁'
     },
     {
       title: 'مراكز تجميل',
-      icon: <FaCut className="text-4xl" />,
+      icon: <FaCut className="text-4xl text-black" />,
       link: '/services/page_2#beauty-centers',
       color: 'from-purple-400 to-purple-600',
       emoji: '💇‍♀️'
     },
     {
       title: 'صالات رياضية',
-      icon: <FaDumbbell className="text-4xl" />,
+      icon: <FaDumbbell className="text-4xl text-black" />,
       link: '/services/page_2#gyms',
       color: 'from-red-400 to-red-600',
       emoji: '🏋️'
     },
     {
       title: 'مكتبات وكتب',
-      icon: <FaBook className="text-4xl" />,
+      icon: <FaBook className="text-4xl text-black" />,
       link: '/services/page_2#libraries',
       color: 'from-amber-400 to-amber-600',
       emoji: '📚'

@@ -6,10 +6,10 @@ const nextConfig = {
   },
   // تعطيل webpack واستخدام Turbopack
   webpack: null,
-  // تمكين وضع التصحيح لـ Prisma
-  experimental: {
-    serverComponentsExternalPackages: ['@prisma/client'],
-  },
+  // حزم خارجية لمكونات الخادم
+  serverExternalPackages: ['@prisma/client'],
+  // إعدادات تجريبية
+  experimental: {},
 };
 
 // إعداد معالجة SVG فقط في بيئة التطوير
