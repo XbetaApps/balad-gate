@@ -4,9 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm install --legacy-peer-deps && next build",
     "start": "next start",
     "lint": "next lint"
+  },
+  "installConfig": {
+    "hoistingLimits": "workspaces",
+    "legacyPeerDeps": true
   },
   "dependencies": {
     "@auth/core": "^0.40.0",
