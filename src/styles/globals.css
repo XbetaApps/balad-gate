@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* ملف أنماط عام */
 :root {
   --primary-color: #4a90e2;
