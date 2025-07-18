@@ -1,0 +1,143 @@
+/* ملف أنماط خاص بصفحة الملف الشخصي */
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --card: #f8f8f8;
+  --border: #e0e0e0;
+  --primary: #d4af37;
+  --primary-foreground: #000000;
+  --muted: rgba(0, 0, 0, 0.05);
+  --text-secondary: #666666;
+}
+
+.dark {
+  --background: #121212;
+  --foreground: #ffffff;
+  --card: #1e1e1e;
+  --border: #333333;
+  --primary: #d4af37;
+  --primary-foreground: #000000;
+  --muted: rgba(255, 255, 255, 0.08);
+  --text-secondary: #cccccc;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+/* أنماط الصفحة */
+.profile-container {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+.profile-card {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+}
+
+.profile-primary-btn {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.profile-muted-text {
+  color: var(--muted);
+}
+
+/* Support Page Styles */
+.support-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.support-description {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--text-secondary);
+}
+
+.contact-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.contact-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.contact-card h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.chat-container {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+.chat-messages {
+  height: 300px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.message {
+  max-width: 80%;
+  padding: 0.75rem 1rem;
+  border-radius: 1rem;
+}
+
+.message.user {
+  align-self: flex-end;
+  background: var(--primary);
+  color: white;
+}
+
+.message.admin,
+.message.supervisor {
+  align-self: flex-start;
+  background: var(--background);
+  border: 1px solid var(--border);
+}
+
+.timestamp {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.chat-input {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--background);
+}
+
+.chat-input button {
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0 1.5rem;
+  cursor: pointer;
+}
