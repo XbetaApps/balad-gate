@@ -8,7 +8,7 @@ import {
   FaFilter,
   FaTrashAlt,
 } from "react-icons/fa";
-import "../../../profile-styles.css";
+import "/profile-styles.css";
 import { motion, AnimatePresence } from "framer-motion";
 
 /**
