@@ -8,8 +8,8 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo.
-echo push xbeta/main -> ameed...
-git push xbeta main:ameed
+echo force push xbeta/main -> ameed...
+git push --force xbeta main:ameed
 
 if %ERRORLEVEL% NEQ 0 (
     echo error push xbeta/ameed
