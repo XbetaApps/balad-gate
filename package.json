@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "npm install --legacy-peer-deps && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "npm install --legacy-peer-deps"
   },
   "installConfig": {
     "hoistingLimits": "workspaces",
@@ -38,13 +39,14 @@
     "@svgr/webpack": "^8.1.0",
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/forms": "^0.5.10",
-    "@tailwindcss/postcss": "^4",
     "@tailwindcss/typography": "^0.5.16",
+    "postcss": "^8.4.38",
+    "autoprefixer": "^10.4.19",
     "@types/node": "24.0.14",
     "@types/react": "^18.3.3",
     "eslint": "^9",
     "eslint-config-next": "14.2.3",
-    "tailwindcss": "^4",
+    "tailwindcss": "^3.4.1",
     "typescript": "5.8.3"
   }
 }
