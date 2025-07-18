@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { FaComments, FaPhone, FaVideo, FaSearch, FaEllipsisV } from 'react-icons/fa';
 import '../profile-styles.css';
