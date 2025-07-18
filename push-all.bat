@@ -3,16 +3,16 @@ echo push origin/main...
 git push origin main
 
 if %ERRORLEVEL% NEQ 0 (
-    echo error push  origin/main
+    echo error push origin/main
     exit /b %ERRORLEVEL%
 )
 
 echo.
-echo push xbeta/ameed...
-git push xbeta ameed
+echo push xbeta/main -> ameed...
+git push xbeta main:ameed
 
 if %ERRORLEVEL% NEQ 0 (
-    echo   error push  xbeta/ameed
+    echo error push xbeta/ameed
     exit /b %ERRORLEVEL%
 )
 
