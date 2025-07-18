@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Script from 'next/script';
 import { useTheme } from './nav/theme/ThemeProvider';
 import {
   FaNewspaper, FaCloudSun, FaRoad, FaDollarSign, FaStore, FaHome,
@@ -115,10 +116,23 @@ export default function HomePage() {
                   {card.title}
                 </span>
               </Link>
+
+              
             );
           })}
         </div>
       </div>
+
+
+
+      <Script 
+        src="https://cdn.botpress.cloud/webchat/v3.2/inject.js" 
+        strategy="afterInteractive"
+      />
+      <Script 
+        src="https://files.bpcontent.cloud/2025/07/17/20/20250717204342-PMXYVLCW.js" 
+        strategy="afterInteractive"
+      />
     </div>
   );
 }

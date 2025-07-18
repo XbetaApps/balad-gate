@@ -33,13 +33,35 @@ export default function RoadConditions() {
       setRoadData(data.roads);
       setFilteredRoads(data.roads);
       
-      // تحديث قائمة المدن إذا كانت متوفرة
-      if (data.cities && data.cities.length > 0) {
-        setCities(['الكل', ...data.cities]);
-      } else {
-        // قائمة مدن افتراضية
-        setCities(['الكل', 'القدس', 'رام الله', 'الخليل', 'نابلس', 'جنين', 'طولكرم', 'أريحا', 'بيت لحم']);
-      }
+      // تحميل المدن المتاحة
+      const loadCities = async () => {
+        try {
+          const response = await fetch('/api/roads');
+          const data = await response.json();
+          
+          // قائمة المدن مع القرى والمناطق التابعة لها
+          const allCities = [
+            'الكل',
+            'نابلس',
+            'جنين',
+            'طولكرم',
+            'قلقيلية',
+            'القدس',
+            'رام الله',
+            'الخليل',
+            'بيت لحم',
+            'أريحا',
+            'طوباس',
+            'سلفيت'
+          ];
+          
+          setCities(allCities);
+        } catch (error) {
+          console.error('Error loading cities:', error);
+          setCities(['الكل', 'نابلس', 'جنين', 'طولكرم', 'قلقيلية', 'القدس', 'رام الله', 'الخليل']);
+        }
+      };
+      loadCities();
       
       setLastUpdate(data.lastUpdate || new Date().toLocaleTimeString('ar-PS'));
       
@@ -92,9 +114,7 @@ export default function RoadConditions() {
               <FaRoad className="inline ml-2 text-blue-600 dark:text-blue-400" />
           حالة الطرق
             </h1>
-            <p className=" font-medium ">
-              <FaClock className="inline ml-1" /> آخر تحديث: {lastUpdate}
-            </p>
+
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3 mt-4 w-full md:w-auto">
@@ -108,8 +128,8 @@ export default function RoadConditions() {
                 className="bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 pr-10 appearance-none transition-colors"
                 disabled={loading}
               >
-                {cities.map((city) => (
-                  <option key={city} value={city}>
+                {cities.map((city, index) => (
+                  <option key={`${city}-${index}`} value={city}>
                     {city}
                   </option>
                 ))}

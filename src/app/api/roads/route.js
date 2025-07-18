@@ -322,18 +322,40 @@ export async function GET(request) {
     
     let filteredRoads = [...roads];
     if (cityFilter && cityFilter !== 'الكل') {
-      filteredRoads = roads.filter(road => 
-        road.city.includes(cityFilter) || 
-        road.name.includes(cityFilter) ||
-        road.details.includes(cityFilter)
-      );
+      // قائمة بالكلمات المفتاحية لكل مدينة للبحث عنها في الاسم أو التفاصيل
+      const cityKeywords = {
+        'نابلس': ['نابلس', 'دير شرف', 'المربعة', 'بيت فوريك', 'حوارة', 'حواره'],
+        'جنين': ['جنين', 'يعبد', 'يعبد', 'عرابة', 'عرابه', 'يعبد'],
+        'طولكرم': ['طولكرم', 'عنبتا', 'شويكة', 'شويكه', 'ذنابة', 'ذنابه'],
+        'قلقيلية': ['قلقيلية', 'قلقيلا', 'حاجز حبلة', 'حبله'],
+        'القدس': ['القدس', 'القدس الشرقية', 'الطور', 'الخان الأحمر', 'معاليه أدوميم', 'أبو ديس'],
+        'رام الله': ['رام الله', 'البيرة', 'بيتونيا', 'البيريج', 'الكونتينر', 'الكونتينر'],
+        'الخليل': ['الخليل', 'حلحول', 'بني نعيم', 'دورا', 'الضفة', 'الضفه']
+      };
+
+      const keywords = cityKeywords[cityFilter] || [cityFilter];
+      
+      filteredRoads = roads.filter(road => {
+        // البحث في اسم المدينة أو الاسم أو التفاصيل
+        const searchText = `${road.city} ${road.name} ${road.details}`.toLowerCase();
+        return keywords.some(keyword => 
+          searchText.includes(keyword.toLowerCase())
+        );
+      });
     }
     
+    // إضافة وقت التحديث الحالي لكل معبر
+    const roadsWithTimestamp = filteredRoads.map(road => ({
+      ...road,
+      lastUpdate: road.lastUpdate || new Date().toISOString()
+    }));
+
+    // إرجاع البيانات
     return NextResponse.json({
       success: true,
-      roads: filteredRoads,
-      cities: cities.length > 0 ? cities : [...new Set(getDefaultRoads().map(r => r.city))],
-      lastUpdate: new Date().toLocaleTimeString('ar-PS')
+      roads: roadsWithTimestamp,
+      cities: Array.from(new Set(filteredRoads.map(road => road.city))).filter(Boolean),
+      lastUpdate: new Date().toISOString()
     });
     
   } catch (error) {

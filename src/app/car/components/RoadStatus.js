@@ -1,6 +1,48 @@
 'use client';
 
-import { FaRoad, FaInfoCircle, FaExclamationTriangle, FaClock } from 'react-icons/fa';
+import { FaRoad, FaClock, FaInfoCircle, FaExclamationTriangle } from 'react-icons/fa';
+
+
+
+// دالة لصياغة الوقت المنقضي
+function formatTimeAgo(dateString) {
+  let date;
+  
+  // معالجة التاريخ المدخل
+  if (dateString instanceof Date) {
+    date = dateString;
+  } else if (typeof dateString === 'string') {
+    // تحويل التاريخ من تنسيق نصي
+    date = new Date(dateString);
+    // إذا كان التاريخ غير صالح، نستخدم التاريخ الحالي
+    if (isNaN(date.getTime())) {
+      date = new Date();
+    }
+  } else {
+    // إذا لم يكن هناك تاريخ، نستخدم التاريخ الحالي
+    date = new Date();
+  }
+  
+  const now = new Date();
+  const seconds = Math.floor((now - date) / 1000);
+  
+  let interval = Math.floor(seconds / 31536000);
+  if (interval >= 1) return `منذ ${interval} سنة`;
+  
+  interval = Math.floor(seconds / 2592000);
+  if (interval >= 1) return `منذ ${interval} شهر`;
+  
+  interval = Math.floor(seconds / 86400);
+  if (interval >= 1) return `منذ ${interval} يوم`;
+  
+  interval = Math.floor(seconds / 3600);
+  if (interval >= 1) return `منذ ${interval} ساعة`;
+  
+  interval = Math.floor(seconds / 60);
+  if (interval >= 1) return `منذ ${interval} دقيقة`;
+  
+  return 'الآن';
+}
 
 const RoadStatus = ({ road }) => {
   const isClosed = road.status === 'مغلق';
@@ -76,9 +118,15 @@ const RoadStatus = ({ road }) => {
         </div>
       )}
       
-      <div className="mt-2 flex items-center text-xs text-gray-500 dark:text-gray-400">
-        <FaClock className="ml-1" />
-        <span>آخر تحديث: {new Date(road.lastUpdate || new Date()).toLocaleTimeString('ar-PS')}</span>
+      <div className="mt-2 flex items-center justify-end text-xs">
+        <div className="flex items-center text-gray-700 dark:text-gray-300">
+          <FaClock className="ml-1 text-amber-500" />
+          <span>{new Date().toLocaleTimeString('ar-PS', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          })}</span>
+        </div>
       </div>
     </div>
   );
