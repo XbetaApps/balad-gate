@@ -1,4 +1,6 @@
-import prisma from '../../../../../prisma/client';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 import bcrypt from 'bcryptjs';
 
 export async function POST(req) {

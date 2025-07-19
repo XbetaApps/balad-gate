@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
-import prisma from '../../../../prisma/client';
+import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+
+const prisma = new PrismaClient();
 
 export const dynamic = 'force-dynamic'; // Ensure this route is handled at runtime
 
