@@ -61,7 +61,7 @@ const navItems = {
   profile: "الملف الشخصي",
   auth: "تسجيل الدخول/التسجيل",
   about: "من نحن",
-  contact: "اتصل بنا",
+  car: "احوال الطرق"  ,
 };
 
 const pageKeys = [
@@ -74,7 +74,7 @@ const pageKeys = [
   { key: "profile", href: "/profile" }, // سيكون محميًا
   { key: "auth", href: "/auth" },
   { key: "about", href: "/about" },
-  { key: "contact", href: "/contact" },
+  { key: "car", href: "/car" },
 ];
 
 const linkFont = '"Tajawal", "Amiri", serif';
