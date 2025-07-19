@@ -6,10 +6,16 @@
       "use": "@vercel/next"
     }
   ],
-  "buildCommand": "prisma generate && next build",
+  "buildCommand": "npm run vercel-build",
   "installCommand": "npm install --legacy-peer-deps",
   "outputDirectory": ".next",
   "env": {
-    "PRISMA_GENERATE_DATAPROXY": "false"
+    "PRISMA_GENERATE_DATAPROXY": "false",
+    "NODE_ENV": "production"
+  },
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    }
   }
 }

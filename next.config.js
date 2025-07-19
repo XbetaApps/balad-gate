@@ -7,6 +7,11 @@ const nextConfig = {
     unoptimized: true,
   },
   webpack: (config, { isServer }) => {
+    // Initialize plugins array if it doesn't exist
+    if (!config.plugins) {
+      config.plugins = [];
+    }
+
     // Handle SVG imports
     config.module.rules.push({
       test: /\.svg$/i,
@@ -14,25 +19,14 @@ const nextConfig = {
       use: ['@svgr/webpack'],
     });
 
+    // Add Prisma plugin in production
+    if (isServer && process.env.NODE_ENV === 'production') {
+      const { PrismaPlugin } = require('@prisma/nextjs-monorepo-workaround-plugin');
+      config.plugins.push(new PrismaPlugin());
+    }
+
     return config;
   },
 };
 
-// Add Prisma build script
-const { PrismaPlugin } = require('@prisma/nextjs-monorepo-workaround-plugin');
-
-module.exports = (phase, { defaultConfig }) => {
-  // Add Prisma plugin
-  if (process.env.NODE_ENV === 'production') {
-    const withPrisma = {
-      webpack: (config, { isServer }) => {
-        if (isServer) {
-          config.plugins = [...config.plugins, new PrismaPlugin()];
-        }
-        return config;
-      },
-    };
-    return withPrisma.webpack(defaultConfig, { isServer: true });
-  }
-  return nextConfig;
-};
+module.exports = nextConfig;
