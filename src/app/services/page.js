@@ -235,7 +235,7 @@ export default function DepartmentsPage() {
 
   return (
     <div
-      className={`min-h-screen py-12 px-4 sm:px-6 lg:px-8 text-right transition-colors duration-300 ${
+      className={` py-12 px-4 sm:px-6 lg:px-8 text-right transition-colors duration-300 ${
         isDarkMode ? 'bg-black' : 'bg-white'
       }`}
     >
