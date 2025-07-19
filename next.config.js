@@ -4,9 +4,8 @@ const nextConfig = {
   output: 'standalone',
   images: {
     domains: [],
-    unoptimized: true, // لتحسين الأداء على Vercel
+    unoptimized: true,
   },
-  // Server Actions are enabled by default in Next.js 14
   webpack: (config, { isServer }) => {
     // Handle SVG imports
     config.module.rules.push({
@@ -15,18 +14,25 @@ const nextConfig = {
       use: ['@svgr/webpack'],
     });
 
-    // Important: return the modified config
     return config;
-  },
-  // إعدادات خاصة بـ Vercel
-  env: {
-    // يمكنك إضافة متغيرات البيئة العامة هنا إذا لزم الأمر
   },
 };
 
-// Configuration for @next/bundle-analyzer
-const withBundleAnalyzer = require('@next/bundle-analyzer')({
-  enabled: process.env.ANALYZE === 'true',
-});
+// Add Prisma build script
+const { PrismaPlugin } = require('@prisma/nextjs-monorepo-workaround-plugin');
 
-module.exports = withBundleAnalyzer(nextConfig);
+module.exports = (phase, { defaultConfig }) => {
+  // Add Prisma plugin
+  if (process.env.NODE_ENV === 'production') {
+    const withPrisma = {
+      webpack: (config, { isServer }) => {
+        if (isServer) {
+          config.plugins = [...config.plugins, new PrismaPlugin()];
+        }
+        return config;
+      },
+    };
+    return withPrisma.webpack(defaultConfig, { isServer: true });
+  }
+  return nextConfig;
+};
