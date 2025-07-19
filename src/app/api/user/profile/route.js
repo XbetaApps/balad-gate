@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import prisma from '../../../../../prisma/client';
 import jwt from 'jsonwebtoken';
 
+export const dynamic = 'force-dynamic'; // Ensure this route is handled at runtime
+
 // دالة لتحويل BigInt إلى نص
 const bigIntToString = (key, value) => {
   return typeof value === 'bigint' ? value.toString() : value;
