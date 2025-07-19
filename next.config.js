@@ -6,9 +6,7 @@ const nextConfig = {
     domains: [],
     unoptimized: true, // لتحسين الأداء على Vercel
   },
-  experimental: {
-    serverActions: true,
-  },
+  // Server Actions are enabled by default in Next.js 14
   webpack: (config, { isServer }) => {
     // Handle SVG imports
     config.module.rules.push({
