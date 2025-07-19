@@ -9,6 +9,7 @@ import {
   FaTrashAlt,
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
+import "./profile-styles.css";
 
 /**
  * NotificationsPage – لوحة إشعارات احترافية

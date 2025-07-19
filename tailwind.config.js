@@ -1,11 +1,5 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  presets: [require('@tailwindcss/forms')],
-  plugins: [
-    require('@tailwindcss/typography'),
-    require('@tailwindcss/forms'),
-    require('@tailwindcss/aspect-ratio'),
-  ],
   // ░░ الوضع الليلي (بتفعيل صنف `dark` على <html>) ░░
   darkMode: 'class',
 

@@ -1,7 +1,6 @@
-'use client';
-
 import { useState, useEffect } from 'react';
 import { FaComments, FaPhone, FaVideo, FaSearch, FaEllipsisV } from 'react-icons/fa';
+import '../profile-styles.css';
 
 export default function ChatPage() {
   const [activeChat, setActiveChat] = useState(null);
