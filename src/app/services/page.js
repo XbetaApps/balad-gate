@@ -6,8 +6,9 @@ import {
   FaBriefcase, FaGraduationCap, FaHospital, FaClinicMedical,
   FaTheaterMasks, FaHotel, FaPills, FaGasPump, FaShoppingBag,
   FaGlassCheers, FaTruck, FaRing, FaTshirt, FaTools, FaBook,
-  FaDumbbell, FaCut, FaChevronUp, FaGift, FaPlus, FaFilter, FaBoxes, FaTimes, FaImage
+  FaDumbbell, FaCut, FaChevronUp, FaGift, FaPlus, FaFilter, FaBoxes, FaTimes, FaImage, FaThList
 } from 'react-icons/fa';
+import ServicesFooter from '@/components/ServicesFooter';
 
 // Palestinian governorates list
 const palestinianGovernorates = [
@@ -497,7 +498,27 @@ const serviceCategories = [
 ];
 
 export default function ServicesPage() {
-  const [activeSection, setActiveSection] = useState('');
+  const [activeSection, setActiveSection] = useState(null);
+  const scrollContainerRef = useRef(null);
+
+  // Scroll to active section when it changes
+  useEffect(() => {
+    if (activeSection && scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const activeElement = container.querySelector(`[href="#${activeSection}"]`);
+      if (activeElement) {
+        const containerWidth = container.offsetWidth;
+        const elementLeft = activeElement.offsetLeft;
+        const elementWidth = activeElement.offsetWidth;
+        const scrollLeft = elementLeft - (containerWidth / 2) + (elementWidth / 2);
+        
+        container.scrollTo({
+          left: scrollLeft,
+          behavior: 'smooth'
+        });
+      }
+    }
+  }, [activeSection]);
   const [showScroll, setShowScroll] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [currentService, setCurrentService] = useState('');
@@ -662,21 +683,61 @@ export default function ServicesPage() {
       const scrollPosition = window.scrollY + 100;
       setShowScroll(scrollPosition > 300);
 
-      // Get all service sections
-      const serviceSections = document.querySelectorAll('[data-service-section]');
+      // Get all service sections and category sections
+      const serviceSections = Array.from(document.querySelectorAll('[data-service-section]'));
+      const categorySections = Array.from(document.querySelectorAll('.service-category'));
       
-      serviceSections.forEach(section => {
+      // Combine all sections with their offsets
+      const allSections = [
+        ...categorySections.map(el => ({
+          id: el.id,
+          offsetTop: el.offsetTop,
+          offsetHeight: el.offsetHeight
+        })),
+        ...serviceSections.map(el => ({
+          id: el.id,
+          offsetTop: el.offsetTop,
+          offsetHeight: el.offsetHeight
+        }))
+      ];
+      
+      // Sort sections by their position on the page
+      allSections.sort((a, b) => a.offsetTop - b.offsetTop);
+      
+      // Get the first section position
+      const firstSection = allSections[0];
+      let foundActive = false;
+      
+      // Find the active section based on scroll position
+      for (const section of allSections) {
         const sectionTop = section.offsetTop;
         const sectionHeight = section.offsetHeight;
-        const sectionId = section.getAttribute('id');
+        const sectionId = section.id;
         
         if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
           setActiveSection(sectionId);
+          foundActive = true;
           if (window.location.hash !== `#${sectionId}`) {
             window.history.replaceState(null, null, `#${sectionId}`);
           }
+          break;
         }
-      });
+      }
+      
+      // If we're above the first section or no section is active, set activeSection to first category
+      if ((firstSection && scrollPosition < firstSection.offsetTop) || !foundActive) {
+        const firstCategory = categorySections[0];
+        if (firstCategory) {
+          setActiveSection(firstCategory.id);
+        } else if (firstSection) {
+          setActiveSection(firstSection.id);
+        } else {
+          setActiveSection(null);
+        }
+        if (window.location.hash !== '') {
+          window.history.replaceState(null, null, ' ');
+        }
+      }
     };
 
     const handleHash = () => {
@@ -726,21 +787,28 @@ export default function ServicesPage() {
     });
   };
 
-  // Filter services based on search query
-  const filteredCategories = serviceCategories.map(category => ({
-    ...category,
-    services: category.services.filter(service => 
-      service.title.includes(searchQuery) || 
-      service.title.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  })).filter(category => category.services.length > 0);
 
-  // Get all services for mobile view
+
+  // Get all services for search functionality
   const allServices = serviceCategories.flatMap(category => category.services);
+  
+  // Filter services based on search query
   const filteredServices = allServices.filter(service => 
     service.title.includes(searchQuery) || 
     service.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  
+  // Get filtered categories with their services
+  const filteredCategories = serviceCategories.map(category => {
+    const filteredCategoryServices = category.services.filter(service => 
+      filteredServices.some(s => s.id === service.id)
+    );
+    
+    return {
+      ...category,
+      services: filteredCategoryServices
+    };
+  }).filter(category => category.services.length > 0);
 
   // Quick add services (recently used or popular)
   const quickAddServices = [
@@ -753,7 +821,7 @@ export default function ServicesPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-12 px-4 sm:px-6 lg:px-8">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white pt-20 pb-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
           <h1 className="text-3xl font-extrabold sm:text-4xl mb-4">
             اكتشف خدماتنا المتنوعة
@@ -782,7 +850,7 @@ export default function ServicesPage() {
         </div>
       </div>
 
-      <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <div id="services-container" className="pt-16 pb-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         {/* Categories */}
         <div className="space-y-8">
           {filteredCategories.map((category) => (
@@ -878,18 +946,74 @@ export default function ServicesPage() {
         </div>
       </div>
 
-      {/* Service Sections for Scrolling */}
+      {/* Service Categories Sections */}
       <div className="py-8">
+        {filteredCategories.map((category) => (
+          <div key={category.id} id={category.id} className="py-12 service-category">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center mb-8">
+                <div className="w-12 h-12 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mr-4 text-amber-600 dark:text-amber-400">
+                  {category.icon}
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {category.title}
+                </h2>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {category.services.map((service) => (
+                  <div 
+                    key={service.id}
+                    className="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-100 dark:border-gray-700 overflow-hidden"
+                  >
+                    <div className="p-4">
+                      <div className={`w-12 h-12 mx-auto rounded-lg ${service.color} bg-opacity-10 flex items-center justify-center mb-3`}>
+                        {service.icon}
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white text-center mb-2">
+                        {service.title}
+                      </h3>
+                      <div className="flex justify-center space-x-2">
+                        <button
+                          onClick={() => {
+                            setCurrentService(service.id);
+                            setShowAddForm(true);
+                          }}
+                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
+                        >
+                          <FaPlus className="ml-1" size={10} />
+                          إضافة
+                        </button>
+                        <a
+                          href={`#${service.id}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            document.getElementById(service.id)?.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-xs font-medium rounded text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
+                        >
+                          تصفح
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+        
+        {/* Individual Service Sections */}
         {allServices.map((service) => (
           <div 
-            key={service.id} 
+            key={`section-${service.id}`} 
             id={service.id} 
             data-service-section
-            className="py-16 px-4"
+            className="py-16 px-4 border-t border-gray-200 dark:border-gray-700"
           >
             <div className="max-w-7xl mx-auto">
               <div className="flex items-center mb-8">
-                <div className={`w-12 h-12 rounded-lg ${service.color} bg-opacity-10 flex items-center justify-center mr-4 text-${service.color.split('-')[1]}-600 dark:text-${service.color.split('-')[1]}-400`}>
+                <div className={`w-12 h-12 rounded-lg ${service.color} bg-opacity-10 flex items-center justify-center mr-4`}>
                   {service.icon}
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -952,47 +1076,119 @@ export default function ServicesPage() {
         </button>
       </div>
 
-      {/* Mobile Navigation - Lowest z-index */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-lg z-10 md:hidden">
-        <div className="flex overflow-x-auto py-2 px-1">
-          {allServices.slice(0, 5).map((service) => (
-            <a
-              key={service.id}
-              href={`#${service.id}`}
-              onClick={(e) => {
-                e.preventDefault();
-                const element = document.getElementById(service.id);
-                if (element) {
-                  element.scrollIntoView({ behavior: 'smooth' });
-                  window.history.pushState(null, null, `#${service.id}`);
-                }
-              }}
-              className={`flex flex-col items-center justify-center p-2 mx-1 rounded-lg min-w-[80px] ${
-                activeSection === service.id
-                  ? 'bg-amber-500 text-white'
-                  : 'text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-              aria-current={activeSection === service.id ? 'page' : undefined}
-            >
-              <span className={`text-2xl ${activeSection === service.id ? 'text-white' : service.color.replace('bg', 'text')} mb-1`}>
-                {service.icon}
-              </span>
-              <span className="text-xs font-medium">{service.title}</span>
-            </a>
-          ))}
-          <button 
-            onClick={toggleFloatingMenu}
-            className={`flex flex-col items-center justify-center p-2 mx-1 rounded-lg min-w-[80px] ${
-              showFloatingMenu 
-                ? 'bg-red-500 text-white' 
+          {/* Mobile Navigation - Horizontal Scrollable */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-lg z-10 md:hidden overflow-hidden">
+        <div 
+          className="flex overflow-x-auto py-2 px-1 scroll-smooth" 
+          style={{ 
+            WebkitOverflowScrolling: 'touch',
+            scrollSnapType: 'x mandatory',
+            scrollPadding: '0 16px',
+            scrollBehavior: 'smooth'
+          }}
+          ref={scrollContainerRef}
+        >
+          {/* All Services Button */}
+          <a
+            href="#services"
+            onClick={(e) => {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              setActiveSection('services');
+            }}
+            className={`flex flex-col items-center justify-center p-2 mx-1 rounded-lg min-w-[80px] flex-shrink-0 ${
+              !activeSection || activeSection === 'services'
+                ? 'bg-amber-500 text-white shadow-md scale-110'
                 : 'text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
+            } transition-all duration-300`}
+            style={{
+              flex: '0 0 auto',
+              scrollSnapAlign: 'center'
+            }}
           >
-            <span className={`text-2xl mb-1 ${showFloatingMenu ? 'text-white' : 'text-amber-500'}`}>
-              {showFloatingMenu ? <span>✕</span> : <FaPlus />}
+            <span className={`text-xl mb-1 ${!activeSection || activeSection === 'services' ? 'text-white' : 'text-amber-500'}`}>
+              <FaThList />
             </span>
-            <span className="text-xs font-medium">المزيد</span>
-          </button>
+            <span className="text-xs font-medium text-center px-1 whitespace-nowrap">
+              الكل
+            </span>
+          </a>
+          
+          {/* Divider */}
+          <div className="h-10 w-px bg-gray-200 dark:bg-gray-600 my-2 mx-1"></div>
+          
+          {/* Main Categories with Subcategories */}
+          {filteredCategories.map((category, index) => (
+            <React.Fragment key={`cat-${category.id}`}>
+              {/* Main Category */}
+              <a
+                href={`#${category.id}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  const element = document.getElementById(category.id);
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    setActiveSection(category.id);
+                  }
+                }}
+                className={`flex flex-col items-center justify-center p-2 mx-1 rounded-lg min-w-[80px] flex-shrink-0 ${
+                  activeSection === category.id
+                    ? 'bg-amber-500 text-white shadow-md scale-110'
+                    : 'text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                } transition-all duration-300`}
+                style={{
+                  flex: '0 0 auto',
+                  scrollSnapAlign: 'center',
+                  borderRight: '1px solid rgba(0,0,0,0.05)'
+                }}
+              >
+                <span className={`text-xl mb-1 ${activeSection === category.id ? 'text-white' : 'text-amber-500'}`}>
+                  {category.icon}
+                </span>
+                <span className="text-xs font-medium text-center px-1 whitespace-nowrap">
+                  {category.title}
+                </span>
+              </a>
+              
+              {/* Subcategories */}
+              {category.services.map((service) => (
+                <a
+                  key={service.id}
+                  href={`#${service.id}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const element = document.getElementById(service.id);
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      setActiveSection(service.id);
+                    }
+                  }}
+                  className={`flex flex-col items-center justify-center p-2 mx-1 rounded-lg min-w-[80px] flex-shrink-0 ${
+                    activeSection === service.id
+                      ? 'bg-amber-500 text-white shadow-md scale-110'
+                      : 'text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                  } transition-all duration-300`}
+                  style={{
+                    flex: '0 0 auto',
+                    scrollSnapAlign: 'center',
+                    borderRight: '1px solid rgba(0,0,0,0.05)'
+                  }}
+                >
+                  <span className={`text-xl mb-1 ${activeSection === service.id ? 'text-white' : service.color}`}>
+                    {service.icon}
+                  </span>
+                  <span className="text-xs font-medium text-center px-1 whitespace-nowrap">
+                    {service.title}
+                  </span>
+                </a>
+              ))}
+              
+              {/* Divider between categories */}
+              {index < filteredCategories.length - 1 && (
+                <div className="h-10 w-px bg-gray-200 dark:bg-gray-600 my-2 mx-1"></div>
+              )}
+            </React.Fragment>
+          ))}
         </div>
         
         {/* Mobile Floating Menu - Higher than mobile nav but lower than FAB */}
