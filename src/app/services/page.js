@@ -8,7 +8,7 @@ import {
   FaGlassCheers, FaTruck, FaRing, FaTshirt, FaTools, FaBook,
   FaDumbbell, FaCut, FaChevronUp, FaGift, FaPlus, FaFilter, FaBoxes, FaTimes, FaImage, FaThList
 } from 'react-icons/fa';
-import ServicesFooter from '@/components/ServicesFooter';
+
 
 // Palestinian governorates list
 const palestinianGovernorates = [
