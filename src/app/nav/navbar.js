@@ -8,6 +8,7 @@ import { useSession } from "../../contexts/SessionContext";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
+import { FaStore, FaShoppingBag, FaUser } from "react-icons/fa";
 
 // تحميل SessionVerification (نسخة JS) بلا SSR
 const SessionVerification = dynamic(
@@ -58,10 +59,9 @@ const navItems = {
   weather: "الطقس",
   money: "العملات",
   services: "الخدمات",
-  profile: "الملف الشخصي",
-  auth: "تسجيل الدخول/التسجيل",
   about: "من نحن",
-  car: "احوال الطرق"  ,
+  car: "احوال الطرق",
+  auth: "تسجيل الدخول"
 };
 
 const pageKeys = [
@@ -71,10 +71,9 @@ const pageKeys = [
   { key: "weather", href: "/weather" },
   { key: "money", href: "/money" },
   { key: "services", href: "/services" },
-  { key: "profile", href: "/profile" }, // سيكون محميًا
-  { key: "auth", href: "/auth" },
   { key: "about", href: "/about" },
   { key: "car", href: "/car" },
+  { key: "auth", href: "/auth" },
 ];
 
 const linkFont = '"Tajawal", "Amiri", serif';
@@ -195,13 +194,13 @@ export default function ResponsiveAppBar() {
       height: '100%', 
       display: 'flex', 
       alignItems: 'center',
-      padding: '0 16px',
+      padding: '0 8px',
       cursor: 'pointer',
       ':hover': {
         color: hoverColor,
       }
     }}>
-      <div 
+      <IconButton 
         onClick={(e) => {
           console.log('تم النقر على زر الملف الشخصي');
           e.stopPropagation();
@@ -218,21 +217,19 @@ export default function ResponsiveAppBar() {
             });
           }
         }}
-        style={{
-          fontFamily: linkFont,
-          fontSize: '1.1rem',
-          color: 'var(--navbar-text)',
-          fontWeight: 700,
-          lineHeight: 'normal',
-          transition: 'all 0.2s',
-          ':hover': {
+        sx={{ 
+          color: 'inherit',
+          '&:hover': { 
             color: hoverColor,
             transform: 'translateY(-2px)',
+            backgroundColor: 'rgba(255, 255, 255, 0.1)'
           },
+          transition: 'all 0.2s',
+          p: 1
         }}
       >
-        الملف الشخصي
-      </div>
+        <FaUser size={20} />
+      </IconButton>
 
       {showAuthModal && (
         <div 
@@ -678,23 +675,36 @@ export default function ResponsiveAppBar() {
                     flexGrow: 1,
                     fontFamily: linkFont,
                     fontWeight: 800,
-                    letterSpacing: ".3rem",
                     color: "inherit",
-                    textDecoration: "none",
-                    cursor: "pointer",
+                    textDecoration: "none"
                   }}
                 >
-                  <Avatar sx={{ display: { xs: "flex", md: "none" }, mr: 1 }}>
-                    <Image
-                      src={logo}
-                      alt="logo"
-                      fill
-                      style={{ objectFit: "contain" }}
-                      sizes="32px"
-                    />
-                  </Avatar>
+                  <Image
+                    src={logo}
+                    alt="شعار الموقع"
+                    width={40}
+                    height={40}
+                    style={{ objectFit: "contain" }}
+                  />
                 </Typography>
               </Link>
+
+              {/* زر الملف الشخصي للهاتف */}
+              <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', ml: 'auto' }}>
+                <Tooltip title={user ? 'الملف الشخصي' : 'تسجيل الدخول'}>
+                  <IconButton
+                    size="large"
+                    onClick={handleProfileClick}
+                    color="inherit"
+                    sx={{
+                      color: textColor,
+                      "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.1)" },
+                    }}
+                  >
+                    <FaUser />
+                  </IconButton>
+                </Tooltip>
+              </Box>
 
               {/* روابط سطح المكتب */}
               {!isMobile && (
@@ -706,13 +716,7 @@ export default function ResponsiveAppBar() {
                     width: "100%",
                   }}
                 >
-                  {pageKeys.map((p) =>
-                    p.key === "profile" ? (
-                      // ملف شخصي محمي
-                      <Tooltip key={p.href} title={navItems[p.key]} arrow placement="bottom">
-                        <span>{ProfileAvatarProtected}</span>
-                      </Tooltip>
-                    ) : (
+                  {pageKeys.map((p) => (
                       <Tooltip key={p.href} title={navItems[p.key]} arrow placement="bottom">
                         <Link
                           href={p.href}
@@ -737,13 +741,12 @@ export default function ResponsiveAppBar() {
                           </Typography>
                         </Link>
                       </Tooltip>
-                    )
-                  )}
+                  ))}
                 </Box>
               )}
 
               {/* تبديل الوضع + الملف */}
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2, mx: 2 }}>
+              <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: "center", gap: 2, mx: 2 }}>
                 <button
                   onClick={toggleColorMode}
                   className="p-2 rounded-full text-gold-500 dark:text-gold-400 hover:bg-dark-700 dark:hover:bg-dark-600"
@@ -751,12 +754,19 @@ export default function ResponsiveAppBar() {
                   {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
                 </button>
 
-                {/* ملف شخصي محمي (سطح المكتب) */}
-                {isMobile ? null : (
-                  <Tooltip title="الملف الشخصي" arrow>
-                    <span>{ProfileAvatarProtected}</span>
-                  </Tooltip>
-                )}
+                {/* زر الملف الشخصي (سطح المكتب) */}
+                <Tooltip title={user ? 'الملف الشخصي' : 'تسجيل الدخول'}>
+                  <IconButton 
+                    onClick={handleProfileClick} 
+                    sx={{ 
+                      p: 1,
+                      color: textColor,
+                      "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.1)" },
+                    }}
+                  >
+                    <FaUser size={20} />
+                  </IconButton>
+                </Tooltip>
               </Box>
             </Toolbar>
           </Container>
@@ -804,6 +814,39 @@ export default function ResponsiveAppBar() {
           </Box>
 
           <List sx={{ width: "100%" }}>
+            {/* زر الملف الشخصي في قائمة البورجر */}
+            <ListItem
+              disablePadding
+              sx={{ mb: 2 }}
+            >
+              <ListItemButton
+                onClick={handleProfileClick}
+                sx={{
+                  width: "100%",
+                  py: 2,
+                  px: 3,
+                  borderRadius: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                  "&:hover": {
+                    backgroundColor: "rgba(255, 255, 255, 0.1)",
+                  },
+                }}
+              >
+                <FaUser style={{ fontSize: '1.2rem' }} />
+                <ListItemText
+                  primary={user ? 'الملف الشخصي' : 'تسجيل الدخول'}
+                  primaryTypographyProps={{
+                    fontFamily: linkFont,
+                    fontWeight: 600,
+                    fontSize: "1.1rem",
+                    color: "var(--navbar-text)",
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+            
             {pageKeys.map((p) => (
               <ListItem
                 key={p.href}
