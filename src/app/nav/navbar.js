@@ -8,7 +8,7 @@ import { useSession } from "../../contexts/SessionContext";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
-import { FaStore, FaShoppingBag, FaUser } from "react-icons/fa";
+import { FaStore, FaShoppingBag, FaUser, FaSignInAlt, FaTimes } from "react-icons/fa";
 
 // تحميل SessionVerification (نسخة JS) بلا SSR
 const SessionVerification = dynamic(
@@ -38,6 +38,12 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import Slide from "@mui/material/Slide";
 import useScrollTrigger from "@mui/material/useScrollTrigger";
 import CssBaseline from "@mui/material/CssBaseline";
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import Button from '@mui/material/Button';
 
 import logo from "./icons/1111.png";
 
@@ -93,6 +99,7 @@ export default function ResponsiveAppBar() {
   const { isVerified: isSessionVerified } = useSession();
   const [mounted, setMounted] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   
   // لا حاجة للتحقق من صحة الجلسة هنا، حيث يتم التحقق في SessionVerification
   
@@ -122,20 +129,33 @@ export default function ResponsiveAppBar() {
     e?.preventDefault();
     e?.stopPropagation();
     
-    console.log('handleProfileClick called, user:', user ? 'موجود' : 'غير موجود');
+    if (loading) {
+      console.log('جاري التحميل...');
+      return;
+    }
+    
+    console.log('النقر على الملف الشخصي - حالة المستخدم:', user ? 'مسجل الدخول' : 'غير مسجل');
     
     if (user) {
       console.log('توجيه إلى صفحة الملف الشخصي');
       router.push("/profile");
     } else {
       console.log('فتح نافذة تسجيل الدخول');
-      setAuthAction(() => () => {
-        console.log('تنفيذ الإجراء بعد تسجيل الدخول');
-        router.push("/profile");
-      });
-      setShowAuthModal(true);
+      setShowLoginPrompt(true);
     }
-  }, [user, router]);
+  }, [user, loading, router]);
+
+  // معالجة تأكيد تسجيل الدخول
+  const handleLoginConfirm = useCallback(() => {
+    setShowLoginPrompt(false);
+    // توجيه المستخدم إلى صفحة تسجيل الدخول
+    router.push("/auth");
+  }, [router]);
+
+  // معالجة إلغاء تسجيل الدخول
+  const handleLoginCancel = useCallback(() => {
+    setShowLoginPrompt(false);
+  }, []);
   
   // 5. Effects
   useEffect(() => {
@@ -185,6 +205,64 @@ export default function ResponsiveAppBar() {
   const hoverColor = "#f0e68c";
   
   if (!mounted) return null;
+
+  // نافذة تأكيد تسجيل الدخول
+  const LoginPromptDialog = (
+    <Dialog
+      open={showLoginPrompt}
+      onClose={handleLoginCancel}
+      aria-labelledby="alert-dialog-title"
+      aria-describedby="alert-dialog-description"
+      dir="rtl"
+      PaperProps={{
+        style: {
+          backgroundColor: darkMode ? '#1e1e1e' : '#ffffff',
+          color: darkMode ? '#ffffff' : '#000000',
+          borderRadius: '12px',
+          padding: '20px',
+          minWidth: '300px',
+          textAlign: 'center'
+        }
+      }}
+    >
+      <DialogTitle id="alert-dialog-title" style={{ color: darkMode ? '#ffd700' : '#1976d2' }}>
+        <FaSignInAlt style={{ marginLeft: '8px', verticalAlign: 'middle' }} />
+        تنبيه
+      </DialogTitle>
+      <DialogContent>
+        <DialogContentText id="alert-dialog-description" style={{ color: darkMode ? '#e0e0e0' : '#333333' }}>
+          يلزم تسجيل الدخول للوصول إلى هذه الميزة. هل ترغب في تسجيل الدخول الآن؟
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions style={{ justifyContent: 'center', padding: '16px', gap: '16px' }}>
+        <Button 
+          onClick={handleLoginCancel}
+          variant="outlined"
+          startIcon={<FaTimes />}
+          style={{
+            color: darkMode ? '#ff6b6b' : '#f44336',
+            borderColor: darkMode ? '#ff6b6b' : '#f44336',
+            minWidth: '120px'
+          }}
+        >
+          إلغاء
+        </Button>
+        <Button 
+          onClick={handleLoginConfirm}
+          variant="contained"
+          startIcon={<FaSignInAlt />}
+          style={{
+            backgroundColor: darkMode ? '#ffd700' : '#1976d2',
+            color: darkMode ? '#000000' : '#ffffff',
+            minWidth: '120px'
+          }}
+          autoFocus
+        >
+          تسجيل الدخول
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 
 
 
@@ -601,7 +679,9 @@ export default function ResponsiveAppBar() {
 
   return (
     <>
+      <SessionVerification />
       <CssBaseline />
+      {LoginPromptDialog}
       <HideOnScroll>
         <AppBar
           position="fixed"
