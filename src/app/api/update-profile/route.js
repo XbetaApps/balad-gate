@@ -2,19 +2,20 @@ import { NextResponse } from 'next/server';
 import { extractToken, verifyToken } from '@/app/lib/auth';
 import { pool } from '@/app/lib/db';
 
-// تمكين خاصية bodyParser لتجاوز الحد الافتراضي
-// هذا مهم لمعالجة البيانات الكبيرة
-// يمكنك ضبط الحد وفقاً لاحتياجاتك
+// Route Segment Config for Next.js 14+
+// https://nextjs.org/docs/app/api-reference/file-conventions/route-segment-config
+
+export const dynamic = 'force-dynamic';
+export const maxDuration = 30; // seconds
+export const fetchCache = 'force-no-store';
+
+// Body size limit (default is 1MB)
 export const config = {
   api: {
     bodyParser: {
       sizeLimit: '1mb',
     },
   },
-  // تمكين الطرق المسموح بها
-  methods: ['POST'],
-  // تعطيل التخزين المؤقت
-  cache: 'no-store',
 };
 
 export async function POST(request) {
