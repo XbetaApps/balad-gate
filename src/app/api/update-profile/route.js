@@ -9,14 +9,8 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 30; // seconds
 export const fetchCache = 'force-no-store';
 
-// Body size limit (default is 1MB)
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '1mb',
-    },
-  },
-};
+// Body size limit is now handled by the runtime or edge config
+// The default limit is 1MB in Next.js 14+
 
 export async function POST(request) {
   console.log('📨 Received update profile request');
