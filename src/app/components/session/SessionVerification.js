@@ -16,31 +16,22 @@ const SessionVerification = ({ children, onVerified, actionName = 'هذا الإ
     const verifyAuth = async () => {
       try {
         await checkAuth();
-        console.log('تم التحقق من حالة المصادقة');
       } catch (error) {
-        console.log('خطأ في التحقق من المصادقة:', error);
+        console.log('الجلسة غير موجودة (خطأ في التحقق)');
       } finally {
         setAuthChecked(true);
       }
     };
 
     verifyAuth();
-  }, [checkAuth]); // تمت إزالة user من مصفوفة التبعية
+  }, [checkAuth]);
 
   const handleClick = (e) => {
     e?.stopPropagation();
-    
-    if (!authChecked) {
-      console.log('جاري التحقق من حالة المصادقة...');
-      return;
-    }
+    console.log(user ? 'الجلسة موجودة' : 'الجلسة غير موجودة');
     
     if (user) {
-      if (onVerified) {
-        onVerified();
-      } else {
-        router.push('/profile');
-      }
+      if (onVerified) onVerified();
     } else {
       setShowLoginPrompt(true);
     }

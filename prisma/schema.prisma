@@ -8,14 +8,75 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model users {
+enum ActorType {
+  user
+  store
+  @@map("actor_type")
+}
+
+enum SenderType {
+  user
+  store
+  @@map("sender_type")
+}
+
+model User {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   serial_id  BigInt   @unique @default(autoincrement())
   email      String   @unique
-  password   String
+  password   String?
   name       String?
-  phone      String?  @db.VarChar(20)
-  city       String   @db.VarChar(255)
+  phone      String?
+  city       String?
   role_id    Int      @db.SmallInt
   created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("users")
+}
+
+model Conversation {
+  id              BigInt     @id @default(autoincrement()) @db.BigInt
+  last_message_id BigInt?    @db.BigInt
+  last_message    Message?   @relation("ConversationLastMessage", fields: [last_message_id], references: [id])
+  last_message_at DateTime?  @db.Timestamptz(6)
+  created_at      DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime   @default(now()) @db.Timestamptz(6)
+
+  participants ConversationParticipant[]
+  messages     Message[] @relation("ConversationMessages")
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id                  BigInt     @id @default(autoincrement()) @db.BigInt
+  conversation_id     BigInt     @db.BigInt
+  actor_id            String     @db.Uuid
+  actor_type          ActorType
+  last_read_message_id BigInt?   @db.BigInt
+  is_muted            Boolean    @default(false)
+  is_archived         Boolean    @default(false)
+  created_at          DateTime   @default(now()) @db.Timestamptz(6)
+
+  conversation Conversation @relation(fields: [conversation_id], references: [id])
+
+  @@index([conversation_id])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id              BigInt     @id @default(autoincrement()) @db.BigInt
+  conversation_id BigInt     @db.BigInt
+  sender_id       String     @db.Uuid
+  sender_type     SenderType
+  content         String     @db.Text
+  is_read         Boolean    @default(false)
+  created_at      DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime   @default(now()) @db.Timestamptz(6)
+
+  conversation Conversation @relation("ConversationMessages", fields: [conversation_id], references: [id])
+  as_last_of    Conversation[] @relation("ConversationLastMessage")
+
+  @@index([conversation_id])
+  @@map("messages")
 }

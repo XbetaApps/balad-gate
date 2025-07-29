@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../auth/AuthProvider';
-import { useSession } from '../../contexts/SessionContext';
 import { 
   FaUser, 
   FaBell, 
@@ -18,8 +17,14 @@ import {
   FaPhone, 
   FaLock, 
   FaMapMarkerAlt,
-  FaEnvelope
+  FaEnvelope,
+  FaUsersCog,
+  FaNewspaper,
+  FaChartLine
 } from 'react-icons/fa';
+import UsersManagement from './components/UsersManagement';
+import PostsManagement from './components/PostsManagement';
+import AdminDashboard from './components/AdminDashboard';
 import NavItem from './components/NavItem';
 import Link from 'next/link';
 import Notifications from './components/Notifications';
@@ -72,11 +77,10 @@ function NotificationBadge({ count }) {
 export default function AccountPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isVerified: isSessionVerified, setVerified: setSessionVerified } = useSession();
+  const { user, logout } = useAuth();
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [currentSection, setCurrentSection] = useState('profile');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user, loading, logout } = useAuth();
   const [userData, setUserData] = useState({
     name: '',
     email: '',
@@ -108,18 +112,87 @@ export default function AccountPage() {
     }));
   };
 
-  const handleSaveClick = (field) => {
-    // تحديث البيانات المحلية فقط
-    setUserData(prev => ({
-      ...prev,
-      [field]: editData[field]
-    }));
+  const handleSaveClick = async (field) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('لم يتم العثور على رمز المصادقة. يرجى تسجيل الدخول مرة أخرى.');
+      }
 
-    // إغلاق وضع التعديل
-    setIsEditing(prev => ({
-      ...prev,
-      [field]: false
-    }));
+      const updateData = {};
+      updateData[field] = editData[field];
+
+      console.log('Sending update request with data:', updateData);
+      
+      const response = await fetch('/api/update-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updateData)
+      });
+
+      const data = await response.json();
+      console.log('Update response:', data);
+
+      if (!response.ok) {
+        throw new Error(data.message || 'حدث خطأ أثناء تحديث البيانات');
+      }
+
+      if (!data.success) {
+        throw new Error(data.message || 'فشل تحديث البيانات');
+      }
+
+      // تحديث البيانات المحلية
+      setUserData(prev => ({
+        ...prev,
+        [field]: editData[field]
+      }));
+
+      // إغلاق وضع التعديل
+      setIsEditing(prev => ({
+        ...prev,
+        [field]: false
+      }));
+
+      alert(data.message || 'تم تحديث البيانات بنجاح');
+    } catch (error) {
+      // Simple error logging
+      console.error('Error updating profile:');
+      console.error('Message:', error.message);
+      console.error('Name:', error.name);
+      if (error.stack) console.error('Stack:', error.stack);
+      console.error('Field being updated:', field);
+      
+      // Only log updateData if it exists in the current scope
+      if (typeof updateData !== 'undefined') {
+        console.error('Update Data:', updateData);
+      } else {
+        console.error('No update data available');
+      }
+      
+      // Default error message
+      let errorMessage = 'حدث خطأ أثناء تحديث البيانات. يرجى المحاولة مرة أخرى.';
+      
+      // More specific error messages based on error type
+      if (!error || !error.message) {
+        errorMessage = 'حدث خطأ غير معروف. يرجى المحاولة مرة أخرى.';
+      } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+        errorMessage = 'تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.';
+      } else if (error.message.includes('401') || error.message.includes('مصادقة')) {
+        errorMessage = 'انتهت جلستك. يرجى تسجيل الدخول مرة أخرى.';
+      } else {
+        // Use the error message but limit its length
+        const message = String(error.message || '');
+        errorMessage = message.length > 200 
+          ? message.substring(0, 200) + '...' 
+          : message;
+      }
+      
+      // Show error to user
+      alert(`❌ ${errorMessage}`);
+    }
   };
 
   const handleCancelEdit = (field) => {
@@ -134,6 +207,99 @@ export default function AccountPage() {
       ...prev,
       [field]: e.target.value
     }));
+  };
+
+  const handlePasswordUpdate = async (e) => {
+    e.preventDefault();
+    
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const currentPassword = formData.get('currentPassword');
+    const newPassword = formData.get('newPassword');
+    const confirmPassword = formData.get('confirmPassword');
+    
+    // التحقق من الحقول المطلوبة
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      alert('الرجاء ملء جميع الحقول المطلوبة');
+      return;
+    }
+    
+    // التحقق من تطابق كلمتي المرور
+    if (newPassword !== confirmPassword) {
+      alert('كلمة المرور الجديدة غير متطابقة');
+      return;
+    }
+    
+    // التحقق من طول كلمة المرور
+    if (newPassword.length < 6) {
+      alert('يجب أن تتكون كلمة المرور من 6 أحرف على الأقل');
+      return;
+    }
+    
+    // إظهار رسالة تحميل
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalButtonText = submitButton.innerHTML;
+    submitButton.disabled = true;
+    submitButton.innerHTML = 'جاري التحديث...';
+    
+    try {
+      // الحصول على التوكن من localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('لم يتم العثور على رمز المصادقة');
+      }
+      
+      // إرسال طلب تحديث كلمة المرور
+      const response = await fetch('/api/update-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        // If the response is not ok, throw an error with the server's message
+        const errorMessage = data.message || 'حدث خطأ أثناء تحديث كلمة المرور';
+        console.error('Server error:', { status: response.status, data });
+        throw new Error(errorMessage);
+      }
+      
+      // If we get here, the update was successful
+      alert('✅ تم تحديث كلمة المرور بنجاح');
+      form.reset();
+    } catch (error) {
+      console.error('Error updating password:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      
+      // Show a more user-friendly error message
+      let errorMessage = 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.';
+      
+      if (error.message.includes('NetworkError')) {
+        errorMessage = 'تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.';
+      } else if (error.message.includes('401')) {
+        errorMessage = 'انتهت جلستك. يرجى تسجيل الدخول مرة أخرى.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(`❌ ${errorMessage}`);
+    } finally {
+      // إعادة تعيين حالة الزر
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalButtonText;
+      }
+    }
   };
 
   useEffect(() => {
@@ -158,20 +324,11 @@ export default function AccountPage() {
   };
 
   const handleVerifySession = () => {
-    // محاكاة عملية التحقق من الجلسة
-    setTimeout(() => {
-      setSessionVerified(true);
-      setShowVerificationModal(false);
-    }, 500);
+    setShowVerificationModal(false);
   };
 
-  // التحقق من صحة الجلسة عند تحميل الصفحة
+  // جلب بيانات المستخدم
   useEffect(() => {
-    if (user && !isSessionVerified) {
-      setShowVerificationModal(true);
-    }
-    
-    // جلب بيانات المستخدم
     const fetchUserData = async () => {
       try {
         setIsLoading(true);
@@ -203,10 +360,12 @@ export default function AccountPage() {
       }  
     };
 
-    fetchUserData();
-  }, [user, isSessionVerified, router]);
+    if (user) {
+      fetchUserData();
+    }
+  }, [user, router]);
 
-  if (loading || isLoading) {
+  if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">جاري تحميل البيانات...</div>;
   }
   if (error) {
@@ -283,7 +442,7 @@ export default function AccountPage() {
               <p className="text-[var(--text-secondary)]">إدارة معلوماتك الشخصية</p>
             </div>
 
-            <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-[var(--text-primary)]">الاسم</label>
                 <div className="bg-[var(--background)] p-3 rounded-lg border border-[var(--border)]">
@@ -424,39 +583,74 @@ export default function AccountPage() {
                   </div>
                 )}
               </div>
-              <div className="[--password-text:var(--text-primary)] dark:[--password-text:var(--primary)] [--password-placeholder:var(--text-secondary)] dark:[--password-placeholder:var(--primary-light)]text-sm font-medium text-[var(--text-primary)]">
-                <TextField 
-                  type="password" 
-                  label="كلمة المرور الحالية" 
-                  placeholder="" 
-                  icon="lock"
-                  className="[&_input]:text-[var(--password-text)] [&_input::placeholder]:text-[var(--password-placeholder)]"
-                />
+              {/* نموذج تغيير كلمة المرور */}
+              <div className="md:col-span-2 space-y-4">
+                <h3 className="text-lg font-medium text-[var(--text-primary)]">تغيير كلمة المرور</h3>
+                <form onSubmit={handlePasswordUpdate} className="space-y-4">
+                  <div className="[--password-text:var(--text-primary)] dark:[--password-text:var(--primary)] [--password-placeholder:var(--text-secondary)] dark:[--password-placeholder:var(--primary-light)]">
+                    <div className="space-y-2">
+                      <label htmlFor="currentPassword" className="text-sm font-medium text-[var(--text-primary)]">كلمة المرور الحالية</label>
+                      <div className="relative">
+                        <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--text-secondary)]" />
+                        <input
+                          id="currentPassword"
+                          name="currentPassword"
+                          type="password"
+                          required
+                          className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                          placeholder="أدخل كلمة المرور الحالية"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="[--password-text:var(--text-primary)] dark:[--password-text:var(--primary)] [--password-placeholder:var(--text-secondary)] dark:[--password-placeholder:var(--primary-light)]">
+                    <div className="space-y-2">
+                      <label htmlFor="newPassword" className="text-sm font-medium text-[var(--text-primary)]">كلمة المرور الجديدة</label>
+                      <div className="relative">
+                        <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--text-secondary)]" />
+                        <input
+                          id="newPassword"
+                          name="newPassword"
+                          type="password"
+                          required
+                          minLength={6}
+                          className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                          placeholder="أدخل كلمة المرور الجديدة"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="[--password-text:var(--text-primary)] dark:[--password-text:var(--primary)] [--password-placeholder:var(--text-secondary)] dark:[--password-placeholder:var(--primary-light)]">
+                    <div className="space-y-2">
+                      <label htmlFor="confirmPassword" className="text-sm font-medium text-[var(--text-primary)]">تأكيد كلمة المرور</label>
+                      <div className="relative">
+                        <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--text-secondary)]" />
+                        <input
+                          id="confirmPassword"
+                          name="confirmPassword"
+                          type="password"
+                          required
+                          minLength={6}
+                          className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                          placeholder="أعد إدخال كلمة المرور الجديدة"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-2">
+                    <button 
+                      type="submit" 
+                      className="w-full px-6 py-3 rounded-lg bg-[var(--primary)] text-black font-medium hover:bg-[var(--primary)]/90 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2 transition-colors"
+                    >
+                      تحديث كلمة المرور
+                    </button>
+                  </div>
+                </form>
               </div>
-              <div className="[--password-text:var(--text-primary)] dark:[--password-text:var(--primary)] [--password-placeholder:var(--text-secondary)] dark:[--password-placeholder:var(--primary-light)]text-sm font-medium text-[var(--text-primary)]">
-                <TextField 
-                  type="password"      //text-sm font-medium text-[var(--text-primary)]
-                  label="كلمة المرور الجديدة" 
-                  placeholder="" 
-                  icon="lock"
-                  className="[&_input]:text-[var(--password-text)] [&_input::placeholder]:text-[var(--password-placeholder)]"
-                />
-              </div>
-              <div className="[--password-text:var(--text-primary)] dark:[--password-text:var(--primary)] [--password-placeholder:var(--text-secondary)] dark:[--password-placeholder:var(--primary-light)]text-sm font-medium text-[var(--text-primary)]">
-                <TextField 
-                  type="password" 
-                  label="تأكيد كلمة المرور" 
-                  placeholder="" 
-                  icon="lock"
-                  className="[&_input]:text-[var(--password-text)] [&_input::placeholder]:text-[var(--password-placeholder)]"
-                />
-              </div>
-              <div className="md:col-span-2 pt-4">
-                <button type="submit" className="w-full px-6 py-3 rounded-lg bg-[var(--primary)] text-black font-medium hover:bg-[var(--primary)]/90 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition-colors">
-                  تحديث البيانات
-                </button>
-              </div>
-            </form>
+            </div>
           </section>
         );
       case 'account':
@@ -473,25 +667,23 @@ export default function AccountPage() {
       case 'favorites':
         return <Favorites />;
       case 'chat':
-        return <Chat />;
-      case 'payments':
-        return <div>المدفوعات</div>;
-      case 'settings':
-        return <div>الإعدادات</div>;
+        return <Chat userData={userData} token={localStorage.getItem('token')} />;
+      case 'preferences':
+        return <Preferences />;
       case 'support':
         return (
           <div className="flex-1 overflow-hidden">
             <Support user={user} />
           </div>
         );
-      case 'preferences':
-        return (
-          <ErrorBoundary>
-            <Preferences />
-          </ErrorBoundary>
-        );
+      case 'users':
+        return <UsersManagement />;
+      case 'posts':
+        return <PostsManagement />;
+      case 'dashboard':
+        return <AdminDashboard />;
       default:
-        return null;
+        return <AccountInfo userData={userData} />;
     }
   };
 
@@ -512,8 +704,25 @@ export default function AccountPage() {
           sidebarOpen ? "translate-x-0" : "translate-x-full md:translate-x-0"
         }`}
       >
-        <div className="h-16 flex items-center justify-between px-6 border-b border-[var(--border)] bg-[var(--background)] text-[var(--text-primary)]">
-          <h1 className="text-xl font-semibold text-[var(--text-primary)]">لوحة التحكم</h1>
+        <div className={`h-16 flex items-center justify-between px-6 border-b border-[var(--border)] ${
+          user?.role_id === 4 
+            ? 'bg-gradient-to-l from-blue-50 to-white dark:from-blue-900/30 dark:to-gray-900 border-r-4 border-r-blue-500' 
+            : 'bg-[var(--background)]'
+        } text-[var(--text-primary)]`}>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-semibold text-[var(--text-primary)]">
+              {user?.role_id === 4 ? (
+                <div className="flex items-center gap-2">
+                  <span>{user?.name || 'المشرف'}</span>
+                  <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">
+                    Admin
+                  </span>
+                </div>
+              ) : (
+                'لوحة التحكم'
+              )}
+            </h1>
+          </div>
           <button
             className="md:hidden text-2xl text-[var(--text-primary)]"
             onClick={() => setSidebarOpen(false)}
@@ -543,12 +752,14 @@ export default function AccountPage() {
               onClick={() => handleSectionClick('notifications')}
               badgeCount={3}
             />
-            <NavItem 
-              icon={<FaComments />} 
-              label="المحادثات" 
-              active={currentSection === 'chat'}
-              onClick={() => handleSectionClick('chat')}
-            />
+            {user?.role_id !== 4 && (
+              <NavItem 
+                icon={<FaComments />} 
+                label="المحادثات" 
+                active={currentSection === 'chat'}
+                onClick={() => handleSectionClick('chat')}
+              />
+            )}
             <NavItem 
               icon={<FaFlask />} 
               label="التفضيلات" 
@@ -568,6 +779,28 @@ export default function AccountPage() {
             active={currentSection === 'support'} 
             onClick={() => handleSectionClick('support')} 
           />
+          {user?.role_id === 4 && ( // 4 for admin
+            <>
+              <NavItem 
+                icon={<FaUsersCog />} 
+                label="إدارة المستخدمين" 
+                active={currentSection === 'users'}
+                onClick={() => handleSectionClick('users')}
+              />
+              <NavItem 
+                icon={<FaNewspaper />} 
+                label="إدارة المنشورات" 
+                active={currentSection === 'posts'}
+                onClick={() => handleSectionClick('posts')}
+              />
+              <NavItem 
+                icon={<FaChartLine />} 
+                label="لوحة التحكم" 
+                active={currentSection === 'dashboard'}
+                onClick={() => handleSectionClick('dashboard')}
+              />
+            </>
+          )}
           <NavItem 
             icon={<FaSignOutAlt />} 
             label="تسجيل الخروج" 

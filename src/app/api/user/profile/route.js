@@ -65,7 +65,7 @@ export async function GET(request) {
     try {
       // Fetch user data from the database
       console.log(`[Profile API] Trying to find user with ID: ${userId}`);
-      const user = await prisma.users.findUnique({
+      const user = await prisma.user.findUnique({
         where: { id: userId },
         select: {
           id: true,

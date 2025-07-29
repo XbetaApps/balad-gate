@@ -1,44 +1,59 @@
-import { PrismaClient } from '@prisma/client';
+export const runtime = 'nodejs';
 
-const prisma = new PrismaClient();
+import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+
+const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'changeme-secret';
 
 export async function POST(req) {
   try {
-    console.log('Login API called');
     const { email, password } = await req.json();
     if (!email || !password) {
-      return new Response(JSON.stringify({ error: 'البريد الإلكتروني وكلمة المرور مطلوبة.' }), { status: 400 });
+      return NextResponse.json({ error: 'البريد الإلكتروني وكلمة المرور مطلوبة.' }, { status: 400 });
     }
 
-    const user = await prisma.users.findUnique({ where: { email } });
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'بيانات الدخول غير صحيحة.' }), { status: 401 });
+    // اختر الاسم المطابق في السكيما: prisma.user أو prisma.users
+    const repo = prisma.user ?? prisma.users;
+    const user = await repo.findUnique({ where: { email } });
+    if (!user || !user.password) {
+      return NextResponse.json({ error: 'بيانات الدخول غير صحيحة.' }, { status: 401 });
     }
 
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) {
-      return new Response(JSON.stringify({ error: 'بيانات الدخول غير صحيحة.' }), { status: 401 });
+    const ok = await bcrypt.compare(String(password), String(user.password));
+    if (!ok) {
+      return NextResponse.json({ error: 'بيانات الدخول غير صحيحة.' }, { status: 401 });
     }
 
-    // إصدار توكن JWT
     const token = jwt.sign(
-      { userId: user.id, role_id: user.role_id, email: user.email, name: user.name },
+      { sub: String(user.id), userId: String(user.id), email: user.email, name: user.name ?? null, role_id: user.role_id ?? null },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
 
-    // إرجاع التوكن في الكوكي
-    return new Response(JSON.stringify({ success: true, token }), {
-      status: 200,
-      headers: {
-        'Set-Cookie': `token=${token}; HttpOnly; Path=/; Max-Age=604800`,
-        'Content-Type': 'application/json',
-      },
+    const res = NextResponse.json({ success: true, token, user: { id: String(user.id), email: user.email, name: user.name ?? null } });
+
+    // كوكيز الجلسة
+    res.cookies.set('session', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
     });
+    res.cookies.set('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+    });
+
+    return res;
   } catch (err) {
-    return new Response(JSON.stringify({ error: 'حدث خطأ في الخادم.' }), { status: 500 });
+    console.error('Login error:', err);
+    return NextResponse.json({ error: 'حدث خطأ في الخادم.' }, { status: 500 });
   }
 }

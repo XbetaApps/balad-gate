@@ -4,6 +4,8 @@ import LayoutClient from "./layout-client";
 import Navbar from "./nav/navbar";
 import CustomThemeProvider from "./nav/theme/ThemeProvider";
 import { CssBaseline } from "@mui/material";
+import { AuthProvider } from "./auth/AuthProvider";
+import { Providers } from "./providers";
 import { SessionProvider } from "../contexts/SessionContext";
 
 // Load Arabic fonts
@@ -43,17 +45,21 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="min-h-screen font-sans antialiased bg-gray-50 dark:bg-gray-900">
-        <CustomThemeProvider>
-          <CssBaseline />
-          <SessionProvider>
-            <LayoutClient>
-              <Navbar />
-              <main className="pt-16">
-                {children}
-              </main>
-            </LayoutClient>
-          </SessionProvider>
-        </CustomThemeProvider>
+        <Providers>
+          <AuthProvider>
+            <SessionProvider>
+              <CustomThemeProvider>
+                <CssBaseline />
+                <LayoutClient>
+                  <Navbar />
+                  <main className="pt-16">
+                    {children}
+                  </main>
+                </LayoutClient>
+              </CustomThemeProvider>
+            </SessionProvider>
+          </AuthProvider>
+        </Providers>
       </body>
     </html>
   );

@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../../app/auth/AuthProvider';
-import { useSession } from '../../contexts/SessionContext';
+import { useSession } from 'next-auth/react';
 
 /**
  * SessionVerification
@@ -17,7 +17,7 @@ export default function SessionVerification({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, loading } = useAuth();
-  const { isLoading, setVerified } = useSession();
+  const { status } = useSession();
 
   useEffect(() => {
     // تخطي الصفحات التي لا تتطلب تحقق
@@ -25,7 +25,7 @@ export default function SessionVerification({ children }) {
       return;
     }
 
-    if (loading || isLoading) return;
+    if (loading || status === 'loading') return;
     
     if (!user) {
       // إذا لم يكن المستخدم مسجل الدخول، قم بتوجيهه إلى صفحة تسجيل الدخول
@@ -33,14 +33,11 @@ export default function SessionVerification({ children }) {
       return;
     }
 
-    // إذا كان المستخدم مسجل الدخول، قم بتعيين الحالة على أنها تم التحقق منها
-    if (user) {
-      setVerified(true);
-    }
-  }, [user, loading, pathname, router, isLoading, setVerified]);
+    // لا حاجة لتعيين الحالة حيث أن next-auth يتعامل مع الحالة تلقائياً
+  }, [user, loading, pathname, router, status]);
 
   // إرجاع null أثناء التحميل
-  if (loading || isLoading) return null;
+  if (loading || status === 'loading') return null;
 
   // إذا كان المستخدم غير مسجل، لا تعرض شيئاً (سيتم توجيهه)
   if (!user) return null;

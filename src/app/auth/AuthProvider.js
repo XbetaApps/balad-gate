@@ -10,11 +10,42 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // تحميل حالة المستخدم عند التحميل الأولي
+  const checkAuth = useCallback(async () => {
+    setLoading(true);
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/user/profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch user data');
+      }
+      
+      const userData = await response.json();
+      setUser(userData);
+    } catch (error) {
+      console.error('Authentication error:', error);
+      setUser(null);
+      // Optionally remove invalid token
+      // localStorage.removeItem('token');
+    } finally {
+      setLoading(false);
+    }
+  }, []); // No dependencies needed as it doesn't rely on props or state from this component
+
   useEffect(() => {
     checkAuth();
     
-    // الاستماع لتغييرات التخزين المحلي
     const handleStorageChange = (e) => {
       if (e.key === 'token') {
         checkAuth();
@@ -22,62 +53,32 @@ export function AuthProvider({ children }) {
     };
     
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+    // Listen for custom auth state change event
+    window.addEventListener('auth-state-changed', checkAuth);
 
-  const checkAuth = useCallback(async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        setUser(null);
-        return;
-      }
-
-      // هنا عادةً يتم التحقق من صحة التوكن مع الخادم
-      // في الوقت الحالي سنفترض أنه صالح
-      const userData = {
-        id: 1,
-        name: 'Alexa A.',
-        email: 'alexaandriana@gmail.com'
-      };
-      
-      setUser(userData);
-      return userData;
-    } catch (error) {
-      console.error('Authentication error:', error);
-      setUser(null);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('auth-state-changed', checkAuth);
+    };
+  }, [checkAuth]);
 
   const login = useCallback(async (email, password) => {
     try {
-      // في التطبيق الحقيقي، استبدل هذا باستدعاء API فعلي
-      // const res = await fetch('/api/auth/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email, password }),
-      // });
-      // const data = await res.json();
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
       
-      // لمحاكاة تسجيل الدخول الناجح
-      const mockResponse = {
-        token: 'mock-jwt-token',
-        user: {
-          id: 1,
-          name: 'Alexa A.',
-          email: email
-        }
-      };
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
+      }
       
-      localStorage.setItem('token', mockResponse.token);
-      setUser(mockResponse.user);
+      const data = await response.json();
+      localStorage.setItem('token', data.token);
       
-      // إرسال حدث لتحديث المكونات الأخرى
+      // Trigger auth state change to update user data
       window.dispatchEvent(new Event('auth-state-changed'));
       
       return true;
@@ -90,12 +91,10 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => {
     localStorage.removeItem('token');
     setUser(null);
-    // إرسال حدث لتحديث المكونات الأخرى
     window.dispatchEvent(new Event('auth-state-changed'));
     router.push('/auth');
   }, [router]);
 
-  // قيمة السياق
   const contextValue = {
     user,
     loading,
