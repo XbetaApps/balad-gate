@@ -3,7 +3,7 @@ export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { getUserFromReq, isAdmin } from '../../_auth';
+//import { getUserFromReq, isAdmin } from '../../_auth';
 
 const prisma = new PrismaClient();
 
