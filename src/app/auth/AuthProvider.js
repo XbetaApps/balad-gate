@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 const AuthContext = createContext();
@@ -9,56 +9,90 @@ export function AuthProvider({ children }) {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  // لمنع سباقات طلبات checkAuth المتعددة
+  const checkingRef = useRef(null);
+
+  const readToken = () => {
+    try { return localStorage.getItem('token'); } catch { return null; }
+  };
+  const writeToken = (val) => {
+    try {
+      if (val) localStorage.setItem('token', val);
+      else localStorage.removeItem('token');
+    } catch {}
+  };
 
   const checkAuth = useCallback(async () => {
+    if (checkingRef.current) return checkingRef.current;
     setLoading(true);
-    const token = localStorage.getItem('token');
-    
-    if (!token) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
 
-    try {
-      const response = await fetch('/api/user/profile', {
-        headers: {
-          'Authorization': `Bearer ${token}`
+    const run = (async () => {
+      try {
+        // 1) التحقق بالكوكي أولاً
+        let res = await fetch('/api/test-session', {
+          method: 'GET',
+          credentials: 'include',
+          cache: 'no-store',
+          headers: { 'Accept': 'application/json' },
+        });
+
+        if (res.ok) {
+          const data = await res.json().catch(() => ({}));
+          if (data?.authenticated && data?.user) {
+            setUser(data.user);
+            return;
+          }
         }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch user data');
+
+        // 2) احتياطيًا بالتوكن المحلي
+        const token = readToken();
+        if (token) {
+          res = await fetch('/api/user/profile', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            cache: 'no-store',
+          });
+
+          if (res.ok) {
+            const userData = await res.json().catch(() => null);
+            if (userData) {
+              setUser(userData);
+              return;
+            }
+          }
+        }
+
+        setUser(null);
+      } catch (err) {
+        console.error('Authentication error:', err);
+        setUser(null);
+      } finally {
+        setLoading(false);
+        checkingRef.current = null;
       }
-      
-      const userData = await response.json();
-      setUser(userData);
-    } catch (error) {
-      console.error('Authentication error:', error);
-      setUser(null);
-      // Optionally remove invalid token
-      // localStorage.removeItem('token');
-    } finally {
-      setLoading(false);
-    }
-  }, []); // No dependencies needed as it doesn't rely on props or state from this component
+    })();
+
+    checkingRef.current = run;
+    return run;
+  }, []);
 
   useEffect(() => {
     checkAuth();
-    
-    const handleStorageChange = (e) => {
-      if (e.key === 'token') {
-        checkAuth();
-      }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    // Listen for custom auth state change event
-    window.addEventListener('auth-state-changed', checkAuth);
 
+    const handleStorageChange = (e) => {
+      if (e.key === 'token') checkAuth();
+    };
+    const handleAuthStateChanged = () => { checkAuth(); };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('auth-state-changed', handleAuthStateChanged);
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('auth-state-changed', checkAuth);
+      window.removeEventListener('auth-state-changed', handleAuthStateChanged);
     };
   }, [checkAuth]);
 
@@ -66,33 +100,58 @@ export function AuthProvider({ children }) {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        credentials: 'include', // مهم لحفظ كوكي HttpOnly
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
-      
+
+      const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
+        throw new Error(data?.error || data?.message || 'Login failed');
       }
-      
-      const data = await response.json();
-      localStorage.setItem('token', data.token);
-      
-      // Trigger auth state change to update user data
-      window.dispatchEvent(new Event('auth-state-changed'));
-      
+
+      // إن عاد التوكن داخل الـ body
+      if (data?.token) {
+        writeToken(data.token);
+      }
+
+      await checkAuth();
+      try { window.dispatchEvent(new Event('auth-state-changed')); } catch {}
       return true;
     } catch (error) {
       console.error('Login error:', error);
       throw error;
     }
-  }, []);
+  }, [checkAuth]);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('token');
+  const logout = useCallback(async () => {
+    // تنظيف محلي دائمًا
+    writeToken(null);
     setUser(null);
-    window.dispatchEvent(new Event('auth-state-changed'));
-    router.push('/auth');
+    try { window.dispatchEvent(new Event('auth-state-changed')); } catch {}
+
+    // 1) حاول حذف الكوكي عبر POST (بلا انتقال صفحة)
+    try {
+      const res = await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' },
+      });
+
+      if (res.ok) {
+        // توجيه “ناعم”
+        router.replace('/auth');
+        router.refresh();
+        return;
+      }
+
+      // إن لم يكن OK ننتقل للخطة B
+      throw new Error(`Logout POST failed with status ${res.status}`);
+    } catch (e) {
+      console.warn('Soft logout failed, falling back to hard redirect:', e);
+      // 2) خطة B: تحويل مباشر إلى GET endpoint ليمسح الكوكي ثم يعيدنا
+      window.location.replace('/api/auth/logout?redirect=/auth');
+    }
   }, [router]);
 
   const contextValue = {
@@ -100,7 +159,8 @@ export function AuthProvider({ children }) {
     loading,
     login,
     logout,
-    checkAuth
+    checkAuth,
+    isAuthenticated: !!user,
   };
 
   return (

@@ -1,68 +1,94 @@
-// app/api/test-session/route.js
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/authOptions';
 
-export const runtime = 'nodejs'; // تأكد أننا لسنا على Edge إذا كنت تستخدم jsonwebtoken
-
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
+/**
+ * Session test endpoint for debugging and testing session validation
+ * This endpoint provides detailed information about the current session
+ */
+export const runtime = 'nodejs';
 
 export async function GET(request) {
-  // 1) جرّب القراءة من الكوكيز (الأفضل أمنياً)
-  const jar = cookies();
-  const cookieToken =
-    jar.get('session')?.value || jar.get('token')?.value || null;
+  try {
+    // 1. Get the session from next-auth
+    const session = await getServerSession(authOptions);
+    
+    // 2. If there's a valid session, return the user data
+    if (session?.user) {
+      return NextResponse.json({
+        authenticated: true,
+        user: {
+          id: session.user.id,
+          name: session.user.name,
+          email: session.user.email,
+          role: session.user.role,
+          image: session.user.image
+        },
+        session: {
+          provider: 'next-auth',
+          expires: session.expires
+        }
+      });
+    }
 
-  // 2) أو جرّب من الهيدر Authorization: Bearer <token> (للأنظمة التي تستخدم localStorage)
-  const authHeader = request.headers.get('authorization') || '';
-  const headerToken = authHeader.startsWith('Bearer ')
-    ? authHeader.split(' ')[1]
-    : null;
+    // 3. If no session, check for token in the Authorization header
+    const authHeader = request.headers.get('authorization') || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
 
-  const token = cookieToken || headerToken;
+    // 4. If there's a token, validate it
+    if (token) {
+      try {
+        const sessionUrl = new URL('/api/auth/session', request.url).toString();
+        const response = await fetch(sessionUrl, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          cache: 'no-store' // Prevent caching
+        });
 
-  if (!token) {
+        if (response.ok) {
+          const userData = await response.json();
+          if (userData?.user) {
+            return NextResponse.json({
+              authenticated: true,
+              user: userData.user,
+              session: {
+                provider: 'token',
+                expires: userData.expires
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error validating token:', error);
+      }
+    }
+
+    // 5. If no valid session or token found
     return NextResponse.json(
       {
         authenticated: false,
         user: null,
         session: null,
-        reason: 'No token found (cookie or Authorization header)',
+        reason: 'No valid session or token found',
+        timestamp: new Date().toISOString()
       },
       { status: 401 }
     );
-  }
-
-  try {
-    // تحقق/فك التوكن
-    const payload = jwt.verify(token, JWT_SECRET);
-
-    // أعرض معلومات المستخدم والجلسة
-    return NextResponse.json({
-      authenticated: true,
-      user: {
-        id: payload.sub ?? payload.id ?? null,
-        name: payload.name ?? null,
-        email: payload.email ?? null,
-        // أضف أي Claims أخرى تحفظها في التوكن
-      },
-      session: {
-        provider: cookieToken ? 'cookie' : 'authorization-header',
-        issuedAt: payload.iat ? new Date(payload.iat * 1000).toISOString() : null,
-        expiresAt: payload.exp ? new Date(payload.exp * 1000).toISOString() : null,
-      },
-      rawPayload: payload, // لإظهار كل الـ claims (احذفها في الإنتاج إن أردت)
-    });
-  } catch (err) {
+    
+  } catch (error) {
+    console.error('Session validation error:', error);
     return NextResponse.json(
       {
         authenticated: false,
         user: null,
         session: null,
-        error: 'Invalid or expired token',
-        details: process.env.NODE_ENV === 'development' ? String(err) : undefined,
+        error: 'Internal server error',
+        details: error.message,
+        timestamp: new Date().toISOString()
       },
-      { status: 401 }
+      { status: 500 }
     );
   }
 }

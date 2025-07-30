@@ -244,7 +244,7 @@ export default function AccountPage() {
     
     try {
       // الحصول على التوكن من localStorage
-      const token = localStorage.getItem('token');
+      const token = user?.token;
       if (!token) {
         throw new Error('لم يتم العثور على رمز المصادقة');
       }
@@ -334,12 +334,14 @@ export default function AccountPage() {
         setIsLoading(true);
         const token = localStorage.getItem('token');
         if (!token) {
-          setIsAuthenticated(false);
-          setIsLoading(false);
-          return;
+            setIsAuthenticated(false);
+            setIsLoading(false);
+            return;
+          //}
         }
+        
         setIsAuthenticated(true);
-
+        
         const response = await fetch('/api/user/profile', {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -365,7 +367,7 @@ export default function AccountPage() {
     }
   }, [user, router]);
 
-  if (isLoading) {
+  if (user&&isLoading) {
     return <div className="flex items-center justify-center min-h-screen">جاري تحميل البيانات...</div>;
   }
   if (error) {
@@ -804,7 +806,12 @@ export default function AccountPage() {
           <NavItem 
             icon={<FaSignOutAlt />} 
             label="تسجيل الخروج" 
-            onClick={handleLogout} 
+            //onClick={handleLogout} //old method to logout 
+            // href="/logout"
+            onClick={() => {
+              // توجيه صلب + Refresh (لا يُضيف سجل جديد للرجوع)
+              window.location.replace("/logout");
+            }}
           />
         </nav>
       </aside>
