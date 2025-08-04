@@ -67,9 +67,15 @@ function TextField({ label, placeholder = "", type = "text", icon = null, fullWi
 }
 
 function NotificationBadge({ count }) {
-  return !count ? null : (
+  // لا نعرض أي شيء إذا كان العدد صفر
+  if (!count) return null;
+  
+  // نعرض العدد مع تقييده إلى 99+ إذا كان أكبر من 99
+  const displayCount = count > 99 ? '99+' : count;
+  
+  return (
     <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[16px] h-[16px] flex items-center justify-center">
-      {count}
+      {displayCount}
     </div>
   );
 }
@@ -98,6 +104,37 @@ export default function AccountPage() {
     city: false
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  
+  // جلب عدد الإشعارات غير المقروءة من API عند تحميل الصفحة
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/notifications', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          },
+          cache: 'no-store'
+        });
+        
+        if (response.ok) {
+          const notifications = await response.json();
+          // حساب عدد الإشعارات غير المقروءة (حيث is_read = false)
+          const unreadCount = notifications.filter(n => !n.is_read).length;
+          setUnreadNotifications(unreadCount);
+        } else {
+          console.error('فشل في جلب الإشعارات');
+        }
+      } catch (error) {
+        console.error('حدث خطأ أثناء جلب الإشعارات:', error);
+      }
+    };
+
+    // استدعاء الدالة مرة واحدة عند تحميل الصفحة
+    fetchUnreadCount();
+  }, []);
   const [error, setError] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -470,7 +507,8 @@ export default function AccountPage() {
                   <span className="text-[var(--text-secondary)]">
                     {userData?.role_id === 1 ? 'مستخدم عادي' : 
                      userData?.role_id === 2 ? 'مستخدم مميز' : 
-                     userData?.role_id === 3 ? 'مدير' : 'غير محدد'}
+                     userData?.role_id === 3 ? 'مدير' :
+                     userData?.role_id === 4 ? 'أدمن' : 'غير محدد'}
                   </span>
                 </div>
               </div>
@@ -707,15 +745,15 @@ export default function AccountPage() {
         }`}
       >
         <div className={`h-16 flex items-center justify-between px-6 border-b border-[var(--border)] ${
-          user?.role_id === 4 
+          userData?.role_id === 4 
             ? 'bg-gradient-to-l from-blue-50 to-white dark:from-blue-900/30 dark:to-gray-900 border-r-4 border-r-blue-500' 
             : 'bg-[var(--background)]'
         } text-[var(--text-primary)]`}>
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-semibold text-[var(--text-primary)]">
-              {user?.role_id === 4 ? (
+              { userData?.role_id === 4 ? (
                 <div className="flex items-center gap-2">
-                  <span>{user?.name || 'المشرف'}</span>
+                  <span>{userData?.name || 'المشرف'}</span>
                   <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">
                     Admin
                   </span>
@@ -747,14 +785,16 @@ export default function AccountPage() {
               active={currentSection === 'favorites'}
               onClick={() => handleSectionClick('favorites')}
             />
-            <NavItem 
-              icon={<FaBell />} 
-              label="الإشعارات" 
-              active={currentSection === 'notifications'}
-              onClick={() => handleSectionClick('notifications')}
-              badgeCount={3}
-            />
-            {user?.role_id !== 4 && (
+            <div className="relative">
+              <NavItem 
+                icon={<FaBell />} 
+                label="الإشعارات" 
+                active={currentSection === 'notifications'}
+                onClick={() => setCurrentSection('notifications')}
+                badgeCount={unreadNotifications}
+              />
+            </div>
+            {userData?.role_id !== 4 && (
               <NavItem 
                 icon={<FaComments />} 
                 label="المحادثات" 
@@ -781,7 +821,7 @@ export default function AccountPage() {
             active={currentSection === 'support'} 
             onClick={() => handleSectionClick('support')} 
           />
-          {user?.role_id === 4 && ( // 4 for admin
+          {userData?.role_id === 4 && ( // 4 for admin
             <>
               <NavItem 
                 icon={<FaUsersCog />} 
@@ -829,19 +869,21 @@ export default function AccountPage() {
           <div className="flex items-center gap-4">
             <div className="text-right">
               <h1 className="font-semibold text-lg sm:text-xl text-[var(--text-primary)]">مرحباً، {user.name}</h1>
-              {currentSection === 'notifications' && (
-                <span className="text-sm text-[var(--text-secondary)]">3 إشعارات جديدة</span>
+              {currentSection === 'notifications' && unreadNotifications > 0 && (
+                <span className="text-sm text-[var(--text-secondary)]">{unreadNotifications} إشعار{unreadNotifications > 1 ? 'ات' : ''} جديدة</span>
               )}
             </div>
-            <div className="relative">
-              <button 
-                className="p-2 rounded-full bg-[var(--primary)] text-[var(--foreground)] hover:bg-[var(--primary)]/90 transition-colors"
-                onClick={() => handleSectionClick('notifications')}
-              >
-                <FaBell className="text-lg" />
-                <NotificationBadge count={3} />
-              </button>
-            </div>
+            {unreadNotifications > 0 && (
+              <div className="relative">
+                <button 
+                  className="p-2 rounded-full bg-[var(--primary)] text-[var(--foreground)] hover:bg-[var(--primary)]/90 transition-colors"
+                  onClick={() => handleSectionClick('notifications')}
+                >
+                  <FaBell className="text-lg" />
+                  <NotificationBadge count={unreadNotifications} />
+                </button>
+              </div>
+            )}
           </div>
         </header>
 

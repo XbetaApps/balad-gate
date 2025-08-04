@@ -1,108 +1,180 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
-import { 
-  Container, 
-  Box, 
-  Typography, 
-  TextField, 
-  Button, 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  Paper,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Alert,
-  Snackbar
+import {
+  Container, Box, Typography, TextField, Button,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Paper, IconButton, Dialog, DialogTitle, DialogContent, DialogActions,
+  Select, MenuItem, FormControl, InputLabel, Alert, Snackbar
 } from '@mui/material';
 import { Edit, Delete, Refresh, Add } from '@mui/icons-material';
 import axios from 'axios';
-import { useAuth } from '@/app/auth/AuthProvider';
 
-const UsersManagement = () => {
+// helpers
+function isAdmin(userData) {
+  return !!userData && Number(userData.role_id) === 4;
+}
+
+function roleIdToString(role_id) {
+  // عدّل حسب خريطتك إن كانت لديك أدوار أخرى
+  if (Number(role_id) === 4) return 'admin';
+  return 'user';
+}
+
+function roleStringToId(roleStr) {
+  return roleStr === 'admin' ? 4 : 1; // user العادي = 1 (بدّلها إن لزم)
+}
+
+async function fetchUserDataFromSession() {
+  const res = await fetch('/api/test-session', {
+    method: 'GET',
+    credentials: 'include',
+    cache: 'no-store',
+    headers: { 'Accept': 'application/json' },
+  });
+
+  if (!res.ok) return null;
+
+  const data = await res.json().catch(() => null);
+  if (!data?.authenticated || !data?.user) return null;
+
+  const role_id =
+    data?.rawPayload?.role_id ??
+    data?.user?.role_id ??
+    null;
+
+  // نعيد userData بصيغة موحّدة
+  return { ...data.user, role_id };
+}
+
+const UsersManagement = ({ userData: userDataProp = null }) => {
+  // حالة المصادقة/الدور
+  const [userData, setUserData] = useState(userDataProp);
+  const [authLoading, setAuthLoading] = useState(!userDataProp);
+
+  // بيانات الأدمن الحالي (لتجنّب حذف نفسه)
+  const currentUserId = userData?.id ?? null;
+
+  // حالة الجدول
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // حوارات
   const [openDialog, setOpenDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openResetDialog, setOpenResetDialog] = useState(false);
+
+  // عناصر مختارة/تحرير
   const [selectedUser, setSelectedUser] = useState(null);
   const [editingUser, setEditingUser] = useState({
     id: '',
     name: '',
     email: '',
-    role: 'user'
+    role: 'user', // نخزّن الدور هنا كنص "user"/"admin"
   });
+
+  // Snackbar
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
-    severity: 'success'
+    severity: 'success',
   });
-  const { user } = useAuth();
 
+  // 1) احصل على userData من /api/test-session إن لم يصل من الأب
   useEffect(() => {
-    if (user?.role_id === 4) { // 4 for admin
+    let mounted = true;
+    async function run() {
+      if (userDataProp) {
+        setUserData(userDataProp);
+        setAuthLoading(false);
+        return;
+      }
+      setAuthLoading(true);
+      const ud = await fetchUserDataFromSession().catch(() => null);
+      if (mounted) {
+        setUserData(ud);
+        setAuthLoading(false);
+      }
+    }
+    run();
+    return () => { mounted = false; };
+  }, [userDataProp]);
+
+  // 2) جلب المستخدمين لو المستخدم أدمن
+  useEffect(() => {
+    if (isAdmin(userData)) {
       fetchUsers();
     }
-  }, [user]);
+  }, [userData]);
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get('/api/users');
-      setUsers(response.data);
+      const response = await axios.get('/api/users', { withCredentials: true });
+      const list = Array.isArray(response.data) ? response.data : [];
+
+      // توحيد الحقول التي نعرضها
+      const normalized = list.map((u) => {
+        const rid = u.role_id ?? (u.role ? roleStringToId(u.role) : null);
+        const rstr = u.role ?? (rid != null ? roleIdToString(rid) : 'user');
+        return {
+          ...u,
+          role_id: rid,
+          role: rstr,
+        };
+      });
+
+      setUsers(normalized);
     } catch (error) {
       console.error('Error fetching users:', error);
       showSnackbar('فشل في تحميل المستخدمين', 'error');
     }
   };
 
-  const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
-  };
+  const handleSearch = (e) => setSearchTerm(e.target.value);
 
-  const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = users.filter((row) => {
+    const name = (row?.name || '').toLowerCase();
+    const email = (row?.email || '').toLowerCase();
+    const q = (searchTerm || '').toLowerCase();
+    return name.includes(q) || email.includes(q);
+  });
 
-  const handleEditClick = (user) => {
+  const handleEditClick = (row) => {
     setEditingUser({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role
+      id: row.id,
+      name: row.name || '',
+      email: row.email || '',
+      role: row.role || roleIdToString(row.role_id), // نحفظه كنص
     });
     setOpenDialog(true);
   };
 
-  const handleResetPassword = (user) => {
-    setSelectedUser(user);
+  const handleResetPassword = (row) => {
+    setSelectedUser(row);
     setOpenResetDialog(true);
   };
 
-  const handleDeleteClick = (user) => {
-    setSelectedUser(user);
+  const handleDeleteClick = (row) => {
+    setSelectedUser(row);
     setOpenDeleteDialog(true);
   };
 
   const handleSaveUser = async () => {
     try {
+      // نجهّز الحمولة كما يحب API لديك:
+      // إن كان API يعتمد الدور كنص:
+      const payload = { ...editingUser };
+      // وإن كان يعتمد role_id بدلاً من role:
+      // payload.role_id = roleStringToId(editingUser.role);
+
       if (editingUser.id) {
-        await axios.put(`/api/users/${editingUser.id}`, editingUser);
+        await axios.put(`/api/users/${editingUser.id}`, payload, { withCredentials: true });
         showSnackbar('تم تحديث المستخدم بنجاح', 'success');
       } else {
-        await axios.post('/api/users', editingUser);
+        await axios.post('/api/users', payload, { withCredentials: true });
         showSnackbar('تمت إضافة المستخدم بنجاح', 'success');
       }
-      fetchUsers();
+      await fetchUsers();
       setOpenDialog(false);
     } catch (error) {
       console.error('Error saving user:', error);
@@ -112,9 +184,10 @@ const UsersManagement = () => {
 
   const handleDeleteUser = async () => {
     try {
-      await axios.delete(`/api/users/${selectedUser.id}`);
+      if (!selectedUser?.id) return;
+      await axios.delete(`/api/users/${selectedUser.id}`, { withCredentials: true });
       showSnackbar('تم حذف المستخدم بنجاح', 'success');
-      fetchUsers();
+      await fetchUsers();
       setOpenDeleteDialog(false);
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -124,7 +197,8 @@ const UsersManagement = () => {
 
   const handleResetPasswordConfirm = async () => {
     try {
-      await axios.post(`/api/users/${selectedUser.id}/reset-password`);
+      if (!selectedUser?.id) return;
+      await axios.post(`/api/users/${selectedUser.id}/reset-password`, {}, { withCredentials: true });
       showSnackbar('تم إرسال رابط إعادة تعيين كلمة المرور إلى بريد المستخدم', 'success');
       setOpenResetDialog(false);
     } catch (error) {
@@ -134,18 +208,23 @@ const UsersManagement = () => {
   };
 
   const showSnackbar = (message, severity = 'success') => {
-    setSnackbar({
-      open: true,
-      message,
-      severity
-    });
+    setSnackbar({ open: true, message, severity });
   };
+  const handleCloseSnackbar = () => setSnackbar((s) => ({ ...s, open: false }));
 
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
-  };
+  // لا نحكم قبل انتهاء التحميل
+  if (authLoading) {
+    return (
+      <Container maxWidth="lg">
+        <Box sx={{ mt: 4, textAlign: 'center' }}>
+          <Typography variant="h6">جاري التحقق من الصلاحيات...</Typography>
+        </Box>
+      </Container>
+    );
+  }
 
-  if (user?.role_id !== 4) { // 4 for admin
+  // ليس أدمن؟
+  if (!isAdmin(userData)) {
     return (
       <Container maxWidth="lg">
         <Box sx={{ mt: 4, textAlign: 'center' }}>
@@ -160,17 +239,12 @@ const UsersManagement = () => {
       <Box sx={{ mt: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h5" component="h2">إدارة المستخدمين</Typography>
-          <Button 
-            variant="contained" 
-            color="primary" 
+          <Button
+            variant="contained"
+            color="primary"
             startIcon={<Add />}
             onClick={() => {
-              setEditingUser({
-                id: '',
-                name: '',
-                email: '',
-                role: 'user'
-              });
+              setEditingUser({ id: '', name: '', email: '', role: 'user' });
               setOpenDialog(true);
             }}
           >
@@ -198,26 +272,34 @@ const UsersManagement = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.role === 'admin' ? 'مدير' : 'مستخدم'}</TableCell>
+              {filteredUsers.map((row) => (
+                <TableRow key={row.id}>
+                  <TableCell>{row.name}</TableCell>
+                  <TableCell>{row.email}</TableCell>
+                  <TableCell>{row.role === 'admin' ? 'مدير' : 'مستخدم'}</TableCell>
                   <TableCell align="center">
-                    <IconButton onClick={() => handleEditClick(user)} color="primary">
+                    <IconButton onClick={() => handleEditClick(row)} color="primary">
                       <Edit />
                     </IconButton>
-                    <IconButton onClick={() => handleResetPassword(user)} color="secondary">
+                    <IconButton onClick={() => handleResetPassword(row)} color="secondary">
                       <Refresh />
                     </IconButton>
-                    {user.id !== user?.id && (
-                      <IconButton onClick={() => handleDeleteClick(user)} color="error">
+                    {/* لا تسمح بحذف نفسك */}
+                    {row.id !== currentUserId && (
+                      <IconButton onClick={() => handleDeleteClick(row)} color="error">
                         <Delete />
                       </IconButton>
                     )}
                   </TableCell>
                 </TableRow>
               ))}
+              {filteredUsers.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} align="center">
+                    لا توجد نتائج مطابقة
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </TableContainer>
@@ -231,7 +313,7 @@ const UsersManagement = () => {
                 fullWidth
                 label="الاسم"
                 value={editingUser.name}
-                onChange={(e) => setEditingUser({...editingUser, name: e.target.value})}
+                onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
                 margin="normal"
               />
               <TextField
@@ -239,7 +321,7 @@ const UsersManagement = () => {
                 label="البريد الإلكتروني"
                 type="email"
                 value={editingUser.email}
-                onChange={(e) => setEditingUser({...editingUser, email: e.target.value})}
+                onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
                 margin="normal"
               />
               <FormControl fullWidth margin="normal">
@@ -247,7 +329,7 @@ const UsersManagement = () => {
                 <Select
                   value={editingUser.role}
                   label="الدور"
-                  onChange={(e) => setEditingUser({...editingUser, role: e.target.value})}
+                  onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
                 >
                   <MenuItem value="user">مستخدم عادي</MenuItem>
                   <MenuItem value="admin">مدير</MenuItem>
@@ -293,7 +375,7 @@ const UsersManagement = () => {
           </DialogActions>
         </Dialog>
 
-        {/* Snackbar for notifications */}
+        {/* Snackbar */}
         <Snackbar
           open={snackbar.open}
           autoHideDuration={6000}

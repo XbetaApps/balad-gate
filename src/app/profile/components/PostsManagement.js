@@ -1,81 +1,123 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
-import { 
-  Container, 
-  Box, 
-  Typography, 
-  TextField, 
-  Button, 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  Paper,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Switch,
-  FormControlLabel,
-  Alert,
-  Snackbar
+import {
+  Container, Box, Typography, TextField, Button,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Paper, IconButton, Dialog, DialogTitle, DialogContent, DialogActions,
+  Switch, FormControlLabel, Alert, Snackbar
 } from '@mui/material';
 import { Edit, Delete, Add, Visibility } from '@mui/icons-material';
 import axios from 'axios';
-import { useAuth } from '@/app/auth/AuthProvider';
 
-const PostsManagement = () => {
+function isAdmin(userData) {
+  return !!userData && Number(userData.role_id) === 4;
+}
+
+async function fetchUserDataFromSession() {
+  // يحاول جلب جلسة المستخدم من /api/test-session
+  const res = await fetch('/api/test-session', {
+    method: 'GET',
+    credentials: 'include',
+    cache: 'no-store',
+    headers: { 'Accept': 'application/json' },
+  });
+
+  if (!res.ok) return null;
+
+  const data = await res.json().catch(() => null);
+  if (!data?.authenticated || !data?.user) return null;
+
+  const role_id =
+    data?.rawPayload?.role_id ??
+    data?.user?.role_id ??
+    null;
+
+  // نعيد userData موحد الشكل
+  return { ...data.user, role_id };
+}
+
+const PostsManagement = ({ userData: userDataProp = null }) => {
+  // الحالة الخاصة بالمصادقة/الدور
+  const [userData, setUserData] = useState(userDataProp);
+  const [authLoading, setAuthLoading] = useState(!userDataProp);
+
+  // الحالة الخاصة بالمنشورات
   const [posts, setPosts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // حوار إضافة/تعديل
   const [openDialog, setOpenDialog] = useState(false);
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [selectedPost, setSelectedPost] = useState(null);
   const [editingPost, setEditingPost] = useState({
     id: '',
     title: '',
     content: '',
-    isPublished: true
+    isPublished: true,
   });
+
+  // حوار الحذف
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [selectedPost, setSelectedPost] = useState(null);
+
+  // Snackbar للتنبيهات
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
-    severity: 'success'
+    severity: 'success',
   });
-  const { user } = useAuth();
 
+  // 1) إن لم يصل userData من الأب، نجلبه من /api/test-session
   useEffect(() => {
-    if (user?.role_id === 4) { // 4 for admin
+    let mounted = true;
+    async function run() {
+      if (userDataProp) {
+        setUserData(userDataProp);
+        setAuthLoading(false);
+        return;
+      }
+      setAuthLoading(true);
+      const ud = await fetchUserDataFromSession().catch(() => null);
+      if (mounted) {
+        setUserData(ud);
+        setAuthLoading(false);
+      }
+    }
+    run();
+    return () => { mounted = false; };
+  }, [userDataProp]);
+
+  // 2) جلب المنشورات فقط إن كان المستخدم أدمن
+  useEffect(() => {
+    if (isAdmin(userData)) {
       fetchPosts();
     }
-  }, [user]);
+  }, [userData]);
 
   const fetchPosts = async () => {
     try {
-      const response = await axios.get('/api/posts');
-      setPosts(response.data);
+      const response = await axios.get('/api/posts', { withCredentials: true });
+      setPosts(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error fetching posts:', error);
       showSnackbar('فشل في تحميل المنشورات', 'error');
     }
   };
 
-  const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
-  };
+  const handleSearch = (e) => setSearchTerm(e.target.value);
 
-  const filteredPosts = posts.filter(post => 
-    post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.content.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPosts = posts.filter((post) => {
+    const t = (post?.title || '').toLowerCase();
+    const c = (post?.content || '').toLowerCase();
+    const q = (searchTerm || '').toLowerCase();
+    return t.includes(q) || c.includes(q);
+  });
 
   const handleEditClick = (post) => {
     setEditingPost({
       id: post.id,
-      title: post.title,
-      content: post.content,
-      isPublished: post.isPublished
+      title: post.title || '',
+      content: post.content || '',
+      isPublished: !!post.isPublished,
     });
     setOpenDialog(true);
   };
@@ -88,13 +130,13 @@ const PostsManagement = () => {
   const handleSavePost = async () => {
     try {
       if (editingPost.id) {
-        await axios.put(`/api/posts/${editingPost.id}`, editingPost);
+        await axios.put(`/api/posts/${editingPost.id}`, editingPost, { withCredentials: true });
         showSnackbar('تم تحديث المنشور بنجاح', 'success');
       } else {
-        await axios.post('/api/posts', editingPost);
+        await axios.post('/api/posts', editingPost, { withCredentials: true });
         showSnackbar('تمت إضافة المنشور بنجاح', 'success');
       }
-      fetchPosts();
+      await fetchPosts();
       setOpenDialog(false);
     } catch (error) {
       console.error('Error saving post:', error);
@@ -104,9 +146,10 @@ const PostsManagement = () => {
 
   const handleDeletePost = async () => {
     try {
-      await axios.delete(`/api/posts/${selectedPost.id}`);
+      if (!selectedPost?.id) return;
+      await axios.delete(`/api/posts/${selectedPost.id}`, { withCredentials: true });
       showSnackbar('تم حذف المنشور بنجاح', 'success');
-      fetchPosts();
+      await fetchPosts();
       setOpenDeleteDialog(false);
     } catch (error) {
       console.error('Error deleting post:', error);
@@ -116,11 +159,13 @@ const PostsManagement = () => {
 
   const togglePublishStatus = async (post) => {
     try {
-      await axios.put(`/api/posts/${post.id}/toggle-publish`, {
-        isPublished: !post.isPublished
-      });
+      await axios.put(
+        `/api/posts/${post.id}/toggle-publish`,
+        { isPublished: !post.isPublished },
+        { withCredentials: true }
+      );
       showSnackbar('تم تحديث حالة النشر بنجاح', 'success');
-      fetchPosts();
+      await fetchPosts();
     } catch (error) {
       console.error('Error toggling publish status:', error);
       showSnackbar('حدث خطأ أثناء تحديث حالة النشر', 'error');
@@ -128,18 +173,23 @@ const PostsManagement = () => {
   };
 
   const showSnackbar = (message, severity = 'success') => {
-    setSnackbar({
-      open: true,
-      message,
-      severity
-    });
+    setSnackbar({ open: true, message, severity });
   };
+  const handleCloseSnackbar = () => setSnackbar((s) => ({ ...s, open: false }));
 
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
-  };
+  // لا تحكم قبل انتهاء التحميل
+  if (authLoading) {
+    return (
+      <Container maxWidth="lg">
+        <Box sx={{ mt: 4, textAlign: 'center' }}>
+          <Typography variant="h6">جاري التحقق من الصلاحيات...</Typography>
+        </Box>
+      </Container>
+    );
+  }
 
-  if (user?.role_id !== 4) { // 4 for admin
+  // إن لم يكن أدمن
+  if (!isAdmin(userData)) {
     return (
       <Container maxWidth="lg">
         <Box sx={{ mt: 4, textAlign: 'center' }}>
@@ -149,22 +199,18 @@ const PostsManagement = () => {
     );
   }
 
+  // واجهة الأدمن
   return (
     <Container maxWidth="lg">
       <Box sx={{ mt: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h5" component="h2">إدارة المنشورات</Typography>
-          <Button 
-            variant="contained" 
-            color="primary" 
+          <Button
+            variant="contained"
+            color="primary"
             startIcon={<Add />}
             onClick={() => {
-              setEditingPost({
-                id: '',
-                title: '',
-                content: '',
-                isPublished: true
-              });
+              setEditingPost({ id: '', title: '', content: '', isPublished: true });
               setOpenDialog(true);
             }}
           >
@@ -199,7 +245,7 @@ const PostsManagement = () => {
                     <FormControlLabel
                       control={
                         <Switch
-                          checked={post.isPublished}
+                          checked={!!post.isPublished}
                           onChange={() => togglePublishStatus(post)}
                           color="primary"
                         />
@@ -207,7 +253,9 @@ const PostsManagement = () => {
                       label={post.isPublished ? 'منشور' : 'مسودة'}
                     />
                   </TableCell>
-                  <TableCell>{new Date(post.createdAt).toLocaleDateString('ar-EG')}</TableCell>
+                  <TableCell>
+                    {post.createdAt ? new Date(post.createdAt).toLocaleDateString('ar-EG') : '-'}
+                  </TableCell>
                   <TableCell align="center">
                     <IconButton onClick={() => handleEditClick(post)} color="primary">
                       <Edit />
@@ -215,10 +263,10 @@ const PostsManagement = () => {
                     <IconButton onClick={() => handleDeleteClick(post)} color="error">
                       <Delete />
                     </IconButton>
-                    <IconButton 
-                      component="a" 
-                      href={`/posts/${post.id}`} 
-                      target="_blank" 
+                    <IconButton
+                      component="a"
+                      href={`/posts/${post.id}`}
+                      target="_blank"
                       color="info"
                     >
                       <Visibility />
@@ -226,11 +274,18 @@ const PostsManagement = () => {
                   </TableCell>
                 </TableRow>
               ))}
+              {filteredPosts.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} align="center">
+                    لا توجد نتائج مطابقة
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </TableContainer>
 
-        {/* Add/Edit Post Dialog */}
+        {/* إضافة/تعديل منشور */}
         <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth>
           <DialogTitle>{editingPost.id ? 'تعديل منشور' : 'إضافة منشور جديد'}</DialogTitle>
           <DialogContent>
@@ -239,7 +294,7 @@ const PostsManagement = () => {
                 fullWidth
                 label="عنوان المنشور"
                 value={editingPost.title}
-                onChange={(e) => setEditingPost({...editingPost, title: e.target.value})}
+                onChange={(e) => setEditingPost({ ...editingPost, title: e.target.value })}
                 margin="normal"
               />
               <TextField
@@ -248,14 +303,14 @@ const PostsManagement = () => {
                 multiline
                 rows={8}
                 value={editingPost.content}
-                onChange={(e) => setEditingPost({...editingPost, content: e.target.value})}
+                onChange={(e) => setEditingPost({ ...editingPost, content: e.target.value })}
                 margin="normal"
               />
               <FormControlLabel
                 control={
                   <Switch
-                    checked={editingPost.isPublished}
-                    onChange={(e) => setEditingPost({...editingPost, isPublished: e.target.checked})}
+                    checked={!!editingPost.isPublished}
+                    onChange={(e) => setEditingPost({ ...editingPost, isPublished: e.target.checked })}
                     color="primary"
                   />
                 }
@@ -271,11 +326,13 @@ const PostsManagement = () => {
           </DialogActions>
         </Dialog>
 
-        {/* Delete Confirmation Dialog */}
+        {/* تأكيد الحذف */}
         <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
           <DialogTitle>تأكيد الحذف</DialogTitle>
           <DialogContent>
-            <Typography>هل أنت متأكد من رغبتك في حذف المنشور "{selectedPost?.title}"؟</Typography>
+            <Typography>
+              هل أنت متأكد من رغبتك في حذف المنشور "{selectedPost?.title}"؟
+            </Typography>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setOpenDeleteDialog(false)}>إلغاء</Button>
@@ -285,7 +342,7 @@ const PostsManagement = () => {
           </DialogActions>
         </Dialog>
 
-        {/* Snackbar for notifications */}
+        {/* Snackbar */}
         <Snackbar
           open={snackbar.open}
           autoHideDuration={6000}

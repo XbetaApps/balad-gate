@@ -1,11 +1,13 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
-import { 
-  Container, 
-  Grid, 
-  Paper, 
-  Typography, 
-  Box, 
-  Card, 
+import {
+  Container,
+  Grid,
+  Paper,
+  Typography,
+  Box,
+  Card,
   CardContent,
   Table,
   TableBody,
@@ -18,24 +20,21 @@ import {
   FormControl,
   InputLabel
 } from '@mui/material';
-import { 
-  People as PeopleIcon, 
-  PostAdd as PostIcon, 
-  Comment as CommentIcon, 
-  Favorite as FavoriteIcon, 
-  Timeline as TimelineIcon,
+import {
+  People as PeopleIcon,
+  Comment as CommentIcon,
   TrendingUp as TrendingUpIcon,
-  AccessTime as AccessTimeIcon,
-  Category as CategoryIcon,
-  Person as PersonIcon,
   PersonOutline as VisitorIcon,
   Visibility as ViewsIcon,
-  Group as GroupIcon
+  Group as GroupIcon,
+  Category as CategoryIcon
 } from '@mui/icons-material';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { useAuth } from '@/app/auth/AuthProvider';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  LineChart, Line, PieChart, Pie, Cell
+} from 'recharts';
 
-// بيانات تجريبية للإحصائيات (يجب استبدالها ببيانات حقيقية من API)
+/* ---------------- Mock data (بدّله ببيانات API لاحقاً) ---------------- */
 const mockStats = {
   general: {
     totalUsers: 1245,
@@ -45,10 +44,7 @@ const mockStats = {
     totalComments: 12345,
     todayVisitors: 243,
     todayRegisteredUsers: 45,
-    visitorStats: {
-      registered: 35, // نسبة الزوار المسجلين
-      guests: 65      // نسبة الزوار غير المسجلين
-    },
+    visitorStats: { registered: 35, guests: 65 },
     visitorTrend: [
       { name: 'يناير', registered: 400, guests: 800 },
       { name: 'فبراير', registered: 600, guests: 1200 },
@@ -90,9 +86,31 @@ const mockStats = {
   ],
 };
 
-// ألوان الرسوم البيانية
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
+/* ---------------- Helpers ---------------- */
+function isAdmin(userData) {
+  return !!userData && Number(userData.role_id) === 4;
+}
+
+async function fetchUserDataFromSession() {
+  const res = await fetch('/api/test-session', {
+    method: 'GET',
+    credentials: 'include',
+    cache: 'no-store',
+    headers: { 'Accept': 'application/json' },
+  });
+
+  if (!res.ok) return null;
+
+  const data = await res.json().catch(() => null);
+  if (!data?.authenticated || !data?.user) return null;
+
+  const role_id = data?.rawPayload?.role_id ?? data?.user?.role_id ?? null;
+  return { ...data.user, role_id };
+}
+
+/* ---------------- UI ---------------- */
 const StatCard = ({ title, value, icon, color }) => (
   <Card sx={{ height: '100%', bgcolor: color || 'background.paper', color: color ? 'common.white' : 'text.primary' }}>
     <CardContent>
@@ -100,7 +118,7 @@ const StatCard = ({ title, value, icon, color }) => (
         <div>
           <Typography variant="h6" color="inherit">{title}</Typography>
           <Typography variant="h4" component="div" color="inherit">
-            {value.toLocaleString()}
+            {Number(value || 0).toLocaleString()}
           </Typography>
         </div>
         <Box sx={{ fontSize: 40, opacity: 0.8 }}>
@@ -111,30 +129,70 @@ const StatCard = ({ title, value, icon, color }) => (
   </Card>
 );
 
-const AdminDashboard = () => {
-  const { user } = useAuth();
+/**
+ * AdminDashboard
+ * - يقبل userData من الأب، أو يجلبه من /api/test-session إن لم يُمرَّر.
+ */
+const AdminDashboard = ({ userData: userDataProp = null }) => {
+  const [userData, setUserData] = useState(userDataProp);
+  const [authLoading, setAuthLoading] = useState(!userDataProp);
+
   const [timeRange, setTimeRange] = useState('week');
   const [stats, setStats] = useState(mockStats);
   const [loading, setLoading] = useState(true);
 
-  // في التطبيق الحقيقي، سيتم استدعاء API لجلب البيانات
+  // جلب userData إن لم يصل من الأب
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        // const response = await fetch(`/api/admin/stats?range=${timeRange}`);
-        // const data = await response.json();
-        // setStats(data);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching stats:', error);
-        setLoading(false);
+    let mounted = true;
+    async function run() {
+      if (userDataProp) {
+        setUserData(userDataProp);
+        setAuthLoading(false);
+        return;
       }
-    };
+      setAuthLoading(true);
+      const ud = await fetchUserDataFromSession().catch(() => null);
+      if (mounted) {
+        setUserData(ud);
+        setAuthLoading(false);
+      }
+    }
+    run();
+    return () => { mounted = false; };
+  }, [userDataProp]);
 
+  // جلب الإحصاءات (بدّل mock بالـ API الحقيقي)
+  useEffect(() => {
+    let mounted = true;
+    async function fetchStats() {
+      try {
+        // مثال عندما تبني API حقيقي:
+        // const res = await fetch(`/api/admin/stats?range=${timeRange}`, { credentials: 'include' });
+        // const data = await res.json();
+        // if (mounted) setStats(data);
+
+        if (mounted) setLoading(false);
+      } catch (e) {
+        console.error('Error fetching stats:', e);
+        if (mounted) setLoading(false);
+      }
+    }
     fetchStats();
+    return () => { mounted = false; };
   }, [timeRange]);
 
-  if (user?.role_id !== 4) {
+  /* حراسة الوصول */
+  if (authLoading) {
+    return (
+      <Container maxWidth="lg">
+        <Box sx={{ mt: 4, textAlign: 'center' }}>
+          <Typography variant="h6">جاري التحقق من الصلاحيات...</Typography>
+        </Box>
+      </Container>
+    );
+  }
+
+  if (!isAdmin(userData)) {
     return (
       <Container maxWidth="lg">
         <Box sx={{ mt: 4, textAlign: 'center' }}>
@@ -177,50 +235,50 @@ const AdminDashboard = () => {
       {/* إحصائيات سريعة */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={2}>
-          <StatCard 
-            title="إجمالي المستخدمين" 
-            value={stats.general.totalUsers} 
-            icon={<PeopleIcon fontSize="inherit" />} 
+          <StatCard
+            title="إجمالي المستخدمين"
+            value={stats.general.totalUsers}
+            icon={<PeopleIcon fontSize="inherit" />}
             color="#3f51b5"
           />
         </Grid>
         <Grid item xs={12} sm={6} md={2}>
-          <StatCard 
-            title="المستخدمين النشطين" 
-            value={stats.general.activeUsers} 
-            icon={<TrendingUpIcon fontSize="inherit" />} 
+          <StatCard
+            title="المستخدمين النشطين"
+            value={stats.general.activeUsers}
+            icon={<TrendingUpIcon fontSize="inherit" />}
             color="#4caf50"
           />
         </Grid>
         <Grid item xs={12} sm={6} md={2}>
-          <StatCard 
-            title="إجمالي الزوار" 
-            value={stats.general.totalVisitors} 
-            icon={<VisitorIcon fontSize="inherit" />} 
+          <StatCard
+            title="إجمالي الزوار"
+            value={stats.general.totalVisitors}
+            icon={<VisitorIcon fontSize="inherit" />}
             color="#9c27b0"
           />
         </Grid>
         <Grid item xs={12} sm={6} md={2}>
-          <StatCard 
-            title="زوار اليوم" 
-            value={stats.general.todayVisitors} 
-            icon={<ViewsIcon fontSize="inherit" />} 
+          <StatCard
+            title="زوار اليوم"
+            value={stats.general.todayVisitors}
+            icon={<ViewsIcon fontSize="inherit" />}
             color="#ff5722"
           />
         </Grid>
         <Grid item xs={12} sm={6} md={2}>
-          <StatCard 
-            title="مستخدمين جدد اليوم" 
-            value={stats.general.todayRegisteredUsers} 
-            icon={<GroupIcon fontSize="inherit" />} 
+          <StatCard
+            title="مستخدمين جدد اليوم"
+            value={stats.general.todayRegisteredUsers}
+            icon={<GroupIcon fontSize="inherit" />}
             color="#009688"
           />
         </Grid>
         <Grid item xs={12} sm={6} md={2}>
-          <StatCard 
-            title="إجمالي التعليقات" 
-            value={stats.general.totalComments} 
-            icon={<CommentIcon fontSize="inherit" />} 
+          <StatCard
+            title="إجمالي التعليقات"
+            value={stats.general.totalComments}
+            icon={<CommentIcon fontSize="inherit" />}
             color="#e91e63"
           />
         </Grid>
@@ -228,7 +286,7 @@ const AdminDashboard = () => {
 
       {/* رسوم بيانية */}
       <Grid container spacing={3}>
-        {/* إحصائيات الزوار */}
+        {/* توزيع الزوار */}
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, height: '100%' }}>
             <Typography variant="h6" gutterBottom>توزيع الزوار</Typography>
@@ -237,8 +295,8 @@ const AdminDashboard = () => {
                 <PieChart>
                   <Pie
                     data={[
-                      { name: 'مسجلين', value: stats.general.visitorStats.registered, color: '#3f51b5' },
-                      { name: 'زوار', value: stats.general.visitorStats.guests, color: '#9c27b0' }
+                      { name: 'مسجلين', value: stats.general.visitorStats.registered },
+                      { name: 'زوار', value: stats.general.visitorStats.guests }
                     ]}
                     cx="50%"
                     cy="50%"
@@ -259,7 +317,7 @@ const AdminDashboard = () => {
           </Paper>
         </Grid>
 
-        {/* إحصائيات الزوار الشهرية */}
+        {/* اتجاهات الزيارات الشهرية */}
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, height: '100%' }}>
             <Typography variant="h6" gutterBottom>اتجاهات الزيارات الشهرية</Typography>
@@ -321,7 +379,7 @@ const AdminDashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {stats.popularCategories.map((category, index) => (
+                  {stats.popularCategories.map((category) => (
                     <TableRow key={category.name}>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -329,7 +387,7 @@ const AdminDashboard = () => {
                           {category.name}
                         </Box>
                       </TableCell>
-                      <TableCell align="right">{category.count.toLocaleString()}</TableCell>
+                      <TableCell align="right">{Number(category.count || 0).toLocaleString()}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
