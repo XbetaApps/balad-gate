@@ -20,7 +20,8 @@ import {
   FaEnvelope,
   FaUsersCog,
   FaNewspaper,
-  FaChartLine
+  FaChartLine,
+  FaHeadset
 } from 'react-icons/fa';
 import UsersManagement from './components/UsersManagement';
 import PostsManagement from './components/PostsManagement';
@@ -35,6 +36,7 @@ import "./profile-styles.css";
 import ErrorBoundary from '../../components/ErrorBoundary';
 import Preferences from './components/Preferences';
 import Support from './components/Support';
+import AdminSupport from './components/AdminSupport';
 import { AccountInfo, PasswordSection } from './components/Account';
 
 /**
@@ -722,6 +724,8 @@ export default function AccountPage() {
         return <PostsManagement />;
       case 'dashboard':
         return <AdminDashboard />;
+      case 'adminSupport':
+        return <AdminSupport />;
       default:
         return <AccountInfo userData={userData} />;
     }
@@ -815,12 +819,14 @@ export default function AccountPage() {
             active={currentSection === 'settings'} 
             onClick={() => handleSectionClick('settings')} 
           />
-          <NavItem 
-            icon={<FaQuestionCircle />} 
-            label="الدعم الفني" 
-            active={currentSection === 'support'} 
-            onClick={() => handleSectionClick('support')} 
-          />
+          {userData?.role_id !== 4 && (
+            <NavItem 
+              icon={<FaQuestionCircle />} 
+              label="الدعم الفني" 
+              active={currentSection === 'support'} 
+              onClick={() => handleSectionClick('support')} 
+            />
+          )}
           {userData?.role_id === 4 && ( // 4 for admin
             <>
               <NavItem 
@@ -840,6 +846,12 @@ export default function AccountPage() {
                 label="لوحة التحكم" 
                 active={currentSection === 'dashboard'}
                 onClick={() => handleSectionClick('dashboard')}
+              />
+              <NavItem 
+                icon={<FaHeadset />} 
+                label="دعم المشرفين" 
+                active={currentSection === 'adminSupport'}
+                onClick={() => handleSectionClick('adminSupport')}
               />
             </>
           )}

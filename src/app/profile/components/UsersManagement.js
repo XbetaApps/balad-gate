@@ -1,28 +1,25 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Container, Box, Typography, TextField, Button,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Paper, IconButton, Dialog, DialogTitle, DialogContent, DialogActions,
-  Select, MenuItem, FormControl, InputLabel, Alert, Snackbar
+  Select, MenuItem, FormControl, InputLabel, Alert, Snackbar, Tooltip, Pagination
 } from '@mui/material';
 import { Edit, Delete, Refresh, Add } from '@mui/icons-material';
-import axios from 'axios';
 
-// helpers
+// ===== Helpers =====
 function isAdmin(userData) {
   return !!userData && Number(userData.role_id) === 4;
 }
 
 function roleIdToString(role_id) {
-  // عدّل حسب خريطتك إن كانت لديك أدوار أخرى
-  if (Number(role_id) === 4) return 'admin';
-  return 'user';
+  return Number(role_id) === 4 ? 'admin' : 'user';
 }
 
 function roleStringToId(roleStr) {
-  return roleStr === 'admin' ? 4 : 1; // user العادي = 1 (بدّلها إن لزم)
+  return roleStr === 'admin' ? 4 : 1;
 }
 
 async function fetchUserDataFromSession() {
@@ -32,55 +29,55 @@ async function fetchUserDataFromSession() {
     cache: 'no-store',
     headers: { 'Accept': 'application/json' },
   });
-
   if (!res.ok) return null;
 
   const data = await res.json().catch(() => null);
   if (!data?.authenticated || !data?.user) return null;
 
-  const role_id =
-    data?.rawPayload?.role_id ??
-    data?.user?.role_id ??
-    null;
-
-  // نعيد userData بصيغة موحّدة
+  const role_id = data?.rawPayload?.role_id ?? data?.user?.role_id ?? null;
   return { ...data.user, role_id };
 }
 
+// ===== Component =====
 const UsersManagement = ({ userData: userDataProp = null }) => {
-  // حالة المصادقة/الدور
+  // Auth state
   const [userData, setUserData] = useState(userDataProp);
   const [authLoading, setAuthLoading] = useState(!userDataProp);
 
-  // بيانات الأدمن الحالي (لتجنّب حذف نفسه)
-  const currentUserId = userData?.id ?? null;
-
-  // حالة الجدول
-  const [users, setUsers] = useState([]);
+  // Table state
+  const [rows, setRows] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // حوارات
+  // Pagination
+  const [page, setPage] = useState(1);          // 1-based
+  const [pageSize, setPageSize] = useState(10); // يمكن تغييره من الواجهة
+  const [total, setTotal] = useState(0);
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(total / pageSize)), [total, pageSize]);
+
+  // Dialogs / Editing
   const [openDialog, setOpenDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openResetDialog, setOpenResetDialog] = useState(false);
 
-  // عناصر مختارة/تحرير
   const [selectedUser, setSelectedUser] = useState(null);
   const [editingUser, setEditingUser] = useState({
     id: '',
     name: '',
     email: '',
-    role: 'user', // نخزّن الدور هنا كنص "user"/"admin"
+    role: 'user', // للعرض فقط
   });
 
   // Snackbar
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'success',
-  });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  // 1) احصل على userData من /api/test-session إن لم يصل من الأب
+  // Loading flags
+  const [listLoading, setListLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Current admin id (to prevent self delete)
+  const currentUserId = userData?.id ?? null;
+
+  // 1) Load session if not provided
   useEffect(() => {
     let mounted = true;
     async function run() {
@@ -100,58 +97,80 @@ const UsersManagement = ({ userData: userDataProp = null }) => {
     return () => { mounted = false; };
   }, [userDataProp]);
 
-  // 2) جلب المستخدمين لو المستخدم أدمن
+  // 2) Fetch users when admin / params change (with debounce on search)
   useEffect(() => {
-    if (isAdmin(userData)) {
-      fetchUsers();
-    }
-  }, [userData]);
+    if (!isAdmin(userData)) return;
 
-  const fetchUsers = async () => {
+    const controller = new AbortController();
+    const id = setTimeout(() => {
+      fetchUsers({ signal: controller.signal }).catch(() => {});
+    }, 300); // debounce
+    return () => {
+      clearTimeout(id);
+      controller.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userData, page, pageSize, searchTerm]);
+
+  async function fetchUsers({ signal } = {}) {
     try {
-      const response = await axios.get('/api/users', { withCredentials: true });
-      const list = Array.isArray(response.data) ? response.data : [];
+      setListLoading(true);
+      const params = new URLSearchParams();
+      params.set('page', String(page));
+      params.set('pageSize', String(pageSize));
+      if (searchTerm.trim()) params.set('q', searchTerm.trim());
 
-      // توحيد الحقول التي نعرضها
-      const normalized = list.map((u) => {
-        const rid = u.role_id ?? (u.role ? roleStringToId(u.role) : null);
-        const rstr = u.role ?? (rid != null ? roleIdToString(rid) : 'user');
-        return {
-          ...u,
-          role_id: rid,
-          role: rstr,
-        };
+      const res = await fetch(`/api/admin/users?${params.toString()}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-store',
+        signal,
       });
+      const data = await res.json().catch(() => ({}));
 
-      setUsers(normalized);
-    } catch (error) {
-      console.error('Error fetching users:', error);
+      if (!res.ok) {
+        throw new Error(data?.error || data?.message || `HTTP ${res.status}`);
+      }
+
+      const list = Array.isArray(data?.data) ? data.data : [];
+      const normalized = list.map(u => ({
+        ...u,
+        role: roleIdToString(u.role_id),
+      }));
+      setRows(normalized);
+      setTotal(Number(data?.total || 0));
+    } catch (e) {
+      console.error('fetchUsers error:', e);
       showSnackbar('فشل في تحميل المستخدمين', 'error');
+    } finally {
+      setListLoading(false);
     }
+  }
+
+  // Filter on client (اختياري) — هنا نعتمد بحث السيرفر، لكن نبقي fallback
+  const filteredRows = useMemo(() => {
+    if (!searchTerm.trim()) return rows;
+    const q = searchTerm.toLowerCase();
+    return rows.filter(
+      (r) => (r?.name || '').toLowerCase().includes(q) || (r?.email || '').toLowerCase().includes(q)
+    );
+  }, [rows, searchTerm]);
+
+  // Handlers
+  const handleSearch = (e) => {
+    setPage(1);
+    setSearchTerm(e.target.value);
   };
-
-  const handleSearch = (e) => setSearchTerm(e.target.value);
-
-  const filteredUsers = users.filter((row) => {
-    const name = (row?.name || '').toLowerCase();
-    const email = (row?.email || '').toLowerCase();
-    const q = (searchTerm || '').toLowerCase();
-    return name.includes(q) || email.includes(q);
-  });
 
   const handleEditClick = (row) => {
     setEditingUser({
       id: row.id,
       name: row.name || '',
       email: row.email || '',
-      role: row.role || roleIdToString(row.role_id), // نحفظه كنص
+      role: row.role || roleIdToString(row.role_id),
     });
     setOpenDialog(true);
-  };
-
-  const handleResetPassword = (row) => {
-    setSelectedUser(row);
-    setOpenResetDialog(true);
   };
 
   const handleDeleteClick = (row) => {
@@ -159,38 +178,85 @@ const UsersManagement = ({ userData: userDataProp = null }) => {
     setOpenDeleteDialog(true);
   };
 
+  const handleResetPassword = (row) => {
+    // لا يوجد endpoint حالياً — نبقيه بصريًا:
+    setSelectedUser(row);
+    setOpenResetDialog(true);
+  };
+
   const handleSaveUser = async () => {
     try {
-      // نجهّز الحمولة كما يحب API لديك:
-      // إن كان API يعتمد الدور كنص:
-      const payload = { ...editingUser };
-      // وإن كان يعتمد role_id بدلاً من role:
-      // payload.role_id = roleStringToId(editingUser.role);
+      setSaving(true);
 
+      const payload = {
+        name: editingUser.name || null,
+        email: (editingUser.email || '').trim().toLowerCase(),
+        role_id: roleStringToId(editingUser.role),
+      };
+
+      let res, data;
       if (editingUser.id) {
-        await axios.put(`/api/users/${editingUser.id}`, payload, { withCredentials: true });
-        showSnackbar('تم تحديث المستخدم بنجاح', 'success');
+        // Update
+        res = await fetch(`/api/admin/users/${editingUser.id}`, {
+          method: 'PUT',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(payload),
+        });
       } else {
-        await axios.post('/api/users', payload, { withCredentials: true });
-        showSnackbar('تمت إضافة المستخدم بنجاح', 'success');
+        // Create
+        res = await fetch('/api/admin/users', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(payload),
+        });
       }
-      await fetchUsers();
+
+      data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error || data?.message || `HTTP ${res.status}`);
+      }
+
+      showSnackbar(editingUser.id ? 'تم تحديث المستخدم بنجاح' : 'تمت إضافة المستخدم بنجاح', 'success');
       setOpenDialog(false);
-    } catch (error) {
-      console.error('Error saving user:', error);
-      showSnackbar('حدث خطأ أثناء حفظ المستخدم', 'error');
+      await fetchUsers();
+    } catch (e) {
+      console.error('save user error:', e);
+      const msg = String(e?.message || '').includes('duplicate')
+        ? 'البريد الإلكتروني مستخدم من قبل'
+        : 'حدث خطأ أثناء حفظ المستخدم';
+      showSnackbar(msg, 'error');
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDeleteUser = async () => {
     try {
       if (!selectedUser?.id) return;
-      await axios.delete(`/api/users/${selectedUser.id}`, { withCredentials: true });
+
+      if (selectedUser.id === currentUserId) {
+        showSnackbar('لا يمكنك حذف حسابك الإداري الحالي', 'error');
+        setOpenDeleteDialog(false);
+        return;
+      }
+
+      const res = await fetch(`/api/admin/users/${selectedUser.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error || data?.message || `HTTP ${res.status}`);
+      }
+
       showSnackbar('تم حذف المستخدم بنجاح', 'success');
-      await fetchUsers();
       setOpenDeleteDialog(false);
-    } catch (error) {
-      console.error('Error deleting user:', error);
+      await fetchUsers();
+    } catch (e) {
+      console.error('delete user error:', e);
       showSnackbar('حدث خطأ أثناء حذف المستخدم', 'error');
     }
   };
@@ -198,21 +264,31 @@ const UsersManagement = ({ userData: userDataProp = null }) => {
   const handleResetPasswordConfirm = async () => {
     try {
       if (!selectedUser?.id) return;
-      await axios.post(`/api/users/${selectedUser.id}/reset-password`, {}, { withCredentials: true });
-      showSnackbar('تم إرسال رابط إعادة تعيين كلمة المرور إلى بريد المستخدم', 'success');
+
+      const res = await fetch(`/api/admin/users/${selectedUser.id}/reset-password`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ newPassword: '123456' })
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || 'فشل في تحديث كلمة المرور');
+      }
+
       setOpenResetDialog(false);
+      showSnackbar('تم تعيين كلمة المرور الجديدة إلى 123456', 'success');
     } catch (error) {
       console.error('Error resetting password:', error);
-      showSnackbar('حدث خطأ أثناء إعادة تعيين كلمة المرور', 'error');
+      showSnackbar(error.message || 'حدث خطأ أثناء تعيين كلمة المرور', 'error');
     }
   };
 
-  const showSnackbar = (message, severity = 'success') => {
-    setSnackbar({ open: true, message, severity });
-  };
+  const showSnackbar = (message, severity = 'success') => setSnackbar({ open: true, message, severity });
   const handleCloseSnackbar = () => setSnackbar((s) => ({ ...s, open: false }));
 
-  // لا نحكم قبل انتهاء التحميل
+  // Auth gates
   if (authLoading) {
     return (
       <Container maxWidth="lg">
@@ -223,7 +299,6 @@ const UsersManagement = ({ userData: userDataProp = null }) => {
     );
   }
 
-  // ليس أدمن؟
   if (!isAdmin(userData)) {
     return (
       <Container maxWidth="lg">
@@ -238,7 +313,9 @@ const UsersManagement = ({ userData: userDataProp = null }) => {
     <Container maxWidth="lg">
       <Box sx={{ mt: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h5" component="h2">إدارة المستخدمين</Typography>
+          <Typography variant="h5" component="h2">
+            إدارة المستخدمين {listLoading ? '…' : ''}
+          </Typography>
           <Button
             variant="contained"
             color="primary"
@@ -252,14 +329,25 @@ const UsersManagement = ({ userData: userDataProp = null }) => {
           </Button>
         </Box>
 
-        <TextField
-          fullWidth
-          label="بحث عن مستخدم..."
-          variant="outlined"
-          value={searchTerm}
-          onChange={handleSearch}
-          sx={{ mb: 3 }}
-        />
+        <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
+          <TextField
+            fullWidth
+            label="بحث عن مستخدم..."
+            variant="outlined"
+            value={searchTerm}
+            onChange={handleSearch}
+          />
+          <FormControl size="small" sx={{ width: 140 }}>
+            <InputLabel>حجم الصفحة</InputLabel>
+            <Select
+              value={pageSize}
+              label="حجم الصفحة"
+              onChange={(e) => { setPage(1); setPageSize(Number(e.target.value)); }}
+            >
+              {[10, 20, 50, 100].map(sz => <MenuItem key={sz} value={sz}>{sz}</MenuItem>)}
+            </Select>
+          </FormControl>
+        </Box>
 
         <TableContainer component={Paper}>
           <Table>
@@ -272,37 +360,57 @@ const UsersManagement = ({ userData: userDataProp = null }) => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredUsers.map((row) => (
+              {filteredRows.map((row) => (
                 <TableRow key={row.id}>
                   <TableCell>{row.name}</TableCell>
                   <TableCell>{row.email}</TableCell>
                   <TableCell>{row.role === 'admin' ? 'مدير' : 'مستخدم'}</TableCell>
                   <TableCell align="center">
-                    <IconButton onClick={() => handleEditClick(row)} color="primary">
-                      <Edit />
-                    </IconButton>
-                    <IconButton onClick={() => handleResetPassword(row)} color="secondary">
-                      <Refresh />
-                    </IconButton>
-                    {/* لا تسمح بحذف نفسك */}
-                    {row.id !== currentUserId && (
-                      <IconButton onClick={() => handleDeleteClick(row)} color="error">
-                        <Delete />
+                    <Tooltip title="تعديل">
+                      <IconButton onClick={() => handleEditClick(row)} color="primary" sx={{ mr: 0.5 }}>
+                        <Edit />
                       </IconButton>
+                    </Tooltip>
+
+                    <Tooltip title="إعادة تعيين كلمة المرور">
+                      <IconButton onClick={() => handleResetPassword(row)} color="secondary" sx={{ mr: 0.5 }}>
+                        <Refresh />
+                      </IconButton>
+                    </Tooltip>
+
+                    {row.id !== currentUserId && (
+                      <Tooltip title="حذف">
+                        <IconButton onClick={() => handleDeleteClick(row)} color="error">
+                          <Delete />
+                        </IconButton>
+                      </Tooltip>
                     )}
                   </TableCell>
                 </TableRow>
               ))}
-              {filteredUsers.length === 0 && (
+              {filteredRows.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} align="center">
-                    لا توجد نتائج مطابقة
+                    {listLoading ? 'جاري التحميل…' : 'لا توجد نتائج مطابقة'}
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
         </TableContainer>
+
+        {/* Pagination controls */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', my: 2 }}>
+          <Typography variant="body2">
+            إجمالي: {total} مستخدم
+          </Typography>
+          <Pagination
+            count={totalPages}
+            page={page}
+            onChange={(_, value) => setPage(value)}
+            color="primary"
+          />
+        </Box>
 
         {/* Add/Edit User Dialog */}
         <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
@@ -339,8 +447,8 @@ const UsersManagement = ({ userData: userDataProp = null }) => {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setOpenDialog(false)}>إلغاء</Button>
-            <Button onClick={handleSaveUser} variant="contained" color="primary">
-              حفظ
+            <Button onClick={handleSaveUser} variant="contained" color="primary" disabled={saving}>
+              {saving ? 'جارٍ الحفظ…' : 'حفظ'}
             </Button>
           </DialogActions>
         </Dialog>
@@ -359,12 +467,18 @@ const UsersManagement = ({ userData: userDataProp = null }) => {
           </DialogActions>
         </Dialog>
 
-        {/* Reset Password Confirmation Dialog */}
+        {/* Reset Password Confirmation Dialog (واجهة فقط) */}
         <Dialog open={openResetDialog} onClose={() => setOpenResetDialog(false)}>
           <DialogTitle>إعادة تعيين كلمة المرور</DialogTitle>
           <DialogContent>
-            <Typography>
-              سيتم إرسال رابط إعادة تعيين كلمة المرور إلى البريد الإلكتروني: {selectedUser?.email}
+            <Typography gutterBottom>
+              سيتم تعيين كلمة المرور الجديدة للمستخدم <strong>{selectedUser?.name}</strong> إلى:
+            </Typography>
+            <Typography variant="h6" align="center" color="primary" sx={{ my: 2 }}>
+              123456
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              سيتمكن المستخدم من تسجيل الدخول باستخدام هذه الكلمة ومن ثم تغييرها من إعدادات الحساب.
             </Typography>
           </DialogContent>
           <DialogActions>
