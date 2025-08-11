@@ -45,6 +45,7 @@ import {
   FaTimes,
   FaThList,
   FaGift,
+  FaClock,
 } from "react-icons/fa";
 
 // ------------------------
@@ -220,6 +221,247 @@ const QUICK_ADD = [
   { id: "jobs", title: "وظيفة", icon: <FaBriefcase /> },
 ];
 
+/* =========================
+   إضافة عرض المنشورات فقط
+   (لا تغييرات على التصميم)
+========================= */
+function PostCard({ post }) {
+  const price =
+    post?.price != null && post?.price !== ""
+      ? Number(post.price).toLocaleString("ar-EG")
+      : null;
+  const created = post?.created_at 
+    ? new Date(post.created_at).toLocaleDateString("ar-EG", {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      })
+    : "-";
+
+  // Get category color if available
+  const category = SERVICE_CATEGORIES.flatMap(cat => 
+    cat.services.filter(s => s.id === post.category_id)
+  )[0];
+  const categoryColor = category?.color || 'bg-blue-500';
+
+  return (
+    <div className="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 dark:border-gray-700 flex flex-col h-full transform hover:-translate-y-1">
+      {/* Image Section */}
+      <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent z-10"></div>
+        <span className="text-gray-400 dark:text-gray-500 text-sm z-0">
+          {post.title?.charAt(0) || 'ص'}
+        </span>
+        
+        {/* Category Badge */}
+        <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-medium text-white ${categoryColor} shadow-md`}>
+          {post.category_name || 'تصنيف'}
+        </div>
+        
+        {/* Status Badge */}
+        <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium ${
+          post.is_visible 
+            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
+            : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+        }`}>
+          {post.is_visible ? 'ظاهر' : 'مخفي'}
+        </div>
+      </div>
+
+      {/* Content Section */}
+      <div className="p-4 flex-1 flex flex-col">
+        {/* Title */}
+        <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-2 line-clamp-1">
+          {post.title || 'عنوان غير محدد'}
+        </h3>
+        
+        {/* Description */}
+        <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2 flex-grow">
+          {post.description || 'لا يوجد وصف متوفر'}
+        </p>
+        
+        {/* Details Grid */}
+        <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3 mb-4">
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
+              <FaMapMarkedAlt className="text-amber-500" />
+              <span className="truncate">{post.governorate || 'غير محدد'}</span>
+            </div>
+            {price && (
+              <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
+                <span className="font-medium text-amber-600 dark:text-amber-400">{price}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">شيكل</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-xs col-span-2">
+              <FaClock className="text-gray-400" />
+              <span>أضيف {created}</span>
+            </div>
+          </div>
+        </div>
+        
+        {/* Tags */}
+        {Array.isArray(post.tags) && post.tags.length > 0 && (
+          <div className="mt-auto flex flex-wrap gap-1.5">
+            {post.tags.slice(0, 3).map((t, i) => (
+              <span 
+                key={i} 
+                className="px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs font-medium flex items-center gap-1"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                {t}
+              </span>
+            ))}
+            {post.tags.length > 3 && (
+              <span className="px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs">
+                +{post.tags.length - 3}
+              </span>
+            )}
+          </div>
+        )}
+        
+        {/* Action Button */}
+        <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+          <a
+            href={`/posts/${post.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+          >
+            عرض التفاصيل
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ServicePosts({ serviceId, governorate, search }) {
+  const categoryName = SERVICE_TO_CATEGORY_NAME[serviceId];
+
+  const [items, setItems] = useState([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [firstLoaded, setFirstLoaded] = useState(false);
+  const [error, setError] = useState(null);
+
+  const limit = 8;
+  const hasMore = items.length < total;
+
+  const fetchPage = useCallback(async (nextPage) => {
+    if (!categoryName) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const qs = new URLSearchParams();
+      qs.set("categoryName", categoryName);
+      qs.set("page", String(nextPage));
+      qs.set("limit", String(limit));
+      qs.set("sortBy", "created_at");
+      qs.set("order", "desc");
+      if (governorate) qs.set("governorate", governorate);
+      if (search) qs.set("q", search);
+
+      const res = await fetch(`/api/services?${qs.toString()}`, {
+        method: "GET",
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.message || "تعذر جلب البيانات");
+
+      const newItems = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
+      setItems((prev) => (nextPage === 1 ? newItems : [...prev, ...newItems]));
+      setTotal(Number(data?.total || newItems.length));
+      setPage(nextPage);
+      setFirstLoaded(true);
+    } catch (e) {
+      setError(e?.message || "تعذر جلب البيانات");
+    } finally {
+      setLoading(false);
+    }
+  }, [categoryName, governorate, search]);
+
+  // أول تحميل ووقت تغيير الفلاتر
+  useEffect(() => {
+    setItems([]);
+    setPage(1);
+    setTotal(0);
+    setFirstLoaded(false);
+    setError(null);
+    fetchPage(1);
+  }, [fetchPage]);
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      {!firstLoaded && loading && (
+        <div className="py-8 text-center text-gray-600 dark:text-gray-300">جارٍ التحميل...</div>
+      )}
+
+      {error && (
+        <div className="py-8 text-center text-red-600 dark:text-red-400">{error}</div>
+      )}
+
+      {firstLoaded && items.length === 0 && !loading && !error && (
+        <div className="py-8 text-center text-gray-600 dark:text-gray-300">
+          لا توجد منشورات حالياً لهذا القسم.
+        </div>
+      )}
+
+      {items.length > 0 && (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {items.map((post) => (
+              <div key={post.id} className="h-full">
+                <PostCard post={post} />
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-10 flex justify-center">
+            {hasMore ? (
+              <button
+                onClick={() => fetchPage(page + 1)}
+                disabled={loading}
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-medium disabled:opacity-60 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    جارٍ التحميل...
+                  </>
+                ) : (
+                  <>
+                    <span>تحميل المزيد</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                  </>
+                )}
+              </button>
+            ) : (
+              <div className="flex flex-col items-center text-center py-4">
+                <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span className="text-gray-500 dark:text-gray-400 text-sm font-medium">تم عرض جميع النتائج</span>
+                <p className="text-gray-400 text-xs mt-1">لا توجد المزيد من النتائج للعرض</p>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ------------------------
 // الكومبوننت الرئيسي
 // ------------------------
@@ -283,13 +525,11 @@ export default function ServicesPage() {
   const requireAuth = useCallback(
     async (action) => {
       try {
-        // إذا كان جاري فحص المصادقة، ننتظر حتى ينتهي
         if (authLoading) {
           console.log('جاري التحميل...');
           return false;
         }
 
-        // إذا كان المستخدم مسجل الدخول
         if (user) {
           console.log('المستخدم مسجل الدخول');
           if (typeof action === 'function') {
@@ -298,7 +538,6 @@ export default function ServicesPage() {
           return true;
         }
 
-        // إذا كان هناك توكن، نحاول تحديث بيانات المستخدم
         const token = localStorage.getItem('token');
         if (token) {
           try {
@@ -313,7 +552,6 @@ export default function ServicesPage() {
           }
         }
 
-        // إذا وصلنا إلى هنا، يجب تسجيل الدخول
         console.log('يجب تسجيل الدخول للمتابعة');
         setAuthError('يجب تسجيل الدخول للمتابعة');
         setShowLoginPrompt(true);
@@ -471,78 +709,41 @@ export default function ServicesPage() {
   // دالة مساعدة للحصول على المستخدم من الطلب مع تسجيل تفصيلي
   const getCurrentUser = async () => {
     try {
-      console.log('=== بدء عملية التحقق من المصادقة ===');
-      
-      // 1. التحقق من localStorage أولاً
+      // 1) localStorage
       const localStorageToken = localStorage.getItem('token');
-      console.log('التحقق من localStorage:', localStorageToken ? 'تم العثور على توكن' : 'لا يوجد توكن');
-      
-      if (localStorageToken) {
-        console.log('تم العثور على التوكن في localStorage');
-        return { token: localStorageToken };
-      }
-      
-      // 2. إذا لم يتم العثور على التوكن في localStorage، نتحقق من الكعكات
-      console.log('جاري فحص ملفات تعريف الارتباط (cookies)...');
+      if (localStorageToken) return { token: localStorageToken };
+
+      // 2) cookies -> localStorage
       const cookies = document.cookie.split(';').reduce((acc, cookie) => {
         const [key, value] = cookie.trim().split('=');
         acc[key] = value;
         return acc;
       }, {});
-      
-      console.log('جميع ملفات تعريف الارتباط:', cookies);
-      
       const cookieToken = cookies.token || cookies['token'];
       if (cookieToken) {
-        console.log('تم العثور على التوكن في ملفات تعريف الارتباط');
-        // تخزين التوكن في localStorage للاستخدام المستقبلي
         localStorage.setItem('token', cookieToken);
         return { token: cookieToken };
       }
-      
-      // 3. إذا لم يتم العثور على التوكن في أي مكان
-      console.log('لم يتم العثور على توكن مصادقة في أي مكان');
       return null;
-      
-    } catch (error) {
-      console.error('حدث خطأ أثناء محاولة الحصول على بيانات المستخدم:', error);
+    } catch {
       return null;
     }
   };
 
   const submitForm = async (e) => {
     e.preventDefault();
-    console.log('=== بدء عملية إرسال النموذج ===');
 
-    // 1. الحصول على بيانات المستخدم الحالي مع تسجيل تفصيلي
-    console.log('جاري التحقق من حالة تسجيل الدخول...');
     const currentUser = await getCurrentUser();
-    
     if (!currentUser || !currentUser.token) {
-      console.error('فشل التحقق من المصادقة: لم يتم العثور على توكن');
-      console.log('تفاصيل المستخدم الحالي:', currentUser);
-      
-      // التحقق من وجود عناصر واجهة المستخدم المطلوبة
-      console.log('عنصر نموذج تسجيل الدخول:', document.getElementById('login-form') ? 'موجود' : 'غير موجود');
-      
       setAuthError('يجب تسجيل الدخول أولاً');
       setShowLoginPrompt(true);
       return;
     }
-    
     const token = currentUser.token;
-    console.log('تم التحقق من المصادقة بنجاح');
-    console.log('طول التوكن:', token ? token.length : 'غير محدد');
-    console.log('بداية التوكن:', token ? token.substring(0, 10) + '...' : 'غير محدد');
 
-    console.log('الخدمة المحددة:', currentService);
     const categoryName = SERVICE_TO_CATEGORY_NAME[currentService];
-    console.log('اسم التصنيف:', categoryName);
-    
     if (!categoryName) {
-      const errorMsg = "تعذر تحديد التصنيف لهذه الخدمة.";
-      console.error(errorMsg);
-      alert(errorMsg);
+      alert("تعذر تحديد التصنيف لهذه الخدمة.");
       return;
     }
 
@@ -557,110 +758,62 @@ export default function ServicesPage() {
       categoryName,
       tags: selectedTags,
     };
-    
-    console.log('بيانات الإرسال (Payload):', JSON.stringify(payload, null, 2));
 
     try {
-      console.log('جاري إرسال الطلب إلى /api/posts...');
-      
-      // إعداد الهيدرز مع التوكن
-      const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      };
-      
-      // إرسال الطلب مع الهيدرز
       const res = await fetch("/api/posts", {
         method: "POST",
-        headers: headers,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(payload),
       });
-      
-      console.log('حالة الاستجابة:', res.status, res.statusText);
-      
+
       if (res.status === 401) {
-        console.log('تم رفض الطلب بسبب عدم المصادقة (401)');
-        // إذا كان الخطأ 401، نقوم بتحديث التوكن وجعله يحاول مرة أخرى
         try {
-          // محاولة تحديث بيانات المستخدم
           await refreshUser();
-          
-          // الحصول على بيانات المستخدم الحالي بعد التحديث
-          const currentUser = await getCurrentUser();
-          
-          if (currentUser && currentUser.token) {
-            console.log('إعادة المحاولة مع التوكن الجديد...');
-            
-            const retryRes = await fetch("/api/posts", {
+          const again = await getCurrentUser();
+          if (again?.token) {
+            const retry = await fetch("/api/posts", {
               method: "POST",
               headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${currentUser.token}`
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${again.token}`,
               },
               body: JSON.stringify(payload),
             });
-            
-            const retryData = await retryRes.json();
-            if (!retryRes.ok) {
-              throw new Error(retryData.message || 'فشل في إضافة المنشور بعد تحديث الجلسة');
-            }
-            
+            const retryData = await retry.json();
+            if (!retry.ok) throw new Error(retryData.message || "فشل في إضافة المنشور");
             resetForm();
             alert("تم إرسال منشورك للمراجعة. بانتظار موافقة الإدارة.");
             return;
           }
-        } catch (retryError) {
-          console.error('فشل إعادة المحاولة بعد تحديث الجلسة:', retryError);
-          throw new Error('انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى');
+          throw new Error("انتهت صلاحية الجلسة");
+        } catch (err) {
+          setAuthError('انتهت جلستك. يرجى تسجيل الدخول مرة أخرى');
+          setShowLoginPrompt(true);
+          return;
         }
       }
-      
-      const data = await res.json().catch(e => {
-        console.error('فشل في تحليل استجابة JSON:', e);
-        return { message: 'استجابة غير صالحة من الخادم' };
-      });
-      
-      console.log('استجابة الخادم:', data);
-      
-      if (!res.ok) {
-        const errorMsg = data?.message || `حدث خطأ (${res.status})`;
-        console.error('خطأ من الخادم:', errorMsg);
-        throw new Error(errorMsg);
-      }
-      
-      console.log('تمت إضافة المنشور بنجاح');
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.message || `خطأ (${res.status})`);
+
       resetForm();
       alert("تم إرسال منشورك للمراجعة. بانتظار موافقة الإدارة.");
-      
     } catch (err) {
-      console.error('خطأ في إضافة المنشور:', {
-        message: err.message,
-        stack: err.stack,
-        name: err.name
-      });
-      
-      if (err.message === 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى' || 
-          err.message.includes('401')) {
+      if (err.message.includes("جلسة")) {
         setAuthError('انتهت جلستك. يرجى تسجيل الدخول مرة أخرى');
         setShowLoginPrompt(true);
       } else {
-        const errorMessage = err.message || "حدث خطأ أثناء محاولة إضافة المنشور. يرجى المحاولة مرة أخرى.";
-        console.error('عرض رسالة الخطأ للمستخدم:', errorMessage);
-        alert(errorMessage);
+        alert(err.message || "حدث خطأ أثناء محاولة إضافة المنشور. يرجى المحاولة مرة أخرى.");
       }
     }
   };
 
   // ------------------------
-  // Mobile bottom navigation
+  // Mobile/scroll behaviors
   // ------------------------
-  const mobileNavRef = useRef(null);
-  const subNavRef = useRef(null);
-  const [mobileActiveTab, setMobileActiveTab] = useState("all");
-  const [expandedCategory, setExpandedCategory] = useState(null);
-  const [showSubNav, setShowSubNav] = useState(false);
-  const [activeSubTab, setActiveSubTab] = useState(null);
-
   useEffect(() => {
     let ticking = false;
     let lastScrollY = window.scrollY;
@@ -705,6 +858,13 @@ export default function ServicesPage() {
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
+
+  const mobileNavRef = useRef(null);
+  const subNavRef = useRef(null);
+  const [mobileActiveTab, setMobileActiveTab] = useState("all");
+  const [expandedCategory, setExpandedCategory] = useState(null);
+  const [showSubNav, setShowSubNav] = useState(false);
+  const [activeSubTab, setActiveSubTab] = useState(null);
 
   useEffect(() => {
     if (!activeSection || !sidebarRef.current) return;
@@ -991,9 +1151,13 @@ export default function ServicesPage() {
                     {getAddBtnText(s.id)}
                   </button>
                 </header>
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center text-gray-600 dark:text-gray-300">
-                  محتوى {s.title} سيظهر هنا
-                </div>
+
+                {/* == عرض المنشورات (بدون تغيير التصميم) == */}
+                <ServicePosts
+                  serviceId={s.id}
+                  governorate={selectedGov}
+                  search={searchQuery}
+                />
               </div>
             </section>
           );
@@ -1347,7 +1511,6 @@ export default function ServicesPage() {
           <Button
             onClick={() => {
               setShowLoginPrompt(false);
-              // نحفظ المسار الحالي للعودة بعد تسجيل الدخول
               const url = '/auth?returnUrl=' + encodeURIComponent(returnUrl || '/services');
               router.push(url);
             }}
