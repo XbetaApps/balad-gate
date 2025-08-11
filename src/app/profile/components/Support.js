@@ -254,25 +254,44 @@ const SupportContent = ({ user }) => {
   }
 
   return (
-    <div className="flex h-full bg-[var(--background)] direction-rtl text-right">
+    <div className="flex flex-col md:flex-row h-full bg-[var(--background)] direction-rtl text-right">
+      {/* زر عرض/إخفاء القائمة في الجوال */}
+      <button 
+        onClick={() => document.getElementById('sidebar').classList.toggle('hidden')}
+        className="md:hidden flex items-center justify-center p-3 bg-[var(--card)] border-b border-[var(--border)]"
+      >
+        <span className="text-[var(--text-primary)]">☰ عرض قنوات الدعم</span>
+      </button>
+
       {/* قائمة الجهات */}
-      <aside className="w-72 border-l border-[var(--border)] bg-[var(--card)]/50 overflow-y-auto">
-        <h2 className="p-6 text-xl font-semibold text-[var(--text-primary)]">الدعم الفني</h2>
-        <ul className="space-y-2 px-4 pb-6">
+      <aside 
+        id="sidebar" 
+        className="w-full md:w-72 border-l border-[var(--border)] bg-[var(--card)]/50 overflow-y-auto hidden md:block"
+      >
+        <h2 className="p-4 md:p-6 text-lg md:text-xl font-semibold text-[var(--text-primary)]">الدعم الفني</h2>
+        <ul className="space-y-2 px-2 md:px-4 pb-4 md:pb-6">
           {recipients.map((r) => (
             <li
               key={r.id}
-              onClick={() => setActiveRecipient(r.id)}
-              className={`p-4 rounded-lg cursor-pointer transition ${
+              onClick={() => {
+                setActiveRecipient(r.id);
+                // إخفاء القائمة بعد الاختيار في وضع الجوال
+                if (window.innerWidth < 768) {
+                  document.getElementById('sidebar').classList.add('hidden');
+                }
+              }}
+              className={`p-3 md:p-4 rounded-lg cursor-pointer transition ${
                 activeRecipient === r.id
                   ? "border-2 border-yellow-500 shadow-lg shadow-yellow-500/20"
                   : "hover:bg-[var(--background-hover)]"
               }`}
             >
-              <div className="flex items-center gap-3">
-                {r.icon}
-                <div className="min-w-0">
-                  <h3 className="font-medium text-[var(--text-primary)]">{r.label}</h3>
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="w-6 h-6 md:w-8 md:h-8 flex-shrink-0">
+                  {React.cloneElement(r.icon, { className: 'w-full h-full' })}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-medium text-sm md:text-base text-[var(--text-primary)]">{r.label}</h3>
                   <p className="text-xs text-[var(--text-secondary)] truncate">{r.desc}</p>
                 </div>
               </div>
@@ -283,55 +302,59 @@ const SupportContent = ({ user }) => {
 
       {/* مساحة المحادثة */}
       <section className="flex-1 flex flex-col">
-        <header className="h-16 px-6 border-b border-[var(--border)] flex items-center gap-3 bg-[var(--card)]/60 backdrop-blur">
+        <header className="h-14 md:h-16 px-4 md:px-6 border-b border-[var(--border)] flex items-center gap-3 bg-[var(--card)]/60 backdrop-blur">
           {activeRecipient === "admin" ? (
-            <FaHeadset className="w-8 h-8 text-[var(--text-secondary)]" />
+            <FaHeadset className="w-6 h-6 md:w-8 md:h-8 text-[var(--text-secondary)]" />
           ) : (
-            <FaUserTie className="w-8 h-8 text-[var(--text-secondary)]" />
+            <FaUserTie className="w-6 h-6 md:w-8 md:h-8 text-[var(--text-secondary)]" />
           )}
-          <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+          <h3 className="text-base md:text-lg font-semibold text-[var(--text-primary)]">
             {activeRecipient === "admin" ? "مشرف الموقع" : "المشرف الشخصي"}
           </h3>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6 space-y-4">
+        <main className="flex-1 overflow-y-auto p-3 md:p-6 space-y-3 md:space-y-4">
           {threads[activeRecipient]?.messages.map((msg) => (
             <div 
               key={msg.id} 
               className={`flex ${msg.senderRole === "user" ? "justify-end" : "justify-start"}`}
             >
               <div 
-                className={`max-w-[90%] p-4 rounded-lg ${
+                className={`max-w-[90%] p-3 md:p-4 rounded-lg text-sm md:text-base ${
                   msg.senderRole === "user" 
                     ? "bg-[var(--primary)] text-black" 
                     : "bg-gray-100"
                 }`}
               >
-                <p className="whitespace-pre-line">{msg.content}</p>
-                <span className="block mt-1 text-xs text-[var(--blue)]">
-                  {new Date(msg.timestamp).toLocaleTimeString("ar-EG")}
+                <p className="whitespace-pre-line break-words">{msg.content}</p>
+                <span className="block mt-1 text-[10px] md:text-xs text-[var(--blue)]">
+                  {new Date(msg.timestamp).toLocaleTimeString("ar-EG", {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
                 </span>
               </div>
             </div>
           ))}
-          <div ref={bottomRef} />
+          <div ref={bottomRef} className="h-4 md:h-6" />
         </main>
 
-        <footer className="border-t border-[var(--border)] p-6 bg-[var(--card)]/60">
-          <div className="flex gap-4">
+        <footer className="border-t border-[var(--border)] p-3 md:p-4 bg-[var(--card)]/60">
+          <div className="flex gap-2 md:gap-4">
             <input
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSend()}
               placeholder="اكتب رسالتك هنا..."
-              className="flex-1 p-3 rounded-lg border border-[var(--border)] bg-[var(--background)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] text-[var(--text-primary)]"
+              className="flex-1 p-2 md:p-3 rounded-lg border border-[var(--border)] bg-[var(--background)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] text-[var(--text-primary)] text-sm md:text-base"
             />
             <button
               onClick={handleSend}
               disabled={!message.trim()}
-              className="px-6 py-2 rounded-lg bg-[var(--primary)] text-black hover:bg-[var(--primary)]/90 disabled:opacity-50 flex items-center gap-2"
+              className="px-4 md:px-6 py-2 rounded-lg bg-[var(--primary)] text-black hover:bg-[var(--primary)]/90 disabled:opacity-50 flex items-center gap-1 md:gap-2 text-sm md:text-base"
+              aria-label="إرسال الرسالة"
             >
-              إرسال <FaPaperPlane />
+              <span className="hidden md:inline">إرسال</span> <FaPaperPlane className="text-sm md:text-base" />
             </button>
           </div>
         </footer>

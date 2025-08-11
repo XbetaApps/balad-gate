@@ -1,20 +1,25 @@
 "use client";
 
 import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Container, Box, Typography, TextField, Button, Tabs, Tab, Chip,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Paper, IconButton, Dialog, DialogTitle, DialogContent, DialogActions,
   Switch, FormControlLabel, Alert, Snackbar, Tooltip, Stack, CircularProgress,
-  MenuItem, Select, InputLabel, FormControl, TableSortLabel
+  TableSortLabel, MenuItem, Select, InputLabel, FormControl
 } from "@mui/material";
 import { Edit, Delete, Visibility, Refresh } from "@mui/icons-material";
 import axios from "axios";
 
-/* ---------------- Helpers: auth & admin check ---------------- */
-function isAdmin(userData) {
-  return !!userData && Number(userData.role_id) === 4;
-}
+/* ---------- Govs ---------- */
+const PALESTINIAN_GOVS = [
+  "القدس","رام الله والبيرة","الخليل","نابلس","جنين",
+  "أريحا والأغوار","طوباس","طولكرم","قلقيلية","سلفيت",
+  "بيت لحم","غزة","شمال غزة","دير البلح","خان يونس","رفح",
+];
+
+/* ---------- Session helper ---------- */
 async function fetchUserDataFromSession() {
   const res = await fetch("/api/test-session", {
     method: "GET",
@@ -29,20 +34,13 @@ async function fetchUserDataFromSession() {
   return { ...data.user, role_id };
 }
 
-/* --------------- Notifications hook (future-ready) ------------ */
-async function notifyUserAction(/* { userId, postId, action, payload } */) {
-  // TODO: لاحقاً اربطه بنقطة نهاية للإشعارات (web push / email / in-app)
-  // console.log("notifyUserAction", { userId, postId, action, payload });
-}
-
-/* ----------------------- Sorting helpers --------------------- */
+/* ---------- Sorting helpers ---------- */
 function descendingComparator(a, b, orderBy) {
   const va = a?.[orderBy];
   const vb = b?.[orderBy];
-  if (va === null || va === undefined) return 1;
-  if (vb === null || vb === undefined) return -1;
+  if (va == null) return 1;
+  if (vb == null) return -1;
 
-  // تاريخ
   if (orderBy === "created_at") {
     const da = new Date(va).getTime();
     const db = new Date(vb).getTime();
@@ -51,7 +49,6 @@ function descendingComparator(a, b, orderBy) {
     return 0;
   }
 
-  // رقمي (السعر)
   if (orderBy === "price") {
     const na = Number(va ?? 0);
     const nb = Number(vb ?? 0);
@@ -60,7 +57,6 @@ function descendingComparator(a, b, orderBy) {
     return 0;
   }
 
-  // نصي
   const sa = String(va).toLowerCase();
   const sb = String(vb).toLowerCase();
   if (sb < sa) return -1;
@@ -82,25 +78,28 @@ function stableSort(array, comparator) {
   return stabilized.map((el) => el[0]);
 }
 
-/* --------------------------- Page ---------------------------- */
+/* ---------- Tabs ---------- */
 const STATUS_TABS = [
+  { key: "all", label: "الكل" },
   { key: "approved", label: "المعتمدة" },
   { key: "pending", label: "قيد المراجعة" },
   { key: "rejected", label: "المرفوضة" },
 ];
 
-export default function PostsManagement({ userData: userDataProp = null, userId = null }) {
-  /* Auth */
-  const [userData, setUserData] = useState(userDataProp);
-  const [currentUserId, setCurrentUserId] = useState(userId);
-  const [authLoading, setAuthLoading] = useState(!userDataProp);
+/* ========================= PAGE ============================== */
+export default function MyPosts() {
+  const router = useRouter();
 
-  /* Data state */
+  /* Auth */
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  /* Data */
   const [posts, setPosts] = useState([]);
   const [fetching, setFetching] = useState(false);
 
   /* UI state */
-  const [tab, setTab] = useState("approved"); // افتراضي: المعتمدة
+  const [tab, setTab] = useState("all");
   const [search, setSearch] = useState("");
   const [order, setOrder] = useState("desc");
   const [orderBy, setOrderBy] = useState("created_at");
@@ -108,59 +107,70 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
   /* Edit dialog */
   const [openEdit, setOpenEdit] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
-  const [current, setCurrent] = useState(null); // post object
-  const [editStatus, setEditStatus] = useState("approved");
-  const [editVisible, setEditVisible] = useState(true);
-  const [editReason, setEditReason] = useState("");
+  const [current, setCurrent] = useState(null);
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [price, setPrice] = useState("");
+  const [governorate, setGovernorate] = useState("");
+  const [isVisible, setIsVisible] = useState(true);
+
+  /* Tags (search-only existing) */
+  const [tagQuery, setTagQuery] = useState("");
+  const [tagOptions, setTagOptions] = useState([]);
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [tagLoading, setTagLoading] = useState(false);
+  const [tagAbort, setTagAbort] = useState(null);
 
   /* Delete dialog */
   const [openDelete, setOpenDelete] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [toDelete, setToDelete] = useState(null);
 
-  /* Snackbar */
+  /* Snackbar (تعريف واحد فقط) */
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const showSnack = (message, severity = "success") =>
+    setSnackbar({ open: true, message, severity });
+  const closeSnack = () => setSnackbar((s) => ({ ...s, open: false }));
 
   /* Load session */
   useEffect(() => {
     let mounted = true;
     (async () => {
-      if (userDataProp) {
-        setUserData(userDataProp);
-        setAuthLoading(false);
-        return;
-      }
       setAuthLoading(true);
       const ud = await fetchUserDataFromSession().catch(() => null);
       if (mounted) {
-        setUserData(ud);
+        setUser(ud);
         setAuthLoading(false);
       }
     })();
     return () => { mounted = false; };
-  }, [userDataProp]);
+  }, []);
 
-  /* Fetch posts when tab changes or after actions */
-  const fetchPosts = useCallback(async () => {
+  /* Fetch my posts */
+  const fetchMyPosts = useCallback(async () => {
     setFetching(true);
     try {
-      const res = await axios.get(`/api/admin/posts`, {
+      const params = { page: 1, limit: 300 };
+      if (tab !== "all") params.status = tab;
+      const res = await axios.get(`/api/my/posts`, {
+        params,
         withCredentials: true,
-        params: { status: tab, page: 1, limit: 300 }, // نجيب كمية معقولة ونفرز/نبحث عميلًا
       });
       const data = res.data;
-      setPosts(Array.isArray(data?.posts) ? data.posts : []);
+      const items = Array.isArray(data) ? data : Array.isArray(data?.posts) ? data.posts : [];
+      setPosts(items);
     } catch (err) {
-      console.error("Error fetching posts:", err);
-      showSnack("فشل في تحميل المنشورات", "error");
+      console.error("Error fetching my posts:", err);
+      showSnack("فشل في تحميل منشوراتك", "error");
     } finally {
       setFetching(false);
     }
   }, [tab]);
 
   useEffect(() => {
-    if (isAdmin(userData)) fetchPosts();
-  }, [userData, tab, fetchPosts]);
+    if (user) fetchMyPosts();
+  }, [user, tab, fetchMyPosts]);
 
   /* Search + sort (client-side) */
   const filteredSorted = useMemo(() => {
@@ -170,62 +180,117 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
       const desc = String(p?.description || "").toLowerCase();
       const gov = String(p?.governorate || "").toLowerCase();
       const cat = String(p?.category_name || "").toLowerCase();
-      const user = String(p?.user_name || p?.user_email || "").toLowerCase();
       const tags = Array.isArray(p?.tags) ? p.tags.join(",").toLowerCase() : "";
       return (
         title.includes(q) ||
         desc.includes(q) ||
         gov.includes(q) ||
         cat.includes(q) ||
-        user.includes(q) ||
         tags.includes(q)
       );
     });
     return stableSort(filtered, getComparator(order, orderBy));
   }, [posts, search, order, orderBy]);
 
+  /* Tags search (existing only) with debounce */
+  useEffect(() => {
+    const q = tagQuery.trim();
+    if (!q) {
+      setTagOptions([]);
+      if (tagAbort) tagAbort.abort?.();
+      return;
+    }
+    const controller = new AbortController();
+    setTagAbort(controller);
+    const t = setTimeout(async () => {
+      setTagLoading(true);
+      try {
+        const res = await fetch(`/api/tags?search=${encodeURIComponent(q)}`, {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+          signal: controller.signal,
+          headers: { Accept: "application/json" },
+        });
+        if (res.ok) {
+          const list = await res.json().catch(() => []);
+          setTagOptions(Array.isArray(list) ? list : []);
+        }
+      } catch (e) {
+        // ignore
+      } finally {
+        setTagLoading(false);
+      }
+    }, 300);
+    return () => {
+      clearTimeout(t);
+      controller.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tagQuery]);
+
+  const addTagByName = (name) => {
+    const n = String(name || "").trim();
+    if (!n) return;
+    if (!selectedTags.includes(n)) setSelectedTags((prev) => [...prev, n]);
+    setTagQuery("");
+    setTagOptions([]);
+  };
+  const removeTag = (name) => {
+    setSelectedTags((prev) => prev.filter((t) => t !== name));
+  };
+
   /* Actions */
   const openEditDialog = (post) => {
     setCurrent(post);
-    setEditStatus(post?.status || "pending");
-    setEditVisible(!!post?.is_visible);
-    setEditReason(post?.rejection_reason || "");
+    setTitle(post?.title || "");
+    setDescription(post?.description || "");
+    setPrice(post?.price ?? "");
+    setGovernorate(post?.governorate || "");
+    setIsVisible(!!post?.is_visible);
+    setSelectedTags(Array.isArray(post?.tags) ? post.tags : []);
     setOpenEdit(true);
   };
   const closeEdit = () => {
     setOpenEdit(false);
     setCurrent(null);
-    setEditReason("");
+    setTagQuery("");
+    setTagOptions([]);
   };
+
   const saveEdit = async () => {
     if (!current?.id) return;
     setEditLoading(true);
     try {
       const payload = {
-        status: editStatus,
-        is_visible: editVisible,
-        ...(editStatus === "rejected" && editReason.trim()
-          ? { rejection_reason: editReason.trim() }
-          : {}),
+        title: title?.trim(),
+        description: description?.trim(),
+        governorate: governorate || null,
+        price: (price === "" || price === null) ? null : Number(price),
+        tags: selectedTags,          // أسماء لتاغات موجودة فقط
+        is_visible: isVisible,
       };
-      await axios.patch(`/api/admin/posts?id=${current.id}`, payload, { withCredentials: true });
-      showSnack("تم تحديث المنشور بنجاح", "success");
-
-      // إشعار مستقبلي (غير مفعّل الآن)
-      notifyUserAction(/* {
-        userId: current.user_id,
-        postId: current.id,
-        action: 'status_changed',
-        payload: payload
-      } */);
-
-      await fetchPosts();
+      await axios.patch(`/api/my/posts/${current.id}`, payload, { withCredentials: true });
+      showSnack("تم حفظ التعديلات", "success");
+      await fetchMyPosts();
       closeEdit();
     } catch (err) {
-      console.error("Error updating post:", err);
-      showSnack("حدث خطأ أثناء التحديث", "error");
+      console.error("Error saving post:", err);
+      const msg = err?.response?.data?.message || "تعذّر حفظ التعديلات";
+      showSnack(msg, "error");
     } finally {
       setEditLoading(false);
+    }
+  };
+
+  const toggleVisibility = async (post) => {
+    try {
+      await axios.patch(`/api/my/posts/${post.id}`, { is_visible: !post.is_visible }, { withCredentials: true });
+      showSnack("تم تحديث الظهور", "success");
+      await fetchMyPosts();
+    } catch (err) {
+      console.error("Error toggling visibility:", err);
+      showSnack("تعذّر تحديث الظهور", "error");
     }
   };
 
@@ -241,10 +306,9 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
     if (!toDelete?.id) return;
     setDeleteLoading(true);
     try {
-      await axios.delete(`/api/admin/posts?id=${toDelete.id}`, { withCredentials: true });
+      await axios.delete(`/api/my/posts/${toDelete.id}`, { withCredentials: true });
       showSnack("تم حذف المنشور بنجاح", "success");
-      // إشعار مستقبلي ممكن هنا أيضًا
-      await fetchPosts();
+      await fetchMyPosts();
       closeDelete();
     } catch (err) {
       console.error("Error deleting post:", err);
@@ -254,41 +318,25 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
     }
   };
 
-  const toggleVisibility = async (post) => {
-    try {
-      await axios.patch(
-        `/api/admin/posts/${post.id}`,
-        { is_visible: !post.is_visible },
-        { withCredentials: true }
-      );
-      showSnack("تم تحديث الظهور", "success");
-      await fetchPosts();
-    } catch (err) {
-      console.error("Error toggling visibility:", err);
-      showSnack("تعذّر تحديث الظهور", "error");
-    }
-  };
-
-  const showSnack = (message, severity = "success") =>
-    setSnackbar({ open: true, message, severity });
-  const closeSnack = () => setSnackbar((s) => ({ ...s, open: false }));
-
   /* Auth gates */
   if (authLoading) {
     return (
       <Container maxWidth="lg">
         <Box sx={{ mt: 6, textAlign: "center" }}>
           <CircularProgress />
-          <Typography sx={{ mt: 2 }}>جاري التحقق من الصلاحيات...</Typography>
+          <Typography sx={{ mt: 2 }}>جاري التحقق من الحساب...</Typography>
         </Box>
       </Container>
     );
   }
-  if (!isAdmin(userData)) {
+  if (!user) {
     return (
       <Container maxWidth="lg">
         <Box sx={{ mt: 6, textAlign: "center" }}>
-          <Alert severity="warning">غير مصرح لك بالوصول إلى هذه الصفحة</Alert>
+          <Alert severity="info">
+            يجب تسجيل الدخول للوصول إلى منشوراتك.
+            <Button href="/auth" variant="text" sx={{ ml: 1 }}>تسجيل الدخول</Button>
+          </Alert>
         </Box>
       </Container>
     );
@@ -301,8 +349,8 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
     { id: "governorate", label: "المحافظة" },
     { id: "price", label: "السعر" },
     { id: "created_at", label: "تاريخ الإنشاء" },
-    { id: "is_visible", label: "الظهور" },
     { id: "status", label: "الحالة" },
+    { id: "is_visible", label: "الظهور" },
     { id: "actions", label: "الإجراءات", sortable: false },
   ].map(cell => ({
     ...cell,
@@ -312,7 +360,6 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
       </Typography>
     )
   }));
-
   const handleRequestSort = (property) => {
     if (property === "actions" || property === "is_visible" || property === "status") return;
     const isAsc = orderBy === property && order === "asc";
@@ -320,15 +367,16 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
     setOrderBy(property);
   };
 
-  /* UI */
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-        <Typography variant="h5" sx={{ color: 'var(--text-primary)', fontWeight: 700 }}>إدارة المنشورات</Typography>
+        <Typography variant="h5" fontWeight={700} sx={{ color: 'var(--text-primary)' }}>
+          منشوراتي
+        </Typography>
         <Stack direction="row" spacing={2}>
-          <Button
-            startIcon={<Refresh />}
-            onClick={fetchPosts}
+          <Button 
+            startIcon={<Refresh />} 
+            onClick={fetchMyPosts} 
             variant="outlined"
             sx={{
               color: 'var(--text-primary)',
@@ -341,6 +389,21 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
             }}
           >
             تحديث
+          </Button>
+          <Button 
+            startIcon={<Visibility />} 
+            onClick={() => router.push('/services')} 
+            variant="contained"
+            sx={{
+              backgroundColor: 'var(--primary)',
+              color: 'var(--primary-foreground)',
+              '&:hover': {
+                backgroundColor: 'var(--gold-border)',
+              },
+              fontWeight: 500,
+            }}
+          >
+            إضافة منشور جديد
           </Button>
         </Stack>
       </Stack>
@@ -484,7 +547,7 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
               ) : filteredSorted.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={headCells.length} align="center">
-                    لا توجد نتائج مطابقة
+                    لا توجد منشورات مطابقة
                   </TableCell>
                 </TableRow>
               ) : (
@@ -534,19 +597,6 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
                     </TableCell>
 
                     <TableCell>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={!!post.is_visible}
-                            onChange={() => toggleVisibility(post)}
-                            color="primary"
-                          />
-                        }
-                        label={post.is_visible ? "ظاهر" : "مخفي"}
-                      />
-                    </TableCell>
-
-                    <TableCell>
                       <Chip
                         label={
                           post.status === "approved"
@@ -566,8 +616,21 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
                       />
                     </TableCell>
 
+                    <TableCell>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={!!post.is_visible}
+                            onChange={() => toggleVisibility(post)}
+                            color="primary"
+                          />
+                        }
+                        label={post.is_visible ? "ظاهر" : "مخفي"}
+                      />
+                    </TableCell>
+
                     <TableCell align="center">
-                      <Tooltip title="إدارة">
+                      <Tooltip title="تعديل">
                         <IconButton color="primary" onClick={() => openEditDialog(post)}>
                           <Edit />
                         </IconButton>
@@ -579,7 +642,7 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
                         </IconButton>
                       </Tooltip>
 
-                      <Tooltip title="عرض">
+                      <Tooltip title="عرض عام">
                         <IconButton color="info" component="a" href={`/posts/${post.id}`} target="_blank">
                           <Visibility />
                         </IconButton>
@@ -593,11 +656,11 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
         </TableContainer>
       </Paper>
 
-      {/* Edit/Moderate Dialog */}
+      {/* Edit Dialog */}
       <Dialog 
         open={openEdit} 
         onClose={closeEdit} 
-        maxWidth="sm" 
+        maxWidth="md" 
         fullWidth 
         dir="rtl"
         PaperProps={{
@@ -617,63 +680,103 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
           px: 3,
           fontWeight: 600,
           fontSize: '1.1rem',
-        }}>إدارة المنشور</DialogTitle>
+        }}>
+          تعديل المنشور
+        </DialogTitle>
         <DialogContent>
-          {current && (
-            <Box sx={{ mt: 1 }}>
-              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                {current.title}
-              </Typography>
+          <Box sx={{ mt: 1 }}>
+            <TextField
+              label="العنوان"
+              fullWidth
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              margin="normal"
+            />
 
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <FormControl fullWidth>
-                  <InputLabel id="status-label">الحالة</InputLabel>
-                  <Select
-                    labelId="status-label"
-                    value={editStatus}
-                    label="الحالة"
-                    onChange={(e) => setEditStatus(e.target.value)}
-                  >
-                    <MenuItem value="approved">معتمدة</MenuItem>
-                    <MenuItem value="pending">قيد المراجعة</MenuItem>
-                    <MenuItem value="rejected">مرفوضة</MenuItem>
-                  </Select>
-                </FormControl>
+            <TextField
+              label="الوصف"
+              fullWidth
+              multiline
+              rows={6}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              margin="normal"
+            />
 
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={editVisible}
-                      onChange={(e) => setEditVisible(e.target.checked)}
-                      color="primary"
-                    />
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mt: 1 }}>
+              <TextField
+                label="السعر (اختياري)"
+                type="number"
+                inputMode="decimal"
+                fullWidth
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+              />
+
+              <FormControl fullWidth>
+                <InputLabel id="gov-label">المحافظة</InputLabel>
+                <Select
+                  labelId="gov-label"
+                  label="المحافظة"
+                  value={governorate}
+                  onChange={(e) => setGovernorate(e.target.value)}
+                >
+                  {PALESTINIAN_GOVS.map((g) => (
+                    <MenuItem key={g} value={g}>{g}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={isVisible}
+                    onChange={(e) => setIsVisible(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label={isVisible ? "ظاهر" : "مخفي"}
+              />
+            </Stack>
+
+            {/* Tags: select from existing only */}
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>التاغات (من الموجودة فقط)</Typography>
+              <TextField
+                placeholder="ابحث عن تاغ ثم اضغط Enter للإضافة"
+                fullWidth
+                value={tagQuery}
+                onChange={(e) => setTagQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    const match = tagOptions.find((t) => t.name === tagQuery.trim());
+                    if (match) addTagByName(match.name);
                   }
-                  label={editVisible ? "ظاهر" : "مخفي"}
-                />
-              </Stack>
-
-              {editStatus === "rejected" && (
-                <TextField
-                  label="سبب الرفض (اختياري)"
-                  value={editReason}
-                  onChange={(e) => setEditReason(e.target.value)}
-                  fullWidth
-                  multiline
-                  rows={3}
-                  sx={{ mt: 2 }}
-                />
+                }}
+              />
+              {tagLoading && <Typography variant="caption">جارٍ البحث...</Typography>}
+              {!!tagOptions.length && (
+                <Paper variant="outlined" sx={{ mt: 1, maxHeight: 200, overflow: "auto" }}>
+                  {tagOptions.map((t) => (
+                    <Button
+                      key={t.id}
+                      onClick={() => addTagByName(t.name)}
+                      sx={{ justifyContent: "flex-start", width: "100%", px: 2, py: 1 }}
+                    >
+                      {t.name}
+                    </Button>
+                  ))}
+                </Paper>
               )}
 
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  التصنيف: {current.category_name || "-"} &nbsp;•&nbsp; المحافظة: {current.governorate || "-"}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  السعر: {current.price != null ? Number(current.price).toLocaleString("ar-EG") : "-"}
-                </Typography>
-              </Box>
+              <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: "wrap" }}>
+                {selectedTags.map((n) => (
+                  <Chip key={n} label={n} onDelete={() => removeTag(n)} />
+                ))}
+              </Stack>
             </Box>
-          )}
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={closeEdit}>إلغاء</Button>
@@ -705,11 +808,11 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
           px: 3,
           fontWeight: 600,
           fontSize: '1.1rem',
-        }}>تأكيد الحذف</DialogTitle>
-        <DialogContent>
-          <Typography>
-            هل أنت متأكد من حذف المنشور "{toDelete?.title}"؟ لا يمكن التراجع عن هذه العملية.
-          </Typography>
+        }}>
+          تأكيد الحذف
+        </DialogTitle>
+        <DialogContent sx={{ py: 3 }}>
+          <Typography color="var(--text-primary)">هل أنت متأكد من حذف هذا المنشور؟ لا يمكن التراجع.</Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={closeDelete}>إلغاء</Button>
