@@ -2,6 +2,13 @@
 
 import { createContext, useState, useEffect } from 'react';
 import { AuthProvider } from './auth/AuthProvider';
+import dynamic from 'next/dynamic';
+
+// Load OnboardingWrapper dynamically to avoid SSR issues
+const OnboardingWrapper = dynamic(
+  () => import('./components/OnboardingWrapper'),
+  { ssr: false }
+);
 
 export const ThemeContext = createContext();
 
@@ -42,6 +49,9 @@ export default function LayoutClient({ children }) {
   return (
     <ThemeContext.Provider value={{ darkMode, toggleDarkMode }}>
       <AuthProvider>
+        {/* Onboarding Modal - Temporarily Disabled */}
+        {/* <OnboardingWrapper key="onboarding-wrapper" /> */}
+        {/* Main Content */}
         {children}
       </AuthProvider>
     </ThemeContext.Provider>

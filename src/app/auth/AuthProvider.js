@@ -24,29 +24,59 @@ export function AuthProvider({ children }) {
 
   const checkAuth = useCallback(async () => {
     if (checkingRef.current) return checkingRef.current;
-    setLoading(true);
-
+    
     const run = (async () => {
+      setLoading(true);
+      checkingRef.current = true;
+      let currentUser = null;
+      
       try {
+        console.log('Starting authentication check...');
+        
         // 1) التحقق بالكوكي أولاً
         let res = await fetch('/api/test-session', {
           method: 'GET',
           credentials: 'include',
           cache: 'no-store',
-          headers: { 'Accept': 'application/json' },
+          headers: { 
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
         });
 
+        console.log('Test session response:', res.status);
+        
         if (res.ok) {
           const data = await res.json().catch(() => ({}));
+          console.log('Session data:', data);
+          
           if (data?.authenticated && data?.user) {
-            setUser(data.user);
-            return;
+            console.log('User authenticated via session:', data.user);
+            currentUser = data.user;
+            // تعيين قيمة افتراضية لحالة الإعداد إذا لم تكن محددة
+            if (currentUser.onboarding_done === undefined) {
+              console.log('Setting default onboarding_done to false');
+              currentUser.onboarding_done = false;
+              // تحديث حالة المستخدم في الخادم
+              try {
+                await fetch('/api/onboarding', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ skip: true })
+                });
+              } catch (error) {
+                console.error('Error updating user onboarding status:', error);
+              }
+            }
+            setUser(currentUser);
+            return currentUser;
           }
         }
 
         // 2) احتياطيًا بالتوكن المحلي
         const token = readToken();
         if (token) {
+          console.log('Trying token-based authentication...');
           res = await fetch('/api/user/profile', {
             method: 'GET',
             credentials: 'include',
@@ -154,12 +184,28 @@ export function AuthProvider({ children }) {
     }
   }, [router]);
 
+  // Function to get the current token
+  const getToken = useCallback(() => {
+    return new Promise((resolve) => {
+      const token = readToken();
+      if (token) {
+        resolve(token);
+      } else {
+        // If no token, try to refresh auth state
+        checkAuth().finally(() => {
+          resolve(readToken());
+        });
+      }
+    });
+  }, [checkAuth]);
+
   const contextValue = {
     user,
     loading,
     login,
     logout,
     checkAuth,
+    getToken,
     isAuthenticated: !!user,
   };
 

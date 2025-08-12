@@ -7,7 +7,7 @@ import { CssBaseline } from "@mui/material";
 import { AuthProvider } from "./auth/AuthProvider";
 import { Providers } from "./providers";
 import { SessionProvider } from "../contexts/SessionContext";
-
+import AIChatWidget from "@/components/AI/ai";
 // Load Arabic fonts
 const tajawal = Tajawal({
   weight: ['400', '500', '700'],
@@ -56,6 +56,7 @@ export default function RootLayout({ children }) {
                     {children}
                   </main>
                 </LayoutClient>
+                <AIChatWidget />
               </CustomThemeProvider>
             </SessionProvider>
           </AuthProvider>
