@@ -1,20 +1,17 @@
 @echo off
-echo push origin/main...
+git pull origin main --rebase
+if %ERRORLEVEL% NEQ 0 (
+    echo Fix conflicts first!
+    exit /b %ERRORLEVEL%
+)
 git push origin main
-
 if %ERRORLEVEL% NEQ 0 (
-    echo error push origin/main
+    echo Error pushing to origin
     exit /b %ERRORLEVEL%
 )
-
-echo.
-echo force push xbeta/main -> ameed...
 git push --force xbeta main:ameed
-
 if %ERRORLEVEL% NEQ 0 (
-    echo error push xbeta/ameed
+    echo Error pushing to xbeta
     exit /b %ERRORLEVEL%
 )
-
-echo.
-echo done all
+echo Done.
