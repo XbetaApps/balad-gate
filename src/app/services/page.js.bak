@@ -1,0 +1,683 @@
+"use client";
+
+import React, { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  FaStore,
+  FaHome,
+  FaMapMarkedAlt,
+  FaCar,
+  FaUtensils,
+  FaBriefcase,
+  FaGraduationCap,
+  FaHospital,
+  FaClinicMedical,
+  FaTheaterMasks,
+  FaHotel,
+  FaPills,
+  FaGasPump,
+  FaShoppingBag,
+  FaGlassCheers,
+  FaTruck,
+  FaRing,
+  FaTshirt,
+  FaTools,
+  FaBook,
+  FaDumbbell,
+  FaCut,
+  FaChevronUp,
+  FaChevronDown,
+  FaPlus,
+  FaFilter,
+} from "react-icons/fa";
+
+/*************************
+ * CONSTANTS & UTILITIES *
+ *************************/
+
+export const PALESTINIAN_GOVERNORATES = [
+  "القدس",
+  "رام الله والبيرة",
+  "الخليل",
+  "نابلس",
+  "جنين",
+  "أريحا والأغوار",
+  "طوباس",
+  "طولكرم",
+  "قلقيلية",
+  "سلفيت",
+  "بيت لحم",
+  "غزة",
+  "شمال غزة",
+  "دير البلح",
+  "خان يونس",
+  "رفح",
+];
+
+const SERVICES = [
+  {
+    id: "stores",
+    title: "متاجر",
+    icon: FaStore,
+    description: "اكتشف أفضل المتاجر المحلية والعالمية في منطقتك",
+  },
+  {
+    id: "real-estate",
+    title: "عقارات",
+    icon: FaHome,
+    description: "عروض مميزة للشقق والفلل والمباني السكنية والتجارية",
+  },
+  {
+    id: "lands",
+    title: "أراضي",
+    icon: FaMapMarkedAlt,
+    description: "أراضي سكنية وتجارية بمساحات وأسعار مناسبة",
+  },
+  {
+    id: "cars",
+    title: "سيارات",
+    icon: FaCar,
+    description: "أحدث السيارات الجديدة والمستعملة بأسعار تنافسية",
+  },
+  {
+    id: "restaurants",
+    title: "مطاعم",
+    icon: FaUtensils,
+    description: "أشهى المأكولات من أفضل المطاعم في مدينتك",
+  },
+  {
+    id: "jobs",
+    title: "فرص عمل",
+    icon: FaBriefcase,
+    description: "فرص عمل شاغرة في مختلف التخصصات والمجالات",
+  },
+  {
+    id: "education",
+    title: "دورات دراسية",
+    icon: FaGraduationCap,
+    description: "معاهد ومراكز تعليمية ودورات تدريبية",
+  },
+  {
+    id: "hospitals",
+    title: "مستشفيات",
+    icon: FaHospital,
+    description: "أفضل المستشفيات والمراكز الطبية",
+  },
+  {
+    id: "clinics",
+    title: "عيادات طبية",
+    icon: FaClinicMedical,
+    description: "عيادات متخصصة وأطباء في مختلف التخصصات",
+  },
+  {
+    id: "entertainment",
+    title: "اماكن ترفيهية",
+    icon: FaTheaterMasks,
+    description: "أماكن ترفيهية وأحداث ثقافية",
+  },
+  {
+    id: "hotels",
+    title: "فنادق",
+    icon: FaHotel,
+    description: "فنادق ومنتجعات وشقق فندقية",
+  },
+  {
+    id: "pharmacies",
+    title: "صيدليات",
+    icon: FaPills,
+    description: "صيدليات ومراكز بيع الأدوية",
+  },
+  {
+    id: "gas-stations",
+    title: "محطات وقود",
+    icon: FaGasPump,
+    description: "أقرب محطات الوقود ومراكز الخدمة",
+  },
+  {
+    id: "shopping",
+    title: "مراكز تجارية",
+    icon: FaShoppingBag,
+    description: "مراكز تجارية وأسواق شعبية",
+  },
+  {
+    id: "wedding-halls",
+    title: "صالات أفراح",
+    icon: FaGlassCheers,
+    description: "أجواء مميزة لحفلات الزفاف والخطوبة",
+  },
+  {
+    id: "delivery",
+    title: "خدمات التوصيل",
+    icon: FaTruck,
+    description: "خدمات النقل والشحن",
+  },
+  {
+    id: "jewelry",
+    title: "مجوهرات وذهب",
+    icon: FaRing,
+    description: "مجوهرات ومصوغات ذهبية وفضية",
+  },
+  {
+    id: "home-appliances",
+    title: "أجهزة منزلية",
+    icon: FaTools,
+    description: "أحدث الأجهزة المنزلية",
+  },
+  {
+    id: "fashion",
+    title: "ملابس وأزياء",
+    icon: FaTshirt,
+    description: "أحدث صيحات الموضة والأزياء",
+  },
+  {
+    id: "car-maintenance",
+    title: "صيانة سيارات",
+    icon: FaTools,
+    description: "خدمات الصيانة والإصلاح",
+  },
+  {
+    id: "gifts",
+    title: "هدايا وتحف",
+    icon: FaGift,
+    description: "هدايا وتحف مميزة",
+  },
+  {
+    id: "beauty-centers",
+    title: "مراكز تجميل",
+    icon: FaCut,
+    description: "مراكز تجميل وعناية شخصية",
+  },
+  {
+    id: "gyms",
+    title: "صالات رياضية",
+    icon: FaDumbbell,
+    description: "النادي الرياضي",
+  },
+  {
+    id: "libraries",
+    title: "مكتبات",
+    icon: FaBook,
+    description: "أشهر المكتبات وأحدث الإصدارات",
+  },
+];
+
+const BUTTON_TEXTS = {
+  stores: "إضافة متجر",
+  "real-estate": "إضافة عقار",
+  lands: "إضافة أرض",
+  cars: "إضافة سيارة",
+  restaurants: "إضافة مطعم",
+  jobs: "إضافة وظيفة",
+  education: "إضافة دورة",
+  hospitals: "إضافة مستشفى",
+  clinics: "إضافة عيادة",
+  entertainment: "إضافة مكان ترفيهي",
+  hotels: "إضافة فندق",
+  pharmacies: "إضافة صيدلية",
+  "gas-stations": "إضافة محطة وقود",
+  shopping: "إضافة مركز تجاري",
+  "wedding-halls": "إضافة صالة أفراح",
+  delivery: "إضافة خدمة توصيل",
+  jewelry: "إضافة معرض مجوهرات",
+  "home-appliances": "إضافة معرض أجهزة",
+  fashion: "إضافة متجر أزياء",
+  "car-maintenance": "إضافة ورشة صيانة",
+  gifts: "إضافة متجر هدايا",
+  "beauty-centers": "إضافة مركز تجميل",
+  gyms: "إضافة نادٍ رياضي",
+  libraries: "إضافة مكتبة",
+};
+
+// Design tokens
+const COLORS = {
+  primary: {
+    light: '#FFD700',
+    DEFAULT: '#FFC107',
+    dark: '#FFA000',
+  },
+  secondary: {
+    light: '#4A6572',
+    DEFAULT: '#344955',
+    dark: '#232F34',
+  },
+  background: {
+    light: '#F9FAFB',
+    dark: '#1A202C',
+  },
+  text: {
+    light: '#2D3748',
+    dark: '#E2E8F0',
+  },
+  accent: '#F6AD55',
+};
+
+const gradient = `bg-gradient-to-br from-[${COLORS.primary.DEFAULT}] to-[${COLORS.accent}]`;
+const cardGradient = `bg-gradient-to-br from-[${COLORS.secondary.DEFAULT}] to-[${COLORS.secondary.dark}]`;
+
+/***********************
+ * REUSABLE COMPONENTS *
+ ***********************/
+
+const GovernorateFilter = ({ selected, onSelect }) => {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-10 h-10 flex items-center justify-center rounded-full bg-black text-white shadow-lg hover:scale-105 transition-transform border-2 border-amber-400"
+        title="تصفية حسب المحافظة"
+      >
+        <FaFilter />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute z-50 left-0 mt-2 w-64 max-h-80 overflow-y-auto rounded-lg bg-white dark:bg-gray-800 shadow-xl p-2 space-y-1"
+          >
+            {PALESTINIAN_GOVERNORATES.map((gov) => (
+              <button
+                key={gov}
+                className={`w-full text-right px-3 py-2 rounded-md text-sm hover:bg-amber-50 dark:hover:bg-gray-700 transition-colors ${
+                  selected === gov && "bg-amber-100 dark:bg-amber-900/50 font-semibold"
+                }`}
+                onClick={() => {
+                  onSelect(gov === selected ? "" : gov);
+                  setOpen(false);
+                }}
+              >
+                {gov}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const ServiceHeader = ({ icon: Icon, title, onAddClick, selectedGov, onSelectGov }) => (
+  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-1">
+    <div className="flex items-center gap-3 flex-wrap">
+      <div className="p-3 bg-white/90 rounded-xl shadow-lg transform transition-all duration-300 hover:scale-105">
+        <Icon className="text-2xl text-gray-800" />
+      </div>
+      <div className="space-y-1">
+        <h3 className="text-2xl font-bold text-gray-800 dark:text-white">{title}</h3>
+        {selectedGov && (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+            {selectedGov}
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectGov('');
+              }}
+              className="mr-1 ml-2 text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-200"
+            >
+              ×
+            </button>
+          </span>
+        )}
+      </div>
+    </div>
+    <div className="flex items-center gap-3">
+      <button
+        onClick={onAddClick}
+        className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white px-5 py-2.5 rounded-xl shadow-lg hover:shadow-xl hover:from-amber-600 hover:to-amber-700 transition-all duration-300 transform hover:-translate-y-0.5"
+      >
+        <FaPlus className="text-lg" />
+        <span className="font-medium">{(onAddClick && BUTTON_TEXTS[onAddClick]) ?? "إضافة"}</span>
+      </button>
+      <GovernorateFilter selected={selectedGov} onSelect={onSelectGov} />
+    </div>
+  </div>
+);
+
+const PlaceholderCard = ({ idx }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, margin: "-50px" }}
+    transition={{ duration: 0.3, delay: (idx % 8) * 0.05 }}
+    className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 dark:border-gray-700"
+  >
+    <div className="relative h-40 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 animate-pulse" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+    </div>
+    <div className="p-4">
+      <div className="h-5 w-3/4 bg-gray-200 dark:bg-gray-700 rounded mb-3 animate-pulse" />
+      <div className="h-4 w-1/2 bg-gray-100 dark:bg-gray-600 rounded animate-pulse" />
+    </div>
+    <div className="px-4 pb-4">
+      <div className="inline-block px-3 py-1 text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 rounded-full">
+        المحافظة
+      </div>
+    </div>
+  </motion.div>
+);
+
+/****************
+ * MAIN PAGE UI *
+ ****************/
+
+const ServiceCard = ({ service, onAddClick, selectedGov, onSelectGov }) => (
+  <div 
+    key={service.id}
+    className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 dark:border-gray-700"
+  >
+    <div className="p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400">
+          <service.icon className="text-2xl" />
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onAddClick(service.id)}
+            className="p-2 text-gray-500 hover:text-amber-600 dark:text-gray-400 dark:hover:text-amber-400 transition-colors"
+            title={BUTTON_TEXTS[service.id] || 'إضافة'}
+          >
+            <FaPlus />
+          </button>
+          <GovernorateFilter 
+            selected={selectedGov} 
+            onSelect={(gov) => onSelectGov(service.id, gov)} 
+          />
+        </div>
+      </div>
+      <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-1">
+        {service.title}
+      </h3>
+      <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">
+        {service.description}
+      </p>
+      {selectedGov && (
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+          <span className="text-xs px-2 py-1 bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 rounded-full">
+            {selectedGov}
+          </span>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+export default function ServicesPage() {
+  const [currentService, setCurrentService] = useState(null);
+  const [filters, setFilters] = useState({});
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const onScroll = () => {
+      setShowScrollTop(window.scrollY > 400);
+    };
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  /**********************
+   * HANDLERS & HELPERS *
+   **********************/
+  const handleFilterChange = (serviceId, gov) =>
+    setFilters((prev) => ({ ...prev, [serviceId]: gov }));
+
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+
+  /*********** RENDER ***********/
+  // Filter services based on search query
+  const filteredServices = SERVICES.filter(service => 
+    service.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    service.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <header className="text-center mb-12">
+          <motion.h1 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-amber-500 to-amber-600 bg-clip-text text-transparent mb-4"
+          >
+            خدماتنا
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto"
+          >
+            اكتشف الخدمات المميزة المتاحة في منطقتك بسهولة وسرعة
+          </motion.p>
+          
+          {/* Search Bar */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="relative max-w-2xl mx-auto mt-8"
+          >
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="ابحث عن خدمة..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pr-12 pl-5 py-3.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-300 shadow-sm"
+              />
+              <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            {searchQuery && (
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 text-right">
+                {filteredServices.length} نتيجة للبحث عن: {searchQuery}
+              </p>
+            )}
+          </motion.div>
+        </header>
+
+        {/* SERVICES GRID */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {filteredServices.length > 0 ? (
+          filteredServices.map((service) => (
+            <ServiceCard
+              key={service.id}
+              service={service}
+              selectedGov={filters[service.id] || ''}
+              onAddClick={(serviceId) => setCurrentService(serviceId)}
+              onSelectGov={(serviceId, gov) => handleFilterChange(serviceId, gov)}
+            />
+          ))
+        ) : (
+          <div className="col-span-full text-center py-16">
+            <div className="mx-auto w-24 h-24 mb-4 text-gray-300 dark:text-gray-600">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">
+              لم يتم العثور على خدمات
+            </h3>
+            <p className="mt-1 text-gray-500 dark:text-gray-400">
+              لا توجد نتائج تطابق بحثك "{searchQuery}"
+            </p>
+            <button
+              onClick={() => setSearchQuery('')}
+              className="mt-4 px-6 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
+            >
+              إعادة تعيين البحث
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* SCROLL TOP BUTTON */}
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0 }}
+            onClick={scrollToTop}
+            className="fixed bottom-8 right-6 sm:right-8 bg-gradient-to-br from-amber-500 to-amber-600 text-white p-3.5 rounded-xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all z-50"
+            aria-label="عودة للأعلى"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <FaChevronUp className="text-lg" />
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* ADD MODAL */}
+      <AnimatePresence>
+        {currentService && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setCurrentService(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", damping: 22, stiffness: 300 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-gray-100 dark:border-gray-700"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+                    {BUTTON_TEXTS[currentService]}
+                  </h2>
+                  <button
+                    onClick={() => setCurrentService(null)}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 -mr-2"
+                    aria-label="إغلاق"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      الاسم
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors"
+                      placeholder="أدخل الاسم"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      الوصف
+                    </label>
+                    <textarea
+                      rows={3}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors"
+                      placeholder="أدخل وصفًا تفصيليًا"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      المحافظة
+                    </label>
+                    <select className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors">
+                      <option value="">اختر المحافظة</option>
+                      {PALESTINIAN_GOVERNORATES.map(gov => (
+                        <option key={gov} value={gov}>{gov}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      صورة (اختياري)
+                    </label>
+                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-xl">
+                      <div className="space-y-1 text-center">
+                        <svg
+                          className="mx-auto h-12 w-12 text-gray-400"
+                          stroke="currentColor"
+                          fill="none"
+                          viewBox="0 0 48 48"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                          <label
+                            htmlFor="file-upload"
+                            className="relative cursor-pointer bg-white dark:bg-gray-800 rounded-md font-medium text-amber-600 hover:text-amber-500 focus-within:outline-none"
+                          >
+                            <span>رفع صورة</span>
+                            <input id="file-upload" name="file-upload" type="file" className="sr-only" />
+                          </label>
+                          <p className="mr-1">أو اسحب وأفلت</p>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          PNG, JPG, GIF حتى 10 ميجابايت
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-6 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentService(null)}
+                    className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl hover:from-amber-600 hover:to-amber-700 transition-all shadow-md hover:shadow-lg"
+                  >
+                    إضافة
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+export default ServicesPage;

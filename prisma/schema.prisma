@@ -1,0 +1,409 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                                                       String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  serial_id                                                BigInt                 @unique @default(autoincrement())
+  email                                                    String                 @unique
+  password                                                 String?
+  name                                                     String?
+  role_id                                                  Int                    @default(2) @db.SmallInt
+  city                                                     String?
+  created_at                                               DateTime?              @default(now()) @db.Timestamptz(6)
+  phone                                                    String?
+  ads                                                      ads[]
+  comments                                                 comments[]
+  favorites                                                favorites[]
+  following                                                following[]
+  notifications                                            notifications[]
+  orders                                                   orders[]
+  reports                                                  reports[]
+  stores                                                   stores[]
+  support_messages                                         support_messages[]
+  support_threads_support_threads_assigned_admin_idTousers support_threads[]      @relation("support_threads_assigned_admin_idTousers")
+  support_threads_support_threads_user_idTousers           support_threads[]      @relation("support_threads_user_idTousers")
+  user_events                                              user_events[]
+  user_tag_follows                                         user_tag_follows[]
+  user_tag_preferences                                     user_tag_preferences[]
+  roles                                                    roles                  @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("users")
+}
+
+model Conversation {
+  id              BigInt                    @id @default(autoincrement())
+  created_at      DateTime                  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime                  @default(now()) @db.Timestamptz(6)
+  last_message_id BigInt?
+  last_message_at DateTime?                 @db.Timestamptz(6)
+  participants    ConversationParticipant[]
+  last_message    Message?                  @relation("ConversationLastMessage", fields: [last_message_id], references: [id], onUpdate: NoAction)
+  messages        Message[]                 @relation("ConversationMessages")
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id                   BigInt       @id @default(autoincrement())
+  conversation_id      BigInt
+  actor_id             String       @db.Uuid
+  actor_type           ActorType
+  last_read_message_id BigInt?
+  is_muted             Boolean?     @default(false)
+  is_archived          Boolean?     @default(false)
+  created_at           DateTime     @default(now()) @db.Timestamptz(6)
+  conversation         Conversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([conversation_id, actor_id, actor_type], map: "unique_participant")
+  @@index([actor_id, actor_type], map: "idx_conv_part_actor")
+  @@index([conversation_id], map: "idx_conv_part_conv")
+  @@map("conversation_participants")
+}
+
+model Message {
+  id              BigInt         @id @default(autoincrement())
+  conversation_id BigInt
+  sender_id       String         @db.Uuid
+  sender_type     ActorType
+  content         String
+  is_read         Boolean?       @default(false)
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime       @default(now()) @db.Timestamptz(6)
+  as_last_of      Conversation[] @relation("ConversationLastMessage")
+  conversation    Conversation   @relation("ConversationMessages", fields: [conversation_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([conversation_id, created_at], map: "idx_messages_conv_created")
+  @@index([sender_id, sender_type], map: "idx_messages_sender")
+  @@map("messages")
+}
+
+model ad_tags {
+  ad_id  String @db.Uuid
+  tag_id String @db.Uuid
+  ads    ads    @relation(fields: [ad_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tags   tags   @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([ad_id, tag_id])
+}
+
+model ads {
+  id          String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  serial_id   BigInt                   @unique @default(autoincrement())
+  user_id     String?                  @db.Uuid
+  category_id String?                  @db.Uuid
+  title       String
+  description String?
+  price       Decimal?                 @db.Decimal
+  location    Unsupported("geometry")?
+  embedding   Unsupported("vector")?
+  created_at  DateTime?                @default(now()) @db.Timestamptz(6)
+  ad_tags     ad_tags[]
+  categories  categories?              @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users       User?                    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  orders      orders[]
+
+  @@index([embedding], map: "ads_vec_idx")
+  @@index([location], map: "idx_ads_geo", type: Gist)
+}
+
+model categories {
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  serial_id        BigInt       @unique @default(autoincrement())
+  name             String
+  parent_id        String?      @db.Uuid
+  ads              ads[]
+  categories       categories?  @relation("categoriesTocategories", fields: [parent_id], references: [id], onUpdate: NoAction)
+  other_categories categories[] @relation("categoriesTocategories")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model comments {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String?   @db.Uuid
+  target_type String
+  target_id   String    @db.Uuid
+  comment     String?
+  rating      Int?
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  users       User?     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model favorites {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String    @db.Uuid
+  item_id     String    @db.Uuid
+  item_type   String
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  archived_at DateTime? @db.Timestamptz(6)
+  users       User      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, item_id, item_type], map: "unique_user_favorite")
+  @@index([user_id, item_type, archived_at], map: "idx_favorites_user")
+}
+
+model following {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  store_id   String    @db.Uuid
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  stores     stores    @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      User      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, store_id], map: "unique_user_following")
+  @@index([user_id], map: "idx_following_user")
+}
+
+model media {
+  id         String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  owner_type String
+  owner_id   String                 @db.Uuid
+  file_path  String
+  width      Int?
+  height     Int?
+  embedding  Unsupported("vector")?
+  labels     String[]
+  created_at DateTime?              @default(now()) @db.Timestamptz(6)
+
+  @@index([embedding], map: "media_vec_idx")
+}
+
+model notifications {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String?   @db.Uuid
+  content    String?
+  read       Boolean?  @default(false)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  users      User?     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model offer_tags {
+  offer_id String @db.Uuid
+  tag_id   String @db.Uuid
+  offers   offers @relation(fields: [offer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tags     tags   @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([offer_id, tag_id])
+}
+
+model offers {
+  id          String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  serial_id   BigInt                 @unique @default(autoincrement())
+  store_id    String?                @db.Uuid
+  title       String
+  description String?
+  expires_at  DateTime?              @db.Timestamptz(6)
+  embedding   Unsupported("vector")?
+  created_at  DateTime?              @default(now()) @db.Timestamptz(6)
+  offer_tags  offer_tags[]
+  stores      stores?                @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([embedding], map: "offers_vec_idx")
+}
+
+model orders {
+  id         String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  serial_id  BigInt        @unique @default(autoincrement())
+  user_id    String?       @db.Uuid
+  ad_id      String?       @db.Uuid
+  status     order_status? @default(pending)
+  created_at DateTime?     @default(now()) @db.Timestamptz(6)
+  updated_at DateTime?     @db.Timestamptz(6)
+  ads        ads?          @relation(fields: [ad_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users      User?         @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model reports {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String?   @db.Uuid
+  subject    String?
+  message    String?
+  status     String?   @default("open")
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  users      User?     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model roles {
+  id    Int    @id @default(autoincrement()) @db.SmallInt
+  name  String @unique
+  users User[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model spatial_ref_sys {
+  srid      Int     @id
+  auth_name String? @db.VarChar(256)
+  auth_srid Int?
+  srtext    String? @db.VarChar(2048)
+  proj4text String? @db.VarChar(2048)
+}
+
+model store_tags {
+  store_id String @db.Uuid
+  tag_id   String @db.Uuid
+  stores   stores @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tags     tags   @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([store_id, tag_id])
+}
+
+model stores {
+  id          String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  serial_id   BigInt                   @unique @default(autoincrement())
+  owner_id    String?                  @db.Uuid
+  name        String
+  description String?
+  location    Unsupported("geometry")?
+  created_at  DateTime?                @default(now()) @db.Timestamptz(6)
+  following   following[]
+  offers      offers[]
+  store_tags  store_tags[]
+  users       User?                    @relation(fields: [owner_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([location], map: "idx_stores_geo", type: Gist)
+}
+
+model support_messages {
+  id                                                                BigInt              @id @default(autoincrement())
+  thread_id                                                         BigInt
+  sender_id                                                         String              @db.Uuid
+  sender_type                                                       support_sender_type
+  content                                                           String
+  is_read_by_user                                                   Boolean             @default(false)
+  is_read_by_admin                                                  Boolean             @default(false)
+  created_at                                                        DateTime            @default(now()) @db.Timestamptz(6)
+  users                                                             User                @relation(fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  support_threads_support_messages_thread_idTosupport_threads       support_threads     @relation("support_messages_thread_idTosupport_threads", fields: [thread_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  support_threads_support_threads_last_message_idTosupport_messages support_threads[]   @relation("support_threads_last_message_idTosupport_messages")
+
+  @@index([thread_id, created_at], map: "idx_support_messages_created")
+  @@index([thread_id], map: "idx_support_messages_thread")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model support_threads {
+  id                                                                 BigInt             @id @default(autoincrement())
+  user_id                                                            String             @db.Uuid
+  assigned_admin_id                                                  String?            @db.Uuid
+  subject                                                            String?
+  status                                                             support_status     @default(open)
+  last_message_id                                                    BigInt?
+  last_message_at                                                    DateTime?          @db.Timestamptz(6)
+  created_at                                                         DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at                                                         DateTime           @default(now()) @db.Timestamptz(6)
+  support_messages_support_messages_thread_idTosupport_threads       support_messages[] @relation("support_messages_thread_idTosupport_threads")
+  support_messages_support_threads_last_message_idTosupport_messages support_messages?  @relation("support_threads_last_message_idTosupport_messages", fields: [last_message_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_support_threads_last_message")
+  users_support_threads_assigned_admin_idTousers                     User?              @relation("support_threads_assigned_admin_idTousers", fields: [assigned_admin_id], references: [id], onUpdate: NoAction)
+  users_support_threads_user_idTousers                               User               @relation("support_threads_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([assigned_admin_id], map: "idx_support_threads_assigned")
+  @@index([status], map: "idx_support_threads_status")
+  @@index([user_id], map: "idx_support_threads_user")
+}
+
+model tags {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                 String                 @unique
+  ad_tags              ad_tags[]
+  offer_tags           offer_tags[]
+  store_tags           store_tags[]
+  user_tag_follows     user_tag_follows[]
+  user_tag_preferences user_tag_preferences[]
+}
+
+model user_events {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String?    @db.Uuid
+  target_type String
+  target_id   String     @db.Uuid
+  event       event_type
+  metadata    Json?
+  created_at  DateTime?  @default(now()) @db.Timestamptz(6)
+  users       User?      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id, created_at(sort: Desc)], map: "idx_events_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model user_tag_follows {
+  user_id    String   @db.Uuid
+  tag_id     String   @db.Uuid
+  weight     Int      @default(1) @db.SmallInt
+  notify     Boolean  @default(true)
+  source     String   @default("manual")
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  status     String   @default("following")
+  tags       tags     @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, tag_id])
+  @@index([tag_id], map: "idx_user_tag_follows_tag_id")
+  @@index([user_id], map: "idx_user_tag_follows_user_id")
+  @@index([status, tag_id], map: "idx_utf_status_tag_id")
+  @@index([user_id, status], map: "idx_utf_user_status")
+}
+
+model user_tag_preferences {
+  user_id    String                @db.Uuid
+  tag_id     String                @db.Uuid
+  status     tag_preference_status @default(suggested)
+  created_at DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at DateTime              @default(now()) @db.Timestamptz(6)
+  tags       tags                  @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_utp_tag")
+  users      User                  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_utp_user")
+
+  @@id([user_id, tag_id])
+  @@index([tag_id, status], map: "idx_utp_tag_status")
+  @@index([user_id, status], map: "idx_utp_user_status")
+}
+
+enum ActorType {
+  user
+  store
+
+  @@map("actor_type")
+}
+
+enum event_type {
+  view
+  click
+  like
+  order
+}
+
+enum msg_sender {
+  user
+  assistant
+}
+
+enum order_status {
+  pending
+  accepted
+  rejected
+  done
+}
+
+enum support_sender_type {
+  user
+  admin
+}
+
+enum support_status {
+  open
+  pending
+  closed
+}
+
+enum tag_preference_status {
+  following
+  suggested
+  archived
+}
