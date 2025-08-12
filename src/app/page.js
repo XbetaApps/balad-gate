@@ -665,15 +665,13 @@ export default function HomePage() {
         </div>
 
         {/* Dynamic Sections */}
-        <div className="w-full pr-2">
-          <div className="max-w-7xl mx-auto">
-            {getEnabledSections().map((section) => (
-              <DynamicSection 
-                key={section.id}
-                section={section}
-              />
-            ))}
-          </div>
+        <div className="w-full">
+          {getEnabledSections().map((section) => (
+            <DynamicSection 
+              key={section.id}
+              section={section}
+            />
+          ))}
         </div>
       </div>
       
