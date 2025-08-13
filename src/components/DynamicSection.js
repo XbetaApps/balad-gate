@@ -114,34 +114,62 @@ const DynamicSection = ({ section }) => {
       if (section.id && section.title) {
         console.log('تصفية العناصر حسب الفئة:', section.title);
         
-        // البحث عن اسم الفئة المطابق في كائن categoryIcons
-        const categoryKey = Object.keys(categoryIcons).find(
-          key => categoryIcons[key].name === section.title.trim()
-        );
+        // الحصول على اسم الفئة من section.id أو البحث عن تطابق في الأسماء
+        const categoryKey = section.id in categoryIcons ? section.id : 
+          Object.keys(categoryIcons).find(
+            key => categoryIcons[key].name === section.title.trim()
+          );
         
-        if (categoryKey) {
+        if (categoryKey && categoryIcons[categoryKey]) {
           const categoryName = categoryIcons[categoryKey].name;
-          console.log('تم العثور على فئة مطابقة:', categoryName);
+          console.log('تم العثور على فئة مطابقة:', categoryName, 'مفتاح الفئة:', categoryKey);
           
           itemsData = itemsData.filter(item => {
-            const matches = item.category_name && 
-              item.category_name.trim() === categoryName;
+            // البحث عن تطابق مع أي من الحقول المحتملة للفئة
+            const itemCategory = item.category_name || item.category;
+            const matches = itemCategory && 
+              (itemCategory.trim() === categoryName || 
+               itemCategory.trim() === section.title.trim() ||
+               (item.category_id && item.category_id.toString() === section.id.toString()));
             
             if (!matches) {
               console.log('تم استبعاد العنصر:', {
                 itemId: item.id,
                 itemTitle: item.title,
-                itemCategory: item.category_name,
+                itemCategory: itemCategory,
+                categoryId: item.category_id,
                 sectionTitle: section.title,
+                sectionId: section.id,
                 expectedCategory: categoryName
+              });
+            } else {
+              console.log('تم قبول العنصر:', {
+                itemId: item.id,
+                itemTitle: item.title,
+                itemCategory: itemCategory,
+                sectionTitle: section.title,
+                sectionId: section.id
               });
             }
             
             return matches;
           });
         } else {
-          console.warn('لم يتم العثور على الفئة في categoryIcons:', section.title);
-          console.log('الفئات المتاحة:', Object.values(categoryIcons).map(c => c.name));
+          console.warn('لم يتم العثور على الفئة في categoryIcons. section.id:', section.id, 'section.title:', section.title);
+          console.log('جميع الفئات المتاحة:', Object.entries(categoryIcons).map(([key, value]) => `${key}: ${value.name}`));
+          
+          // محاولة مطابقة الفئات بشكل مرن
+          const lowercaseSectionTitle = section.title.trim().toLowerCase();
+          const foundCategory = Object.entries(categoryIcons).find(([key, value]) => 
+            value.name.toLowerCase() === lowercaseSectionTitle ||
+            key.toLowerCase() === lowercaseSectionTitle
+          );
+          
+          if (foundCategory) {
+            console.log('تم العثور على تطابق مرن:', foundCategory[0], '=', foundCategory[1].name);
+          } else {
+            console.log('لم يتم العثور على أي تطابق مرن');
+          }
         }
       }
       

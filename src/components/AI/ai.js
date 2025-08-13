@@ -11,6 +11,7 @@ import SendIcon from '@mui/icons-material/Send';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { isServiceQuestion, handleServiceQuestion } from './services.js';
 
 
 const ChatContainer = styled(Box)(({ theme }) => ({
@@ -532,29 +533,57 @@ export default function AIChatWidget() {
     );
   };
 
+  // Process user message and determine the appropriate response
+  const processUserMessage = async (userMessage) => {
+    // Check if the message is about services
+    if (isServiceQuestion(userMessage)) {
+      try {
+        // Handle service-related queries
+        const reply = await handleServiceQuestion(userMessage);
+        return { text: reply, isUser: false };
+      } catch (error) {
+        console.error('Error processing service request:', error);
+        return { 
+          text: 'عذراً، حدث خطأ أثناء معالجة طلبك. يرجى المحاولة مرة أخرى لاحقاً.', 
+          isUser: false,
+          isError: true
+        };
+      }
+    }
+    
+    // Return null if not a service question (will be handled by other logic)
+    return null;
+  };
+
   const handleSendMessage = async () => {
-    // التحقق من طلب البحث عن خدمات أولاً
-    if (isServiceSearchQuery(input)) {
-      setMessages(prev => [...prev, { text: input, isUser: true }]);
-      setInput('');
-      
-      const response = await handleServiceSearch(input);
-      setMessages(prev => [...prev, { text: response.message, isUser: false }]);
+    // Clear input immediately
+    const userInput = input.trim();
+    if (!userInput || isLoading) return;
+    
+    // Add user message immediately
+    setMessages(prev => [
+      ...prev.filter(msg => !msg.isTyping),
+      { text: userInput, isUser: true }
+    ]);
+    setInput('');
+    setIsLoading(true);
+    
+    // Process the message
+    const serviceResponse = await processUserMessage(userInput);
+    
+    if (serviceResponse) {
+      // If it's a service response, show it
+      setMessages(prev => [
+        ...prev.filter(msg => !msg.isTyping),
+        serviceResponse
+      ]);
+      setIsLoading(false);
       return;
     }
     
-    // معالجة الطلبات الأخرى...
-    if (!input.trim() || isLoading) return;
-
-    // Clear input immediately
-    const userInput = input;
-    setInput('');
-    setIsLoading(true);
-
-    // Add user message and loading indicator in one update
+    // Add loading indicator
     setMessages(prev => [
       ...prev.filter(msg => !msg.isTyping),
-      { text: userInput, isUser: true },
       { text: 'جاري معالجة طلبك...', isUser: false, isTyping: true }
     ]);
 
