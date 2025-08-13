@@ -517,6 +517,17 @@ export default function AIChatWidget() {
   };
 
   const handleSendMessage = async () => {
+    // التحقق من طلب البحث عن خدمات أولاً
+    if (isServiceSearchQuery(input)) {
+      setMessages(prev => [...prev, { text: input, isUser: true }]);
+      setInput('');
+      
+      const response = await handleServiceSearch(input);
+      setMessages(prev => [...prev, { text: response.message, isUser: false }]);
+      return;
+    }
+    
+    // معالجة الطلبات الأخرى...
     if (!input.trim() || isLoading) return;
 
     // Clear input immediately
