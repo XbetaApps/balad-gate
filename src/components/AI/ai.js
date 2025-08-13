@@ -516,6 +516,22 @@ export default function AIChatWidget() {
     );
   };
 
+  // Function to check if the message is a service search query
+  const isServiceSearchQuery = (text) => {
+    if (!text) return false;
+    
+    const textLower = text.toLowerCase();
+    const serviceKeywords = [
+      'خدمات', 'خدمة', 'بحث عن خدمات', 'أريد خدمة', 'عاوز خدمة',
+      'services', 'service', 'search for services', 'i need a service',
+      'service search', 'find services', 'service provider', 'مزود خدمة'
+    ];
+
+    return serviceKeywords.some(keyword => 
+      textLower.includes(keyword.toLowerCase())
+    );
+  };
+
   const handleSendMessage = async () => {
     // التحقق من طلب البحث عن خدمات أولاً
     if (isServiceSearchQuery(input)) {
