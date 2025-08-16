@@ -1,11 +1,8 @@
 'use client';
 
-import { SessionProvider } from 'next-auth/react';
+// Removed NextAuth SessionProvider – using custom Auth system
 
 export function Providers({ children }) {
-  return (
-    <SessionProvider>
-      {children}
-    </SessionProvider>
-  );
+  return children;
+
 }

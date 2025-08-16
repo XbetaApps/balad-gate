@@ -93,7 +93,16 @@ export async function GET(req) {
 
   const q = (url.searchParams.get('q') || '').trim();
   const governorate = (url.searchParams.get('governorate') || '').trim();
-  const categoryName = (url.searchParams.get('categoryName') || '').trim();
+  // Allow multiple category names via repeated params or comma-separated values
+  const categoryNameParams = url.searchParams.getAll('categoryName');
+  const categoryNames = Array.from(
+    new Set(
+      categoryNameParams
+        .flatMap((s) => String(s || '').split(','))
+        .map((s) => s.trim())
+        .filter(Boolean)
+    )
+  );
 
   const tagsRaw = url.searchParams.getAll('tags');
   const tags = Array.from(
@@ -112,7 +121,8 @@ export async function GET(req) {
 
   if (q) { where.push(`(p.title ILIKE $${i} OR p.description ILIKE $${i})`); params.push(`%${q}%`); i++; }
   if (governorate) { where.push(`p.governorate = $${i}`); params.push(governorate); i++; }
-  if (categoryName) { where.push(`c.name = $${i}`); params.push(categoryName); i++; }
+  if (categoryNames.length === 1) { where.push(`c.name = $${i}`); params.push(categoryNames[0]); i++; }
+  else if (categoryNames.length > 1) { where.push(`c.name = ANY($${i})`); params.push(categoryNames); i++; }
   if (tags.length > 0) { where.push(`t.name = ANY($${i})`); params.push(tags); i++; }
 
   const sql = `

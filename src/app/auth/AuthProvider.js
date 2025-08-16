@@ -154,6 +154,9 @@ export function AuthProvider({ children }) {
     }
   }, [checkAuth]);
 
+  // Expose a lightweight refreshUser that simply re-runs checkAuth
+  const refreshUser = useCallback(() => checkAuth(), [checkAuth]);
+
   const logout = useCallback(async () => {
     // تنظيف محلي دائمًا
     writeToken(null);
@@ -204,6 +207,7 @@ export function AuthProvider({ children }) {
     loading,
     login,
     logout,
+    refreshUser,
     checkAuth,
     getToken,
     isAuthenticated: !!user,
