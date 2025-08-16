@@ -33,6 +33,8 @@ model User {
   user_tag_follows                                         user_tag_follows[]
   user_tag_preferences                                     user_tag_preferences[]
   roles                                                    roles                  @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  onboarding_done                                          Boolean                @default(false)
+  onboarding_done_at                                       DateTime?              @db.Timestamptz(6)
 
   @@map("users")
 }

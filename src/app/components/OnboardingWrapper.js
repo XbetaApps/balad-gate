@@ -7,62 +7,93 @@ import { useAuth } from '../auth/AuthProvider';
 export default function OnboardingWrapper() {
   const { user, loading: authLoading } = useAuth();
   const [showModal, setShowModal] = useState(false);
-  const [initialized, setInitialized] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // إذا كان التحميل لا يزال جارياً، لا تفعل شيئاً
-    if (authLoading) return;
-    
-    console.log('OnboardingWrapper - Auth state:', { 
-      hasUser: !!user,
-      userId: user?.id,
-      onboardingDone: user?.onboarding_done
-    });
-    
-    // إذا كان المستخدم مسجل الدخول
-    if (user) {
-      // إذا كانت حالة الإعداد غير معرفة أو false، اعرض النافذة
-      const shouldShow = user.onboarding_done === false || user.onboarding_done === undefined;
-      console.log('OnboardingWrapper - Should show modal:', shouldShow);
-      
-      setShowModal(shouldShow);
-    } else {
-      // إذا لم يكن المستخدم مسجل الدخول، أخفي النافذة
-      setShowModal(false);
-    }
-    
-    setInitialized(true);
-  }, [user, authLoading]);
-  
-  // لا تعرض شيئًا حتى يكتمل التحميل الأولي
-  if (authLoading || !initialized) {
-    console.log('OnboardingWrapper - Waiting for auth to initialize...');
-    return null;
-  }
+    let cancelled = false;
 
-  const handleOnboardingComplete = ({ skipped }) => {
+    async function check() {
+      // 1) ما عندنا مستخدم أو ما خلص تحميل الهوية -> لا نعرض
+      if (authLoading) {
+        console.log('[OnboardingWrapper] authLoading=true → wait');
+        return;
+      }
+      if (!user?.id) {
+        console.log('[OnboardingWrapper] no user.id → hide');
+        setShowModal(false);
+        setReady(true);
+        return;
+      }
+
+      // 2) افتراض: اعرض المودال حتى يثبت العكس
+      // هذا يمنع فترات “اختفاء” إذا تأخّر الشبك أو فشل الطلب
+      setShowModal(true);
+
+      try {
+        console.log('[OnboardingWrapper] checking /api/onboarding?action=check for user', user.id);
+        const res = await fetch('/api/onboarding?action=check', {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            'X-User-Id': user.id, // مهم جدًا
+          },
+          cache: 'no-store',
+        });
+
+        const data = await res.json().catch(() => ({}));
+        console.log('[OnboardingWrapper] check result:', res.status, data);
+
+        if (cancelled) return;
+
+        if (!res.ok) {
+          // في حال الخطأ، نظل على showModal=true
+          console.warn('[OnboardingWrapper] check failed → keep modal visible');
+          setShowModal(true);
+          setReady(true);
+          return;
+        }
+
+        // 3) منطق الإظهار: إذا كانت القيمة false أو غير موجودة → اعرض
+        const done = data?.onboarding_done === true;
+        if (!done) {
+          console.log('[OnboardingWrapper] onboarding_done=false → show modal');
+          setShowModal(true);
+        } else {
+          console.log('[OnboardingWrapper] onboarding_done=true → hide modal');
+          setShowModal(false);
+        }
+        setReady(true);
+      } catch (err) {
+        if (cancelled) return;
+        console.error('[OnboardingWrapper] check error → show modal by default:', err);
+        setShowModal(true); // الافتراضي عند الفشل: اعرض
+        setReady(true);
+      }
+    }
+
+    check();
+    return () => { cancelled = true; };
+  }, [authLoading, user?.id]);
+
+  // 4) ردّ نداءات الإنهاء من المودال
+  const handleOnboardingComplete = async ({ skipped, saved }) => {
+    console.log('[OnboardingWrapper] onDone', { skipped, saved });
     setShowModal(false);
-    // يمكنك إضافة أي إجراء إضافي هنا بعد اكتمال الإعداد
-    console.log('Onboarding completed', { skipped });
   };
 
-  if (!showModal) return null;
-  
-  console.log('OnboardingWrapper - Render:', { 
-    showModal, 
-    user: { 
-      id: user?.id, 
-      onboarding_done: user?.onboarding_done 
-    } 
-  });
+  // 5) منع الوميض أثناء التحميل
+  if (authLoading || !ready) return null;
+  if (!showModal || !user) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-          <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-        </div>
-        <OnboardingModal onDone={handleOnboardingComplete} />
+    <div className="fixed inset-0 z-[2147483647] pointer-events-none">
+      {/* نجعل الحاوية pointer-events:none ثم نعيدها للمودال نفسه */}
+      <div className="pointer-events-auto">
+        <OnboardingModal
+          open={showModal}
+          onDone={handleOnboardingComplete}
+          onClose={() => setShowModal(false)}
+        />
       </div>
     </div>
   );
