@@ -23,6 +23,34 @@ function asUuid(val) {
   return UUID_RE.test(s) ? s : null;
 }
 
+// خريطة slug -> الاسم العربي المستخدم في قاعدة البيانات للتصنيفات
+// مطابقةً لما يستخدمه الواجهة الأمامية في DynamicSection/categoryIcons
+const SLUG_TO_NAME = {
+  'commercial-stores': 'متاجر',
+  'pharmacies': 'صيدليات',
+  'jewelry': 'مجوهرات وذهب',
+  'malls': 'مراكز تجارية',
+  'restaurants': 'مطاعم',
+  'hotels': 'فنادق',
+  'cars': 'سيارات',
+  'real-estate': 'عقارات',
+  'lands': 'أراضي',
+  'jobs': 'فرص عمل',
+  'clothing': 'ملابس وأزياء',
+  'education': 'دورات دراسية',
+  'hospitals': 'مستشفيات',
+  'clinics': 'عيادات طبية',
+  'entertainment': 'أماكن ترفيهية',
+  'wedding-halls': 'صالات أفراح',
+  'transport': 'خدمات توصيل',
+  'fuel': 'محطات وقود',
+  'sports': 'صالات رياضية',
+  'books': 'مكتبات وكتب',
+  'gifts': 'هدايا وتحف',
+  'beauty': 'مراكز تجميل',
+  'health': 'صحة'
+};
+
 function getJwtSecret() {
   return (
     process.env.JWT_SECRET ||
@@ -103,6 +131,20 @@ export async function GET(req) {
         .filter(Boolean)
     )
   );
+  // Also support category slugs via 'category' param(s) and map them to Arabic names
+  const categorySlugParams = url.searchParams.getAll('category');
+  const categorySlugs = Array.from(
+    new Set(
+      categorySlugParams
+        .flatMap((s) => String(s || '').split(','))
+        .map((s) => s.trim())
+        .filter(Boolean)
+    )
+  );
+  const categoryNamesFromSlugs = categorySlugs
+    .map((slug) => SLUG_TO_NAME[slug])
+    .filter(Boolean);
+  const allCategoryNames = Array.from(new Set([...categoryNames, ...categoryNamesFromSlugs]));
 
   const tagsRaw = url.searchParams.getAll('tags');
   const tags = Array.from(
@@ -121,8 +163,8 @@ export async function GET(req) {
 
   if (q) { where.push(`(p.title ILIKE $${i} OR p.description ILIKE $${i})`); params.push(`%${q}%`); i++; }
   if (governorate) { where.push(`p.governorate = $${i}`); params.push(governorate); i++; }
-  if (categoryNames.length === 1) { where.push(`c.name = $${i}`); params.push(categoryNames[0]); i++; }
-  else if (categoryNames.length > 1) { where.push(`c.name = ANY($${i})`); params.push(categoryNames); i++; }
+  if (allCategoryNames.length === 1) { where.push(`c.name = $${i}`); params.push(allCategoryNames[0]); i++; }
+  else if (allCategoryNames.length > 1) { where.push(`c.name = ANY($${i})`); params.push(allCategoryNames); i++; }
   if (tags.length > 0) { where.push(`t.name = ANY($${i})`); params.push(tags); i++; }
 
   const sql = `
