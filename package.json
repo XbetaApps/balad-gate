@@ -12,6 +12,10 @@
   },
   "dependencies": {
     "@auth/core": "^0.40.0",
+    "@capacitor/android": "^7.4.2",
+    "@capacitor/app": "^7.0.2",
+    "@capacitor/browser": "^7.0.2",
+    "@capacitor/core": "^7.4.2",
     "@emotion/react": "^11.11.3",
     "@emotion/styled": "^11.11.0",
     "@mui/icons-material": "^5.15.6",
@@ -26,6 +30,7 @@
     "next": "14.2.30",
     "next-auth": "4.24.5",
     "next-intl": "4.3.4",
+    "next-pwa": "^5.6.0",
     "next-themes": "0.4.6",
     "node-fetch": "^2.7.0",
     "openai": "^5.9.0",
@@ -39,6 +44,7 @@
     "rss-parser": "^3.13.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.4.2",
     "@eslint/eslintrc": "^3.0.0",
     "@next/bundle-analyzer": "^15.4.2",
     "@prisma/nextjs-monorepo-workaround-plugin": "^6.12.0",
