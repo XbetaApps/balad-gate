@@ -161,7 +161,6 @@ export async function GET() {
       lastUpdated: new Date().toISOString()
     };
 
-    // Cache the result
     setCache(cacheKey, result);
 
     return NextResponse.json(result);
