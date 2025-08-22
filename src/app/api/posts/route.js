@@ -23,32 +23,32 @@ function asUuid(val) {
   return UUID_RE.test(s) ? s : null;
 }
 
-// خريطة slug -> الاسم العربي المستخدم في قاعدة البيانات للتصنيفات
-// مطابقةً لما يستخدمه الواجهة الأمامية في DynamicSection/categoryIcons
-const SLUG_TO_NAME = {
-  'commercial-stores': 'متاجر',
-  'pharmacies': 'صيدليات',
-  'jewelry': 'مجوهرات وذهب',
-  'malls': 'مراكز تجارية',
-  'restaurants': 'مطاعم',
-  'hotels': 'فنادق',
-  'cars': 'سيارات',
-  'real-estate': 'عقارات',
-  'lands': 'أراضي',
-  'jobs': 'فرص عمل',
-  'clothing': 'ملابس وأزياء',
-  'education': 'دورات دراسية',
-  'hospitals': 'مستشفيات',
-  'clinics': 'عيادات طبية',
-  'entertainment': 'أماكن ترفيهية',
-  'wedding-halls': 'صالات أفراح',
-  'transport': 'خدمات توصيل',
-  'fuel': 'محطات وقود',
-  'sports': 'صالات رياضية',
-  'books': 'مكتبات وكتب',
-  'gifts': 'هدايا وتحف',
-  'beauty': 'مراكز تجميل',
-  'health': 'صحة'
+// خريطة slug -> مجموعة الأسماء العربية المحتملة في قاعدة البيانات للتصنيف
+// هذا يسمح بدعم مرادفات متعددة (مطابقةً لما في sections.js)
+const SLUG_TO_NAMES = {
+  'commercial-stores': ['المتاجر', 'متاجر', 'محلات'],
+  'pharmacies': ['صيدليات', 'صيدلية'],
+  'jewelry': ['مجوهرات وذهب', 'مجوهرات', 'ذهب'],
+  'malls': ['مراكز تجارية', 'مجمعات تجارية', 'مولات', 'مول'],
+  'restaurants': ['مطاعم', 'مطعم'],
+  'hotels': ['فنادق', 'فندق'],
+  'cars': ['سيارات', 'سيارة'],
+  'real-estate': ['عقارات', 'عقار'],
+  'lands': ['أراضي', 'أرض'],
+  'jobs': ['فرص عمل', 'وظائف', 'وظيفة', 'عمل'],
+  'clothing': ['ملابس وأزياء', 'ملابس', 'أزياء'],
+  'education': ['دورات دراسية', 'دورات', 'كورس', 'كورسات'],
+  'hospitals': ['مستشفيات', 'مستشفى'],
+  'clinics': ['عيادات طبية', 'عيادات', 'عيادة'],
+  'entertainment': ['أماكن ترفيهية', 'ترفيه', 'أماكن ترفيه'],
+  'wedding-halls': ['صالات أفراح', 'صالات افراح', 'قاعة أفراح', 'قاعات أفراح'],
+  'transport': ['خدمات توصيل', 'توصيل'],
+  'fuel': ['محطات وقود', 'محطة وقود', 'بنزينات', 'محطات بنزين'],
+  'sports': ['صالات رياضية', 'نوادي رياضية', 'نادي رياضي', 'جيم'],
+  'books': ['مكتبات وكتب', 'مكتبات', 'كتب', 'الكتب', 'كتب ومكتبات'],
+  'gifts': ['هدايا وتحف', 'هدايا'],
+  'beauty': ['مراكز تجميل', 'صالونات تجميل', 'تجميل'],
+  'health': ['صحة']
 };
 
 function getJwtSecret() {
@@ -120,7 +120,16 @@ export async function GET(req) {
   const url = new URL(req.url);
 
   const q = (url.searchParams.get('q') || '').trim();
-  const governorate = (url.searchParams.get('governorate') || '').trim();
+  // Support multiple governorates via repeated params or comma-separated list
+  const governorateParams = url.searchParams.getAll('governorate');
+  const governorates = Array.from(
+    new Set(
+      governorateParams
+        .flatMap((s) => String(s || '').split(','))
+        .map((s) => s.trim())
+        .filter(Boolean)
+    )
+  );
   // Allow multiple category names via repeated params or comma-separated values
   const categoryNameParams = url.searchParams.getAll('categoryName');
   const categoryNames = Array.from(
@@ -131,7 +140,7 @@ export async function GET(req) {
         .filter(Boolean)
     )
   );
-  // Also support category slugs via 'category' param(s) and map them to Arabic names
+  // Also support category slugs via 'category' param(s) and map them to Arabic names (multiple variants)
   const categorySlugParams = url.searchParams.getAll('category');
   const categorySlugs = Array.from(
     new Set(
@@ -142,7 +151,7 @@ export async function GET(req) {
     )
   );
   const categoryNamesFromSlugs = categorySlugs
-    .map((slug) => SLUG_TO_NAME[slug])
+    .flatMap((slug) => SLUG_TO_NAMES[slug] || [])
     .filter(Boolean);
   const allCategoryNames = Array.from(new Set([...categoryNames, ...categoryNamesFromSlugs]));
 
@@ -162,9 +171,19 @@ export async function GET(req) {
   let i = 1;
 
   if (q) { where.push(`(p.title ILIKE $${i} OR p.description ILIKE $${i})`); params.push(`%${q}%`); i++; }
-  if (governorate) { where.push(`p.governorate = $${i}`); params.push(governorate); i++; }
-  if (allCategoryNames.length === 1) { where.push(`c.name = $${i}`); params.push(allCategoryNames[0]); i++; }
-  else if (allCategoryNames.length > 1) { where.push(`c.name = ANY($${i})`); params.push(allCategoryNames); i++; }
+  if (governorates.length > 0) {
+    // استخدم ILIKE ANY مع أنماط % لإلتقاط الصيغ المختلفة (مثال: محافظة/منطقة الوسطى)
+    const govPatterns = Array.from(new Set([
+      ...governorates,
+      ...governorates.map((g) => `%${g}%`),
+      ...governorates.map((g) => `%محافظة ${g}%`),
+      ...governorates.map((g) => `%المنطقة ${g}%`),
+    ]));
+    where.push(`p.governorate ILIKE ANY($${i})`);
+    params.push(govPatterns);
+    i++;
+  }
+  if (allCategoryNames.length > 0) { where.push(`c.name = ANY($${i})`); params.push(allCategoryNames); i++; }
   if (tags.length > 0) { where.push(`t.name = ANY($${i})`); params.push(tags); i++; }
 
   const sql = `
@@ -284,6 +303,21 @@ export async function POST(req) {
          ON CONFLICT DO NOTHING`,
         [postId, tagNames]
       );
+    }
+
+    // إنشاء إشعار للمشرفين بوجود منشور جديد بحاجة لموافقة
+    try {
+      const content = `منشور جديد بانتظار الموافقة: ${title}`;
+      await client.query(
+        `INSERT INTO public.notifications (user_id, content, read)
+         SELECT u.id, $1, false
+         FROM public.users u
+         WHERE u.role_id = 4`,
+        [content]
+      );
+    } catch (notifErr) {
+      console.error('Failed to create admin notifications for new post', notifErr);
+      // نكمل المعاملة حتى لا نمنع إنشاء المنشور في حال فشل الإشعارات
     }
 
     await client.query('COMMIT');

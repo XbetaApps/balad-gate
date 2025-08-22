@@ -36,11 +36,11 @@ const PALESTINIAN_GOVERNORATES = [
     'اراضي': 'lands',
     'أراضي': 'lands',
     // وظائف
-    'وظيفة': 'jobs',
+    'وظيفة': 'jobs',                //
     'وظائف': 'jobs',
     'عمل': 'jobs',
     // ذهب ومجوهرات
-    'ذهب': 'jewelry',
+    'ذهب': 'jewelry',               ///
     'مجوهرات': 'jewelry',
     // مراكز تجارية
     'مول': 'malls',
@@ -62,20 +62,23 @@ const PALESTINIAN_GOVERNORATES = [
     'محطات وقود': 'fuel',
     'بنزين': 'fuel',
     // توصيل
-    'توصيل': 'transport',
+    'توصيل': 'transport',                   //
     'خدمات توصيل': 'transport',
     // رياضة
-    'نادي رياضي': 'sports',
+    'نادي رياضي': 'sports',                //
     'صالات رياضية': 'sports',
+    'نوادي رياضية': 'sports',
+    'جيم': 'sports',
+    'رياضة': 'sports',
     // كتب
-    'مكتبة': 'books',
+    'مكتبة': 'books',                       //
     'مكتبات': 'books',
     'كتب': 'books',
     // هدايا
-    'هدية': 'gifts',
+    'هدية': 'gifts',                        //
     'هدايا': 'gifts',
     // ترفيه
-    'ترفيه': 'entertainment',
+    'ترفيه': 'entertainment',               //
     // صالات أفراح
     'صالة أفراح': 'wedding-halls',
     'صالات أفراح': 'wedding-halls'
@@ -98,7 +101,7 @@ const PALESTINIAN_GOVERNORATES = [
     'hospitals': 'مستشفيات',
     'clinics': 'عيادات طبية',
     'entertainment': 'أماكن ترفيهية',
-    'wedding-halls': 'صالات أفراح',
+    'wedding-halls': 'صالات افراح',
     'transport': 'خدمات توصيل',
     'fuel': 'محطات وقود',
     'sports': 'صالات رياضية',
@@ -156,27 +159,30 @@ const PALESTINIAN_GOVERNORATES = [
       const params = new URLSearchParams();
   
       if (city) {
+        // خريطة المدينة -> مرادفات المحافظة المحتملة في قاعدة البيانات
         const governorateMap = {
-          'رام الله': 'رام الله والبيرة',
-          'رام الله والبيرة': 'رام الله والبيرة',
-          'القدس': 'القدس',
-          'نابلس': 'نابلس',
-          'الخليل': 'الخليل',
-          'بيت لحم': 'بيت لحم',
-          'أريحا': 'أريحا',
-          'طولكرم': 'طولكرم',
-          'قلقيلية': 'قلقيلية',
-          'سلفيت': 'سلفيت',
-          'طوباس': 'طوباس',
-          'جنين': 'جنين',
-          'غزة': 'غزة',
-          'خان يونس': 'خان يونس',
-          'رفح': 'رفح',
-          'دير البلح': 'دير البلح'
+          'رام الله': ['رام الله', 'رام الله والبيرة'],
+          'رام الله والبيرة': ['رام الله', 'رام الله والبيرة'],
+          'القدس': ['القدس'],
+          'نابلس': ['نابلس'],
+          'الخليل': ['الخليل'],
+          'بيت لحم': ['بيت لحم'],
+          'أريحا': ['أريحا'],
+          'طولكرم': ['طولكرم'],
+          'قلقيلية': ['قلقيلية'],
+          'سلفيت': ['سلفيت'],
+          'طوباس': ['طوباس'],
+          'جنين': ['جنين'],
+          'غزة': ['غزة', 'مدينة غزة'],
+          'خان يونس': ['خان يونس', 'خانيونس'],
+          'رفح': ['رفح'],
+          // في بعض قواعد البيانات تُسجل دير البلح ضمن الوسطى
+          'دير البلح': ['دير البلح', 'الوسطى', 'المنطقة الوسطى']
         };
         const normalizedCity = city.trim();
-        const governorate = governorateMap[normalizedCity] || normalizedCity;
-        params.append('governorate', governorate);
+        const candidates = governorateMap[normalizedCity] || [normalizedCity];
+        // Send all candidates as repeated params so the backend uses ANY()
+        for (const g of candidates) params.append('governorate', g);
       }
 
       if (category) {

@@ -79,12 +79,12 @@ const SERVICE_CATEGORIES = [
     title: "خدمات تجارية",
     icon: <FaStore className="text-xl" />,
     services: [
-      { id: "stores", title: "متاجر", icon: <FaStore className="text-2xl" />, color: "bg-blue-500" },
-      { id: "malls", title: "مراكز تجارية", icon: <FaShoppingBag className="text-2xl" />, color: "bg-purple-600" },
-      { id: "restaurants", title: "مطاعم", icon: <FaUtensils className="text-2xl" />, color: "bg-purple-500" },
-      { id: "pharmacies", title: "صيدليات", icon: <FaPills className="text-2xl" />, color: "bg-red-600" },
-      { id: "jewelry", title: "مجوهرات", icon: <FaRing className="text-2xl" />, color: "bg-yellow-500" },
-      { id: "fashion", title: "أزياء", icon: <FaTshirt className="text-2xl" />, color: "bg-indigo-600" },
+      { id: "stores", title: "متاجر", icon: <FaStore className="text-2xl" />, color: "bg-amber-500" },
+      { id: "malls", title: "مراكز تجارية", icon: <FaShoppingBag className="text-2xl" />, color: "bg-amber-500" },
+      { id: "restaurants", title: "مطاعم", icon: <FaUtensils className="text-2xl" />, color: "bg-amber-500" },
+      { id: "pharmacies", title: "صيدليات", icon: <FaPills className="text-2xl" />, color: "bg-amber-500" },
+      { id: "jewelry", title: "مجوهرات", icon: <FaRing className="text-2xl" />, color: "bg-amber-500" },
+      { id: "fashion", title: "أزياء", icon: <FaTshirt className="text-2xl" />, color: "bg-amber-500" },
     ],
   },
   {
@@ -92,10 +92,10 @@ const SERVICE_CATEGORIES = [
     title: "عقارات وأراضي",
     icon: <FaHome className="text-xl" />,
     services: [
-      { id: "real-estate", title: "عقارات", icon: <FaHome className="text-2xl" />, color: "bg-green-500" },
+      { id: "real-estate", title: "عقارات", icon: <FaHome className="text-2xl" />, color: "bg-amber-500" },
       { id: "lands", title: "أراضي", icon: <FaMapMarkedAlt className="text-2xl" />, color: "bg-amber-500" },
-      { id: "hotels", title: "فنادق", icon: <FaHotel className="text-2xl" />, color: "bg-amber-600" },
-      { id: "wedding-halls", title: "صالات أفراح", icon: <FaGlassCheers className="text-2xl" />, color: "bg-pink-600" },
+      { id: "hotels", title: "فنادق", icon: <FaHotel className="text-2xl" />, color: "bg-amber-500" },
+      { id: "wedding-halls", title: "صالات أفراح", icon: <FaGlassCheers className="text-2xl" />, color: "bg-amber-500" },
     ],
   },
   {
@@ -103,9 +103,9 @@ const SERVICE_CATEGORIES = [
     title: "مركبات ومواصلات",
     icon: <FaCar className="text-xl" />,
     services: [
-      { id: "cars", title: "سيارات", icon: <FaCar className="text-2xl" />, color: "bg-red-500" },
-      { id: "gas-stations", title: "محطات وقود", icon: <FaGasPump className="text-2xl" />, color: "bg-blue-600" },
-      { id: "delivery", title: "توصيل", icon: <FaTruck className="text-2xl" />, color: "bg-green-600" },
+      { id: "cars", title: "سيارات", icon: <FaCar className="text-2xl" />, color: "bg-amber-500" },
+      { id: "gas-stations", title: "محطات وقود", icon: <FaGasPump className="text-2xl" />, color: "bg-amber-500" },
+      { id: "delivery", title: "توصيل", icon: <FaTruck className="text-2xl" />, color: "bg-amber-500" },
     ],
   },
   {
@@ -113,10 +113,10 @@ const SERVICE_CATEGORIES = [
     title: "صحة ولياقة",
     icon: <FaClinicMedical className="text-xl" />,
     services: [
-      { id: "hospitals", title: "مستشفيات", icon: <FaHospital className="text-2xl" />, color: "bg-rose-500" },
-      { id: "clinics", title: "عيادات", icon: <FaClinicMedical className="text-2xl" />, color: "bg-emerald-500" },
-      { id: "gyms", title: "نوادي رياضية", icon: <FaDumbbell className="text-2xl" />, color: "bg-red-700" },
-      { id: "beauty-centers", title: "مراكز تجميل", icon: <FaCut className="text-2xl" />, color: "bg-pink-400" },
+      { id: "hospitals", title: "مستشفيات", icon: <FaHospital className="text-2xl" />, color: "bg-amber-500" },
+      { id: "clinics", title: "عيادات", icon: <FaClinicMedical className="text-2xl" />, color: "bg-amber-500" },
+      { id: "gyms", title: "نوادي رياضية", icon: <FaDumbbell className="text-2xl" />, color: "bg-amber-500" },
+      { id: "beauty-centers", title: "مراكز تجميل", icon: <FaCut className="text-2xl" />, color: "bg-amber-500" },
     ],
   },
   {
@@ -124,8 +124,8 @@ const SERVICE_CATEGORIES = [
     title: "تعليم وتطوير",
     icon: <FaGraduationCap className="text-xl" />,
     services: [
-      { id: "courses", title: "دورات", icon: <FaGraduationCap className="text-2xl" />, color: "bg-pink-500" },
-      { id: "libraries", title: "مكتبات", icon: <FaBook className="text-2xl" />, color: "bg-amber-700" },
+      { id: "courses", title: "دورات", icon: <FaGraduationCap className="text-2xl" />, color: "bg-amber-500" },
+      { id: "libraries", title: "مكتبات", icon: <FaBook className="text-2xl" />, color: "bg-amber-500" },
     ],
   },
   {
@@ -133,9 +133,9 @@ const SERVICE_CATEGORIES = [
     title: "خدمات أخرى",
     icon: <FaBoxes className="text-xl" />,
     services: [
-      { id: "jobs", title: "وظائف", icon: <FaBriefcase className="text-2xl" />, color: "bg-indigo-500" },
-      { id: "entertainment", title: "ترفيه", icon: <FaTheaterMasks className="text-2xl" />, color: "bg-cyan-500" },
-      { id: "gifts", title: "هدايا", icon: <FaGift className="text-2xl" />, color: "bg-rose-400" },
+      { id: "jobs", title: "وظائف", icon: <FaBriefcase className="text-2xl" />, color: "bg-amber-500" },
+      { id: "entertainment", title: "ترفيه", icon: <FaTheaterMasks className="text-2xl" />, color: "bg-amber-500" },
+      { id: "gifts", title: "هدايا", icon: <FaGift className="text-2xl" />, color: "bg-amber-500" },
     ],
   },
 ];
@@ -225,7 +225,7 @@ const QUICK_ADD = [
    إضافة عرض المنشورات فقط
    (لا تغييرات على التصميم)
 ========================= */
-function PostCard({ post }) {
+function PostCard({ post, onShowDetails }) {
   const price =
     post?.price != null && post?.price !== ""
       ? Number(post.price).toLocaleString("ar-EG")
@@ -238,101 +238,70 @@ function PostCard({ post }) {
       })
     : "-";
 
-  // Get category color if available
-  const category = SERVICE_CATEGORIES.flatMap(cat => 
+  // Resolve category meta (icon/color) by id or name
+  const categoryById = SERVICE_CATEGORIES.flatMap(cat => 
     cat.services.filter(s => s.id === post.category_id)
   )[0];
+  const categoryByName = SERVICE_CATEGORIES.flatMap(cat =>
+    cat.services.filter(s => s.title === post.category_name)
+  )[0];
+  const category = categoryById || categoryByName;
   const categoryColor = category?.color || 'bg-blue-500';
 
   return (
-    <div className="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 dark:border-gray-700 flex flex-col h-full transform hover:-translate-y-1">
-      {/* Image Section */}
-      <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent z-10"></div>
-        <span className="text-gray-400 dark:text-gray-500 text-sm z-0">
-          {post.title?.charAt(0) || 'ص'}
-        </span>
-        
+    <div className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border-2 border-amber-400/80 dark:border-amber-400/60 flex flex-col h-full transform hover:-translate-y-1 hover:brightness-95 dark:hover:brightness-90">
+      {/* Header Section */}
+      <div className="relative h-40 bg-gradient-to-b from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-900/10 flex items-center justify-center overflow-hidden">
         {/* Category Badge */}
         <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-medium text-white ${categoryColor} shadow-md`}>
           {post.category_name || 'تصنيف'}
         </div>
-        
-        {/* Status Badge */}
-        <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium ${
-          post.is_visible 
-            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
-            : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-        }`}>
-          {post.is_visible ? 'ظاهر' : 'مخفي'}
+        {/* Centered category icon */}
+        <div className="z-0 text-amber-500/80">
+          {category?.icon || (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M2 5a2 2 0 012-2h2a2 2 0 012 2v10a1 1 0 01-1.447.894L4 14.118l-3.553 1.776A1 1 0 01-1 15V5a2 2 0 012-2h1z" />
+            </svg>
+          )}
         </div>
+        {/* Status Badge (optional) */}
+        
       </div>
 
       {/* Content Section */}
       <div className="p-4 flex-1 flex flex-col">
         {/* Title */}
-        <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-2 line-clamp-1">
+        <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-3 line-clamp-1">
           {post.title || 'عنوان غير محدد'}
         </h3>
-        
-        {/* Description */}
-        <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2 flex-grow">
-          {post.description || 'لا يوجد وصف متوفر'}
-        </p>
-        
-        {/* Details Grid */}
-        <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3 mb-4">
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
-              <FaMapMarkedAlt className="text-amber-500" />
-              <span className="truncate">{post.governorate || 'غير محدد'}</span>
-            </div>
-            {price && (
-              <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
-                <span className="font-medium text-amber-600 dark:text-amber-400">{price}</span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">شيكل</span>
-              </div>
-            )}
-            <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-xs col-span-2">
-              <FaClock className="text-gray-400" />
-              <span>أضيف {created}</span>
-            </div>
-          </div>
+
+        {/* Compact location row */}
+        <div className="mt-1 flex items-center gap-2 text-gray-700 dark:text-gray-300 text-sm">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+          <FaMapMarkedAlt className="text-amber-500" />
+          <span className="truncate">
+            {post.governorate || 'غير محدد'}{post.address ? `، ${post.address}` : ''}
+          </span>
         </div>
-        
-        {/* Tags */}
-        {Array.isArray(post.tags) && post.tags.length > 0 && (
-          <div className="mt-auto flex flex-wrap gap-1.5">
-            {post.tags.slice(0, 3).map((t, i) => (
-              <span 
-                key={i} 
-                className="px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs font-medium flex items-center gap-1"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                {t}
-              </span>
-            ))}
-            {post.tags.length > 3 && (
-              <span className="px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs">
-                +{post.tags.length - 3}
-              </span>
-            )}
-          </div>
-        )}
-        
+
         {/* Action Button */}
-        <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
-          <a
-            href={`/posts/${post.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+        <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => onShowDetails && onShowDetails(post)}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md"
           >
-            عرض التفاصيل
+            عرض المزيد
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
-          </a>
+          </button>
+          {price && (
+            <div className="flex items-center gap-1 text-amber-700 dark:text-amber-400">
+              <span className="font-semibold">{price}</span>
+              <span className="text-xs">شيكل</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -348,6 +317,8 @@ function ServicePosts({ serviceId, governorate, search }) {
   const [loading, setLoading] = useState(false);
   const [firstLoaded, setFirstLoaded] = useState(false);
   const [error, setError] = useState(null);
+  const [openDetails, setOpenDetails] = useState(false);
+  const [selectedPost, setSelectedPost] = useState(null);
 
   const limit = 8;
   const hasMore = items.length < total;
@@ -396,8 +367,18 @@ function ServicePosts({ serviceId, governorate, search }) {
     fetchPage(1);
   }, [fetchPage]);
 
+  const handleShowDetails = useCallback((post) => {
+    setSelectedPost(post || null);
+    setOpenDetails(true);
+  }, []);
+
+  const handleCloseDetails = useCallback(() => {
+    setOpenDetails(false);
+    setSelectedPost(null);
+  }, []);
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+    <div className="rounded-xl shadow p-6">
       {!firstLoaded && loading && (
         <div className="py-8 text-center text-gray-600 dark:text-gray-300">جارٍ التحميل...</div>
       )}
@@ -417,7 +398,7 @@ function ServicePosts({ serviceId, governorate, search }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {items.map((post) => (
               <div key={post.id} className="h-full">
-                <PostCard post={post} />
+                <PostCard post={post} onShowDetails={handleShowDetails} />
               </div>
             ))}
           </div>
@@ -456,6 +437,153 @@ function ServicePosts({ serviceId, governorate, search }) {
               </div>
             )}
           </div>
+
+          {/* Details Modal */}
+          <Dialog
+            open={openDetails}
+            onClose={handleCloseDetails}
+            fullWidth
+            maxWidth="md"
+            PaperProps={{ className: "bg-white text-gray-900 dark:bg-gray-900 dark:text-white" }}
+          >
+            <DialogTitle className="!pb-2 dark:text-white">
+              <div className="flex items-center justify-between gap-3">
+                {/* Title on the right for RTL */}
+                <span className="ms-auto font-bold line-clamp-1 dark:text-white">
+                  تفاصيل الإعلان
+                </span>
+                <button onClick={handleCloseDetails} className="me-auto p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-white/10">
+                  <FaTimes />
+                </button>
+              </div>
+            </DialogTitle>
+            <DialogContent dividers className="dark:text-white">
+              {selectedPost && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {/* Left column: textual details */}
+                  <div className="order-2 sm:order-1 space-y-5">
+                    {/* Title and small category pill */}
+                    <div>
+                      <h3 className="text-xl font-bold dark:text-white">{selectedPost.title}</h3>
+                      {selectedPost.category_name && (
+                        <div className="mt-1 flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-white">
+                            {selectedPost.category_name}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Price badge */}
+                    {selectedPost.price != null && selectedPost.price !== '' && (
+                      <div className="rounded-lg px-4 py-3 inline-flex items-center gap-2 bg-amber-50 text-gray-800 dark:bg-white/10 dark:text-white">
+                        <span className="text-sm dark:text-white">السعر</span>
+                        <span className="font-extrabold text-amber-600 dark:text-white text-lg">
+                          {Number(selectedPost.price).toLocaleString('ar-EG')}
+                        </span>
+                        <span className="text-sm dark:text-white">₪</span>
+                      </div>
+                    )}
+
+                    {/* Location */}
+                    <div className="flex items-center">
+                      <div className="w-full rounded-lg bg-gray-100 text-gray-700 px-3 py-2 flex items-center gap-2 dark:bg-white/5 dark:text-white">
+                        <FaMapMarkedAlt className="text-amber-500 shrink-0" />
+                        <span className="font-medium dark:text-white">الموقع:</span>
+                        <span className="truncate">
+                          {selectedPost.governorate || 'غير محدد'}{selectedPost.address ? ` - ${selectedPost.address}` : ''}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Created date */}
+                    <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-white">
+                      <FaClock className="text-gray-400 dark:text-white/70" />
+                      <span>
+                        نُشر في {selectedPost.created_at ? new Date(selectedPost.created_at).toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' }) : '-'}
+                      </span>
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <h4 className="font-semibold mb-2 dark:text-white">تفاصيل الإعلان:</h4>
+                      <p className="leading-7 whitespace-pre-line text-gray-700 dark:text-white/90">
+                        {selectedPost.description || 'لا يوجد تفاصيل إضافية'}
+                      </p>
+                    </div>
+
+                    {/* Contact Info */}
+                    <div className="pt-2 border-t border-gray-100 dark:border-white/10 ">
+                      <h4 className="font-semibold mb-2 dark:text-white">معلومات الاتصال:</h4>
+                      <div className="space-y-1 text-gray-700 dark:text-white">
+                        {selectedPost.phone && (
+                          <div>☎️ {selectedPost.phone}</div>
+                        )}
+                        {selectedPost.working_hours && (
+                          <div>⏰ {selectedPost.working_hours}</div>
+                        )}
+                        {selectedPost.website && (
+                          <div className="truncate">🌐 <a className="text-amber-600 hover:underline dark:text-white" href={selectedPost.website} target="_blank" rel="noreferrer noopener">{selectedPost.website}</a></div>
+                        )}
+                        {!selectedPost.phone && !selectedPost.website && !selectedPost.working_hours && (
+                          <div className="text-gray-500 dark:text-white/80 text-sm flex flex-col gap-2">
+                            <button
+                              type="button"
+                              onClick={() => { window.location.href = '/profile?section=chat'; }}
+                              className="self-start inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium shadow-sm"
+                            >
+                              ابدأ دردشة
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                                <path d="M2.25 12c0-5.108 4.142-9.25 9.25-9.25s9.25 4.142 9.25 9.25-4.142 9.25-9.25 9.25a9.19 9.19 0 01-4.017-.913l-3.493.88a.75.75 0 01-.916-.916l.88-3.493A9.19 9.19 0 012.25 12zm6.5-1.25a1 1 0 100 2h6.5a1 1 0 100-2H8.75z" />
+                              </svg>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Tags */}
+                    {Array.isArray(selectedPost.tags) && selectedPost.tags.length > 0 && (
+                      <div className="pt-2 border-t border-gray-100 dark:border-white/10 ">
+                        <h4 className="font-semibold mb-2 dark:text-white">تاغات</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedPost.tags.map((t, i) => (
+                            <span key={i} className="px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 text-xs dark:bg-white/10 dark:text-white">
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right column: image placeholder */}
+                  <div className="order-1 sm:order-2">
+                    <div className="w-full h-56 sm:h-64 rounded-xl bg-gray-100 dark:bg-gray-700/50 flex items-center justify-center">
+                      {(() => {
+                        const byId = SERVICE_CATEGORIES.flatMap(cat => cat.services.filter(s => s.id === selectedPost?.category_id))[0];
+                        const byName = SERVICE_CATEGORIES.flatMap(cat => cat.services.filter(s => s.title === selectedPost?.category_name))[0];
+                        const selectedCategory = byId || byName;
+                        if (selectedCategory?.icon) {
+                          return React.cloneElement(selectedCategory.icon, { className: "w-24 h-24 text-amber-500" });
+                        }
+                        return (
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12 text-gray-400">
+                            <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm0 3a1.5 1.5 0 011.5 1.5v4.5a1.5 1.5 0 01-3 0V6.75A1.5 1.5 0 0112 5.25zm0 9a1.5 1.5 0 100 3h.008a1.5 1.5 0 100-3H12z" clipRule="evenodd" />
+                          </svg>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseDetails} variant="contained" color="warning">
+                إغلاق
+              </Button>
+            </DialogActions>
+          </Dialog>
         </>
       )}
     </div>
@@ -484,6 +612,10 @@ export default function ServicesPage() {
   // دالة للتحقق من تسجيل الدخول مع اختبار الجلسة
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [authError, setAuthError] = useState(null);
+  // حوار التغذية الراجعة (نجاح/خطأ) بدل alert
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackTitle, setFeedbackTitle] = useState("");
+  const [feedbackMessage, setFeedbackMessage] = useState("");
   
   // تأثير للتحقق من حالة المصادقة عند التحميل
   useEffect(() => {
@@ -730,6 +862,8 @@ export default function ServicesPage() {
     }
   };
 
+  
+
   const submitForm = async (e) => {
     e.preventDefault();
 
@@ -743,7 +877,9 @@ export default function ServicesPage() {
 
     const categoryName = SERVICE_TO_CATEGORY_NAME[currentService];
     if (!categoryName) {
-      alert("تعذر تحديد التصنيف لهذه الخدمة.");
+      setFeedbackTitle("خطأ");
+      setFeedbackMessage("تعذر تحديد التصنيف لهذه الخدمة.");
+      setFeedbackOpen(true);
       return;
     }
 
@@ -785,7 +921,9 @@ export default function ServicesPage() {
             const retryData = await retry.json();
             if (!retry.ok) throw new Error(retryData.message || "فشل في إضافة المنشور");
             resetForm();
-            alert("تم إرسال منشورك للمراجعة. بانتظار موافقة الإدارة.");
+            setFeedbackTitle("تم الإرسال");
+            setFeedbackMessage("تم إرسال منشورك للمراجعة. بانتظار موافقة الإدارة.");
+            setFeedbackOpen(true);
             return;
           }
           throw new Error("انتهت صلاحية الجلسة");
@@ -800,13 +938,17 @@ export default function ServicesPage() {
       if (!res.ok) throw new Error(data?.message || `خطأ (${res.status})`);
 
       resetForm();
-      alert("تم إرسال منشورك للمراجعة. بانتظار موافقة الإدارة.");
+      setFeedbackTitle("تم الإرسال");
+      setFeedbackMessage("تم إرسال منشورك للمراجعة. بانتظار موافقة الإدارة.");
+      setFeedbackOpen(true);
     } catch (err) {
       if (err.message.includes("جلسة")) {
         setAuthError('انتهت جلستك. يرجى تسجيل الدخول مرة أخرى');
         setShowLoginPrompt(true);
       } else {
-        alert(err.message || "حدث خطأ أثناء محاولة إضافة المنشور. يرجى المحاولة مرة أخرى.");
+        setFeedbackTitle("خطأ");
+        setFeedbackMessage(err.message || "حدث خطأ أثناء محاولة إضافة المنشور. يرجى المحاولة مرة أخرى.");
+        setFeedbackOpen(true);
       }
     }
   };
@@ -1518,6 +1660,27 @@ export default function ServicesPage() {
             autoFocus
           >
             تسجيل الدخول
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* نافذة تأكيد/خطأ بعد الإرسال */}
+      <Dialog
+        open={feedbackOpen}
+        onClose={() => setFeedbackOpen(false)}
+        aria-labelledby="feedback-dialog-title"
+        aria-describedby="feedback-dialog-description"
+        dir="rtl"
+      >
+        <DialogTitle id="feedback-dialog-title">{feedbackTitle}</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="feedback-dialog-description">
+            {feedbackMessage}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setFeedbackOpen(false)} variant="contained" color="warning">
+            إغلاق
           </Button>
         </DialogActions>
       </Dialog>

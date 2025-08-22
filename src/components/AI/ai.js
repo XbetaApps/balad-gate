@@ -393,6 +393,22 @@ export default function AIChatWidget() {
   // تحميل الرسائل المحفوظة من localStorage عند التحميل الأولي
   const [messages, setMessages] = useState(() => {
     if (typeof window !== 'undefined') {
+      // محاولة تحميل آخر حالة محفوظة
+      const lastState = localStorage.getItem('LAST_CHAT_STATE');
+      if (lastState) {
+        try {
+          const parsedState = JSON.parse(lastState);
+          // التحقق من أن البيانات ليست قديمة جداً (أقل من يومين)
+          const twoDaysAgo = Date.now() - (48 * 60 * 60 * 1000);
+          if (parsedState.timestamp > twoDaysAgo && parsedState.messages?.length > 0) {
+            return parsedState.messages;
+          }
+        } catch (e) {
+          console.error('خطأ في تحميل آخر حالة دردشة:', e);
+        }
+      }
+      
+      // إذا لم تكن هناك حالة سابقة أو كانت قديمة، جلب الرسائل المحفوظة
       const saved = localStorage.getItem(CHAT_STORAGE_KEY);
       return saved ? JSON.parse(saved) : [
         { text: 'مرحباً! أنا مساعدك الذكي. كيف يمكنني مساعدتك اليوم؟', isUser: false }
@@ -405,10 +421,22 @@ export default function AIChatWidget() {
   
   // حفظ الرسائل في localStorage عند تغييرها
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && messages.length > 0) {
       localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
     }
   }, [messages]);
+
+  // حفظ آخر حالة للدردشة عند الإغلاق
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && messages.length > 0) {
+        localStorage.setItem('LAST_CHAT_STATE', JSON.stringify({
+          messages: messages,
+          timestamp: new Date().getTime()
+        }));
+      }
+    };
+  }, [isOpen, messages]);
   
   useEffect(() => {
     console.log('AIChatWidget mounted, isOpen:', isOpen);
@@ -420,6 +448,8 @@ export default function AIChatWidget() {
   const [selectedCurrency, setSelectedCurrency] = useState(null);
   const [awaitingGovernorate, setAwaitingGovernorate] = useState(false);
   const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
+  const inputContainerRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -428,6 +458,17 @@ export default function AIChatWidget() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Keep the input focused when the chat opens and scroll to bottom
+  useEffect(() => {
+    if (isOpen) {
+      // Delay to ensure the input is mounted and visible
+      setTimeout(() => {
+        inputRef.current?.focus();
+        scrollToBottom();
+      }, 100);
+    }
+  }, [isOpen]);
 
   // Add debug effect to check if component mounts
   useEffect(() => {
@@ -560,6 +601,11 @@ export default function AIChatWidget() {
     const userInput = input.trim();
     if (!userInput || isLoading) return;
     
+    // Keep the input focused
+    if (inputRef.current) {
+      inputRef.current.focus({ preventScroll: true });
+    }
+    
     // Add user message immediately
     setMessages(prev => [
       ...prev.filter(msg => !msg.isTyping),
@@ -567,6 +613,8 @@ export default function AIChatWidget() {
     ]);
     setInput('');
     setIsLoading(true);
+    // Ensure input stays focused for immediate next typing
+    setTimeout(() => inputRef.current?.focus(), 0);
     
     // Process the message
     const serviceResponse = await processUserMessage(userInput);
@@ -1506,11 +1554,23 @@ ${weatherData.city}
             </Box>
           )}
           
-          <InputContainer>
+          <InputContainer ref={inputContainerRef}>
             <TextField
               fullWidth
               variant="outlined"
               placeholder="اكتب رسالتك هنا..."
+              inputRef={inputRef}
+              autoFocus={isOpen}
+              inputProps={{
+                ref: (node) => {
+                  // Keep the ref in sync
+                  inputRef.current = node;
+                  // Focus when mounted or when chat opens
+                  if (node && isOpen) {
+                    node.focus();
+                  }
+                }
+              }}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
@@ -1528,7 +1588,14 @@ ${weatherData.city}
               InputProps={{
                 endAdornment: (
                   <IconButton 
-                    onClick={handleSendMessage}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
                     disabled={!input.trim() || isLoading}
                     color="primary"
                     sx={{ marginLeft: '8px' }}
