@@ -236,40 +236,37 @@ const PALESTINIAN_GOVERNORATES = [
         return `⚠️ عذراً، لم يتم العثور على أي بيانات${category ? ` ضمن ${SLUG_TO_NAME[category] || 'التصنيف المطلوب'}` : ''}${city ? ` في ${city}` : ''}.`;
       }
   
-      let reply = `🔍 *نتائج البحث${category ? ` عن ${SLUG_TO_NAME[category] || 'الخدمات'}` : ' عن الخدمات'}${city ? ` في ${city}` : ''}*\n`;
-      reply += `📊 العدد الإجمالي: ${services.length} عنصر\n\n`;
-      
-      services.slice(0, 20).forEach((service, index) => {
-        reply += `━━━━━━━━━━━━━━━━━━\n`;
-        reply += `🔹 *${index + 1}. ${service.title || service.name || 'خدمة بدون عنوان'}*\n\n`;
-        
-        // الموقع والمدينة
-        if (service.governorate || service.address) {
-          reply += `📍 *الموقع:*\n`;
-          if (service.governorate) reply += `   🏙️ ${service.governorate}\n`;
-          if (service.address) reply += `   🏠 ${service.address}\n`;
-          reply += '\n';
-        }
-        
-        // الوصف
-        if (service.description) {
-          reply += `📝 *الوصف:*\n${service.description}\n\n`;
-        }
-        
-        // معلومات الاتصال والسعر
-        reply += `📌 *معلومات إضافية:*\n`;
-        if (service.phone) reply += `   ☎️ ${service.phone}\n`;
-        if (service.price) reply += `   💰 *السعر:* ${service.price}\n`;
-        if (service.working_hours) reply += `   ⏰ *ساعات العمل:* ${service.working_hours}\n`;
-        if (service.website) reply += `   🌐 ${service.website}\n`;
-        
-        reply += '\n';
-      });
-  
-      if (services.length > 20) {
-        reply += `🔹 *و ${services.length - 20} خدمة إضافية...*`;
-      }
-  
+      let reply = `${category ? `  ${SLUG_TO_NAME[category] || 'الخدمات'}` : '  '}${city ? `  ${city}` : ''}*\n`;
+reply += `📊 *العدد الكلي:* ${services.length}\n\n`;
+
+services.slice(0, 15).forEach((service, index) => {
+  reply += `━━━━━━━━━━━━━━━\n`;
+  reply += `*${index + 1}. ${service.title || service.name || 'خدمة بدون عنوان'}*\n`;
+
+  // 🏙️ الموقع
+  if (service.governorate || service.address) {
+    reply += `🏙️ ${service.governorate || ''}`;
+    if (service.address) reply += ` - ${service.address}`;
+    reply += `\n`;
+  }
+
+  // 💰 السعر
+  if (service.price) {
+    reply += `💰 ${service.price}\n`;
+  }
+
+  // 📝 الوصف
+  if (service.description) {
+    reply += `📝 ${service.description.length > 150 ? service.description.slice(0, 150) + '...' : service.description}\n`;
+  }
+
+  reply += '\n';
+});
+
+if (services.length > 15) {
+  reply += `🔹 *و ${services.length - 15} خدمة إضافية...*`;
+}
+
       return reply;
   
     } catch (error) {
