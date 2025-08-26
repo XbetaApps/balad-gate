@@ -1,3 +1,4 @@
+// /app/api/posts/route.js
 export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
@@ -5,6 +6,9 @@ import { cookies } from 'next/headers';
 import { Pool } from 'pg';
 import jwt from 'jsonwebtoken';
 
+/* =========================
+   إعداد اتصال قاعدة البيانات
+========================= */
 function getPool() {
   if (!globalThis.__PG_POOL__) {
     globalThis.__PG_POOL__ = new Pool({
@@ -13,6 +17,20 @@ function getPool() {
     });
   }
   return globalThis.__PG_POOL__;
+}
+
+/* =========================
+   أدوات مساعدة
+========================= */
+// التحقق من القيم الفارغة
+function validateNoNulls(data, fields) {
+  const errors = [];
+  for (const field of fields) {
+    if (data[field] === null || data[field] === undefined) {
+      errors.push(`حقل ${field} مطلوب ولا يمكن أن يكون فارغًا`);
+    }
+  }
+  return errors.length ? errors : null;
 }
 
 const UUID_RE =
@@ -116,19 +134,32 @@ export async function GET(req) {
   if (tags.length > 0) { where.push(`t.name = ANY($${i})`); params.push(tags); i++; }
 
   const sql = `
+    WITH filtered AS (
+      SELECT
+        p.id, p.title, p.description, p.governorate, p.price,
+        p.status, p.is_visible, p.created_at, p.category_id,
+        COALESCE(p.is_anonymous, FALSE) AS is_anonymous,         -- ✅ NULL => FALSE
+        c.name AS category_name,
+        -- إخفاء معرف المستخدم إذا كان المنشور مجهولاً
+        CASE WHEN COALESCE(p.is_anonymous, FALSE) = FALSE THEN p.user_id END AS user_id
+      FROM public.posts p
+      LEFT JOIN public.categories c ON c.id = p.category_id
+      ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+      ORDER BY p.created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    )
     SELECT
-      p.id, p.title, p.description, p.governorate, p.price,
-      p.status, p.is_visible, p.created_at, p.user_id, p.category_id,
-      c.name AS category_name,
+      f.id, f.title, f.description, f.governorate, f.price,
+      f.status, f.is_visible, f.created_at, f.category_id,
+      f.is_anonymous, f.category_name, f.user_id,
       COALESCE(array_agg(DISTINCT t.name) FILTER (WHERE t.id IS NOT NULL), '{}') AS tags
-    FROM public.posts p
-    LEFT JOIN public.categories c ON c.id = p.category_id
-    LEFT JOIN public.post_tags pt ON pt.post_id = p.id
+    FROM filtered f
+    LEFT JOIN public.post_tags pt ON pt.post_id = f.id
     LEFT JOIN public.tags t ON t.id = pt.tag_id
-    ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
-    GROUP BY p.id, c.name
-    ORDER BY p.created_at DESC
-    LIMIT ${limit} OFFSET ${offset};
+    GROUP BY
+      f.id, f.title, f.description, f.governorate, f.price, f.status,
+      f.is_visible, f.created_at, f.user_id, f.category_id, f.is_anonymous, f.category_name
+    ORDER BY f.created_at DESC;
   `;
 
   const client = await pool.connect();
@@ -170,9 +201,18 @@ export async function POST(req) {
     ? [...new Set(body.tags.map((t) => (t || '').trim()).filter(Boolean))]
     : [];
 
-  if (!title || !description || !governorate || (!categoryIdInput && !categoryNameInput)) {
-    return NextResponse.json({ message: 'يرجى تعبئة العنوان والوصف والمحافظة واختيار التصنيف.' }, { status: 422 });
+  // التحقق من الحقول المطلوبة
+  if (!title || !description || !governorate) {
+    return NextResponse.json({ message: 'يرجى تعبئة جميع الحقول المطلوبة' }, { status: 422 });
   }
+  
+  // التحقق من وجود التصنيف
+  if (!categoryIdInput && !categoryNameInput) {
+    return NextResponse.json({ message: 'يجب اختيار التصنيف.' }, { status: 422 });
+  }
+  
+  // إذا كان isAnonymous يساوي null، يتم اعتباره false
+  const isAnonymous = body.isAnonymous === null ? false : Boolean(body.isAnonymous);
 
   let price = null;
   if (body.price !== null && body.price !== undefined && `${body.price}`.trim() !== '') {
@@ -190,7 +230,10 @@ export async function POST(req) {
     // حلّ التصنيف من الاسم إن لزم
     let categoryId = categoryIdInput || null;
     if (!categoryId && categoryNameInput) {
-      const cat = await client.query(`SELECT id FROM public.categories WHERE name = $1 LIMIT 1`, [categoryNameInput]);
+      const cat = await client.query(
+        `SELECT id FROM public.categories WHERE name = $1 LIMIT 1`,
+        [categoryNameInput]
+      );
       if (cat.rowCount === 0) {
         await client.query('ROLLBACK');
         return NextResponse.json({ message: 'التصنيف غير موجود.', category: categoryNameInput }, { status: 422 });
@@ -198,12 +241,12 @@ export async function POST(req) {
       categoryId = cat.rows[0].id;
     }
 
-    // إنشاء المنشور
+    // ✅ إنشاء المنشور مع is_anonymous
     const postRes = await client.query(
-      `INSERT INTO public.posts (user_id, category_id, title, description, governorate, price, status, is_visible)
-       VALUES ($1,$2,$3,$4,$5,$6,'pending', true)
+      `INSERT INTO public.posts (user_id, category_id, title, description, governorate, price, status, is_visible, is_anonymous)
+       VALUES ($1,$2,$3,$4,$5,$6,'pending', TRUE, $7)
        RETURNING id`,
-      [userId, categoryId, title, description, governorate, price]
+      [userId, categoryId, title, description, governorate, price, isAnonymous]
     );
     const postId = postRes.rows[0].id;
 
@@ -236,7 +279,7 @@ export async function POST(req) {
 
     await client.query('COMMIT');
     return NextResponse.json(
-      { id: postId, status: 'pending', message: 'تم إنشاء المنشور وبانتظار الموافقة.' },
+      { id: postId, status: 'pending', is_anonymous: isAnonymous, message: 'تم إنشاء المنشور وبانتظار الموافقة.' },
       { status: 201 }
     );
   } catch (error) {

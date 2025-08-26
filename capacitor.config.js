@@ -2,7 +2,7 @@
 const config = {
   appId: 'com.slameh.app',
   appName: 'SLAMEH',
-  webDir: 'dist',
+  webDir: '.next',
   server: {
     url: 'https://balad-gate-git-main-xbetas-projects.vercel.app',
     cleartext: false,

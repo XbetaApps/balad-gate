@@ -21,11 +21,13 @@ import {
   FaUsersCog,
   FaNewspaper,
   FaChartLine,
-  FaHeadset
+  FaHeadset,
+  FaList
 } from 'react-icons/fa';
 import UsersManagement from './components/UsersManagement';
 import PostsManagement from './components/PostsManagement';
 import AdminDashboard from './components/AdminDashboard';
+import CategoriesManagement from './components/CategoriesManagement';
 import NavItem from './components/NavItem';
 import Link from 'next/link';
 import Notifications from './components/Notifications';
@@ -533,6 +535,8 @@ export default function AccountPage() {
         return <AdminDashboard />;
       case 'adminSupport':
         return <AdminSupport />;
+      case 'categories':
+        return <CategoriesManagement />;
       case 'myPosts': // 👈 جديد
         return <UserPostsSection />;
       default:
@@ -609,6 +613,7 @@ export default function AccountPage() {
             <>
               <NavItem icon={<FaUsersCog />} label="إدارة المستخدمين" active={currentSection === 'users'} onClick={() => handleSectionClick('users')} />
               <NavItem icon={<FaNewspaper />} label="إدارة المنشورات" active={currentSection === 'posts'} onClick={() => handleSectionClick('posts')} />
+              <NavItem icon={<FaList />} label="إدارة الأقسام" active={currentSection === 'categories'} onClick={() => handleSectionClick('categories')} />
               <NavItem icon={<FaChartLine />} label="لوحة التحكم" active={currentSection === 'dashboard'} onClick={() => handleSectionClick('dashboard')} />
               <NavItem icon={<FaHeadset />} label="دعم المشرفين" active={currentSection === 'adminSupport'} onClick={() => handleSectionClick('adminSupport')} />
             </>

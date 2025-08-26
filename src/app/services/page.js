@@ -36,6 +36,7 @@ import {
   FaRing,
   FaTshirt,
   FaBook,
+  FaUser,
   FaDumbbell,
   FaCut,
   FaChevronUp,
@@ -240,9 +241,13 @@ function PostCard({ post }) {
 
   // Get category color if available
   const category = SERVICE_CATEGORIES.flatMap(cat => 
-    cat.services.filter(s => s.id === post.category_id)
-  )[0];
-  const categoryColor = category?.color || 'bg-blue-500';
+    cat.services.find(s => s.id === post.category_name)
+  ).find(Boolean);
+
+  // Determine publisher name based on anonymous status
+  const publisherName = post.is_anonymous 
+    ? "مجهول" 
+    : post.user_name || (post.user_id ? `مستخدم ${post.user_id.substring(0, 4)}` : "مستخدم");
 
   return (
     <div className="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 dark:border-gray-700 flex flex-col h-full transform hover:-translate-y-1">
@@ -254,7 +259,7 @@ function PostCard({ post }) {
         </span>
         
         {/* Category Badge */}
-        <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-medium text-white ${categoryColor} shadow-md`}>
+        <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-medium text-white ${category?.color || 'bg-blue-500'} shadow-md`}>
           {post.category_name || 'تصنيف'}
         </div>
         
@@ -283,6 +288,14 @@ function PostCard({ post }) {
         {/* Details Grid */}
         <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3 mb-4">
           <div className="grid grid-cols-2 gap-2 text-sm">
+            {/* Publisher - always show */}
+            <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300 col-span-2">
+              <FaUser className="text-blue-500" />
+              <span className="truncate">
+                {post.is_anonymous ? 'مجهول' : post.user_name || `مستخدم ${post.user_id ? post.user_id.substring(0, 4) : 'غير معروف'}`}
+              </span>
+            </div>
+            
             <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
               <FaMapMarkedAlt className="text-amber-500" />
               <span className="truncate">{post.governorate || 'غير محدد'}</span>
@@ -583,6 +596,7 @@ export default function ServicesPage() {
     description: "",
     governorate: "",
     price: "",
+    isAnonymous: false
   });
 
   // التاغات
@@ -700,6 +714,7 @@ export default function ServicesPage() {
       description: "",
       governorate: "",
       price: "",
+      isAnonymous: false
     });
     setSelectedTags([]);
     setTagQuery("");
@@ -709,40 +724,78 @@ export default function ServicesPage() {
   // دالة مساعدة للحصول على المستخدم من الطلب مع تسجيل تفصيلي
   const getCurrentUser = async () => {
     try {
-      // 1) localStorage
-      const localStorageToken = localStorage.getItem('token');
-      if (localStorageToken) return { token: localStorageToken };
-
-      // 2) cookies -> localStorage
-      const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-        const [key, value] = cookie.trim().split('=');
-        acc[key] = value;
-        return acc;
-      }, {});
-      const cookieToken = cookies.token || cookies['token'];
-      if (cookieToken) {
-        localStorage.setItem('token', cookieToken);
-        return { token: cookieToken };
+      // 1) Check if we have a valid user from auth context first
+      if (user && user.token) {
+        return { token: user.token };
       }
+
+      // 2) Try to get token from localStorage
+      let token = null;
+      if (typeof window !== 'undefined') {
+        token = localStorage.getItem('token');
+      }
+      
+      // 3) If no token in localStorage, try to get from cookies
+      if (!token && typeof document !== 'undefined') {
+        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+          const [key, value] = cookie.trim().split('=');
+          acc[key] = value;
+          return acc;
+        }, {});
+        token = cookies.token || cookies['token'] || '';
+        
+        // If found in cookies, save to localStorage for future use
+        if (token && typeof window !== 'undefined') {
+          localStorage.setItem('token', token);
+        }
+      }
+
+      // 4) If we have a token, verify it's valid
+      if (token) {
+        // Simple validation that it looks like a JWT
+        const tokenParts = token.split('.');
+        if (tokenParts.length === 3) {
+          return { token };
+        } else {
+          // Invalid token format, clean up
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('token');
+          }
+          return null;
+        }
+      }
+
       return null;
-    } catch {
+    } catch (error) {
+      console.error('Error getting current user:', error);
       return null;
     }
   };
 
   const submitForm = async (e) => {
     e.preventDefault();
+    console.log('Starting form submission...');
 
-    const currentUser = await getCurrentUser();
-    if (!currentUser || !currentUser.token) {
+    // Check if user is authenticated using the auth context
+    if (!isAuthenticated) {
+      console.log('User not authenticated - showing login prompt');
       setAuthError('يجب تسجيل الدخول أولاً');
       setShowLoginPrompt(true);
       return;
     }
-    const token = currentUser.token;
+    
+    // Get the token from the auth context
+    const token = user?.token || localStorage.getItem('token');
+    if (!token) {
+      console.error('No authentication token found');
+      setAuthError('لم يتم العثور على رمز المصادقة');
+      setShowLoginPrompt(true);
+      return;
+    }
 
     const categoryName = SERVICE_TO_CATEGORY_NAME[currentService];
     if (!categoryName) {
+      console.error('Could not determine category for service:', currentService);
       alert("تعذر تحديد التصنيف لهذه الخدمة.");
       return;
     }
@@ -751,29 +804,39 @@ export default function ServicesPage() {
       title: formData.title.trim(),
       description: formData.description?.trim() || "",
       governorate: formData.governorate || "",
-      price:
-        formData.price !== "" && formData.price !== null
-          ? Number(formData.price)
-          : null,
+      price: formData.price !== "" && formData.price !== null
+        ? Number(formData.price)
+        : null,
       categoryName,
       tags: selectedTags,
+      isAnonymous: formData.isAnonymous || false
     };
+
+    console.log('Sending payload:', JSON.stringify(payload, null, 2));
 
     try {
       const res = await fetch("/api/posts", {
         method: "POST",
+        credentials: 'include',
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify(payload),
       });
 
+      console.log('Response status:', res.status);
+      
+      const responseData = await res.json().catch(() => ({}));
+      console.log('Response data:', responseData);
+
       if (res.status === 401) {
+        console.log('Authentication required, attempting to refresh token...');
         try {
           await refreshUser();
           const again = await getCurrentUser();
           if (again?.token) {
+            console.log('Retrying with new token...');
             const retry = await fetch("/api/posts", {
               method: "POST",
               headers: {
@@ -782,27 +845,36 @@ export default function ServicesPage() {
               },
               body: JSON.stringify(payload),
             });
-            const retryData = await retry.json();
-            if (!retry.ok) throw new Error(retryData.message || "فشل في إضافة المنشور");
+            
+            const retryData = await retry.json().catch(() => ({}));
+            console.log('Retry response:', { status: retry.status, data: retryData });
+            
+            if (!retry.ok) {
+              throw new Error(retryData.message || `فشل في إضافة المنشور (${retry.status})`);
+            }
+            
             resetForm();
             alert("تم إرسال منشورك للمراجعة. بانتظار موافقة الإدارة.");
             return;
           }
           throw new Error("انتهت صلاحية الجلسة");
         } catch (err) {
+          console.error('Token refresh failed:', err);
           setAuthError('انتهت جلستك. يرجى تسجيل الدخول مرة أخرى');
           setShowLoginPrompt(true);
           return;
         }
       }
 
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.message || `خطأ (${res.status})`);
+      if (!res.ok) {
+        throw new Error(responseData.message || `خطأ في الخادم (${res.status})`);
+      }
 
       resetForm();
       alert("تم إرسال منشورك للمراجعة. بانتظار موافقة الإدارة.");
     } catch (err) {
-      if (err.message.includes("جلسة")) {
+      console.error('Submission error:', err);
+      if (err.message.includes("جلسة") || err.message.includes("انتهت")) {
         setAuthError('انتهت جلستك. يرجى تسجيل الدخول مرة أخرى');
         setShowLoginPrompt(true);
       } else {
@@ -1321,6 +1393,22 @@ export default function ServicesPage() {
                     <option key={gov}>{gov}</option>
                   ))}
                 </select>
+              </div>
+
+              {/* Anonymous Toggle */}
+              <div className="flex items-center justify-between p-2 border border-gray-200 dark:border-gray-700 rounded-md">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  نشر بشكل مجهول
+                </label>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer"
+                    checked={formData.isAnonymous}
+                    onChange={(e) => setFormData(prev => ({...prev, isAnonymous: e.target.checked}))}
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-amber-500"></div>
+                </label>
               </div>
 
               {/* التاغات */}
