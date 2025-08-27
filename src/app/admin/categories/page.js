@@ -304,18 +304,18 @@ const AdminCategories = () => {
               <TableRow>
                 <TableCell>الاسم</TableCell>
                 <TableCell>الرابط</TableCell>
-                <TableCell>الوصف</td>
-                <TableCell>الحالة</td>
-                <TableCell>الترتيب</td>
-                <TableCell>الإجراءات</td>
+                <TableCell>الوصف</TableCell>
+                <TableCell>الحالة</TableCell>
+                <TableCell>الترتيب</TableCell>
+                <TableCell>الإجراءات</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {categories.map((category) => (
                 <TableRow key={category.id}>
-                  <TableCell>{category.name}</td>
-                  <TableCell>{category.slug}</td>
-                  <TableCell>{category.description || '-'}</td>
+                  <TableCell>{category.name}</TableCell>
+                  <TableCell>{category.slug}</TableCell>
+                  <TableCell>{category.description || '-'}</TableCell>
                   <TableCell>
                     <FormControlLabel
                       control={
@@ -327,8 +327,8 @@ const AdminCategories = () => {
                       }
                       label={category.is_active ? 'نشط' : 'غير نشط'}
                     />
-                  </td>
-                  <TableCell>{category.sort_order}</td>
+                  </TableCell>
+                  <TableCell>{category.sort_order}</TableCell>
                   <TableCell>
                     <IconButton
                       color="primary"
@@ -342,7 +342,7 @@ const AdminCategories = () => {
                     >
                       <DeleteIcon />
                     </IconButton>
-                  </td>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
