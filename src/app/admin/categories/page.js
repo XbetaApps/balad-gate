@@ -327,8 +327,8 @@ const AdminCategories = () => {
                       }
                       label={category.is_active ? 'نشط' : 'غير نشط'}
                     />
-                  </td>
-                  <TableCell>{category.sort_order}</td>
+                  </TableCell>
+                  <TableCell>{category.sort_order}</TableCell>
                   <TableCell>
                     <IconButton
                       color="primary"
@@ -342,7 +342,7 @@ const AdminCategories = () => {
                     >
                       <DeleteIcon />
                     </IconButton>
-                  </td>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
