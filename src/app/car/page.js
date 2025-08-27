@@ -41,7 +41,7 @@ export default function RoadStatusPage() {
       setError(null);
     } catch (err) {
       console.error('Error fetching data:', err);
-      setError(err.message || 'حدث خطأ أثناء جلب البيانات');
+      setError(err.message || '   خطا  حدث خطأ أثناء جلب البيانات');
     } finally {
       setLoading(false);
       setIsRefreshing(false);

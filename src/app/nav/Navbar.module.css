@@ -133,3 +133,4 @@ input:checked ~ .knob  {
 @media (max-width: 420px) {
   .switch { display: none; }
 }
+

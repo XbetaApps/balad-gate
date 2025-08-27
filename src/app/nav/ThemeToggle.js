@@ -1,7 +1,7 @@
 'use client';
 
-import { useColorMode } from './theme/ThemeProvider';
 import { useState, useEffect } from 'react';
+import { useColorMode } from './theme/ThemeProvider';
 import { motion } from 'framer-motion';
 const MoonIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -24,19 +24,39 @@ const SunIcon = () => (
 );
 
 export default function ThemeToggle() {
-  const { mode, toggleColorMode } = useColorMode();
+  const { toggleColorMode } = useColorMode();
   const [mounted, setMounted] = useState(false);
-  const isDark = mode === 'dark';
+  const [isDark, setIsDark] = useState(typeof document !== 'undefined' ? document.documentElement.classList.contains('dark') : false);
 
   useEffect(() => {
     setMounted(true);
+    const handler = () => setIsDark(document.documentElement.classList.contains('dark'));
+    document.addEventListener('themeChange', handler);
+    return () => document.removeEventListener('themeChange', handler);
   }, []);
 
   if (!mounted) return null;
 
   return (
     <button
-      onClick={toggleColorMode}
+      onClick={() => {
+        if (typeof document !== 'undefined') {
+          const nowDark = !document.documentElement.classList.contains('dark');
+          // apply
+          if (nowDark) {
+            document.documentElement.classList.add('dark');
+            document.body.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+            document.body.classList.remove('dark');
+          }
+          localStorage.setItem('colorMode', nowDark ? 'dark' : 'light');
+          localStorage.setItem('darkMode', JSON.stringify(nowDark));
+          document.dispatchEvent(new CustomEvent('themeChange', { detail: { mode: nowDark ? 'dark' : 'light' } }));
+          setIsDark(nowDark);
+          toggleColorMode();
+        }
+      }}
       aria-label="Toggle Theme"
       className={`relative w-20 h-10 rounded-full transition-colors duration-300 
         ${isDark ? 'bg-gray-700' : 'bg-yellow-400'}

@@ -81,7 +81,7 @@ export async function GET(request) {
     const xml = await response.text();
     const feed = await parser.parseString(xml);
 
-    const items = (feed.items || []).slice(0, 20).map((item, index) => {
+    const items = (feed.items || []).slice(0, 1).map((item, index) => {
       const content = item.content || item.contentEncoded || item.contentSnippet || '';
       const image = item.enclosure?.url || item['media:content']?.$?.url || item['media:thumbnail']?.$?.url || extractFirstImage(content);
       const clean = content.replace(/<[^>]*>?/gm, '').replace(/\s+/g, ' ').trim();

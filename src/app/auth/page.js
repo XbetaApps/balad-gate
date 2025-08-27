@@ -102,13 +102,25 @@ export default function AuthPage() {
       const data = await res.json();
 
       if (res.ok && data.token) {
-        setSignInSuccess('تم تسجيل الدخول بنجاح! سيتم تحويلك للصفحة الرئيسية...');
-        if (typeof window !== 'undefined') localStorage.setItem('token', data.token);
-        setTimeout(() => router.push('/'), 1500);
+        setSignInSuccess('تم تسجيل الدخول بنجاح! جاري تحديث الصفحة...');
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('token', data.token);
+          // التحقق من وجود مسار محفوظ للعودة إليه
+          const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+          if (redirectPath) {
+            // حذف المسار المحفوظ بعد استخدامه
+            sessionStorage.removeItem('redirectAfterLogin');
+            window.location.href = redirectPath;
+          } else {
+            // إذا لم يكن هناك مسار محفوظ، يتم التوجيه للصفحة الرئيسية
+            window.location.href = '/';
+          }
+        }
       } else {
         setSignInError(data.error || 'فشل تسجيل الدخول');
       }
-    } catch {
+    } catch (error) {
+      console.error('Login error:', error);
       setSignInError('حدث خطأ في الاتصال بالخادم');
     } finally {
       setSignInLoading(false);

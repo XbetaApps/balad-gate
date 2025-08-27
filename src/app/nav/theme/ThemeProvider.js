@@ -6,6 +6,7 @@ import { getTheme } from './theme';
 
 export const ColorModeContext = createContext({ 
   toggleColorMode: () => {},
+  setMode: () => {},
   mode: 'light'
 });
 
@@ -17,7 +18,8 @@ export const useTheme = () => {
   return {
     mode: context.mode,
     darkMode: context.mode === 'dark',
-    toggleColorMode: context.toggleColorMode
+    toggleColorMode: context.toggleColorMode,
+    setMode: context.setMode,
   };
 };
 
@@ -28,90 +30,44 @@ export default function CustomThemeProvider({ children }) {
   const [mode, setMode] = useState('light');
   const [mounted, setMounted] = useState(false);
 
-  // Apply theme changes
-  const applyTheme = (themeMode) => {
-    const html = document.documentElement;
-    
-    if (themeMode === 'dark') {
-      html.classList.add('dark');
-      html.setAttribute('data-theme', 'dark');
-      html.style.colorScheme = 'dark';
-      document.body.style.backgroundColor = '#121212';
-    } else {
-      html.classList.remove('dark');
-      html.setAttribute('data-theme', 'light');
-      html.style.colorScheme = 'light';
-      document.body.style.backgroundColor = '#ffffff';
-    }
-    
-    // Remove any inline text colors to let Tailwind handle them
-    document.body.style.color = '';
-    
-    // Dispatch theme change event
-    document.dispatchEvent(new CustomEvent('themeChange', { 
-      detail: { mode: themeMode } 
-    }));
-  };
-
-  // Initialize theme from localStorage or system preference
   useEffect(() => {
-    // Get saved theme or use system preference
     const savedMode = localStorage.getItem('colorMode');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const initialMode = savedMode || (prefersDark ? 'dark' : 'light');
-    
-    // Apply initial theme
-    setMode(initialMode);
-    applyTheme(initialMode);
+    if (savedMode) {
+      setMode(savedMode);
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setMode('dark');
+    }
     setMounted(true);
-    
-    // Listen for system theme changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => {
-      const newMode = mediaQuery.matches ? 'dark' : 'light';
-      if (!localStorage.getItem('colorMode')) {
-        setMode(newMode);
-        applyTheme(newMode);
-      }
-    };
-    
-    mediaQuery.addEventListener('change', handleChange);
-    
-    return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  const toggleColorMode = useMemo(
-    () => ({
-      toggleColorMode: () => {
-        setMode((prevMode) => {
-          const newMode = prevMode === 'light' ? 'dark' : 'light';
-          // Save preference
-          localStorage.setItem('colorMode', newMode);
-          // Apply theme changes
-          applyTheme(newMode);
-          return newMode;
-        });
-      },
-      mode: mode,
-      darkMode: mode === 'dark',
-    }),
-    [mode]
-  );
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.toggle('dark', mode === 'dark');
+      document.body.style.backgroundColor = mode === 'dark' ? '#121212' : '#ffffff';
+      document.dispatchEvent(new CustomEvent('themeChanged', { 
+        detail: { mode },
+        bubbles: true,
+        composed: true
+      }));
+    }
+  }, [mode]);
 
-
-
-  const theme = useMemo(() => getTheme(mode), [mode]);
-
-  if (!mounted) {
-    return null; // or a loading spinner
-  }
+  const colorMode = {
+    setMode,
+    toggleColorMode: () => {
+      setMode((prevMode) => {
+        const newMode = prevMode === 'light' ? 'dark' : 'light';
+        localStorage.setItem('colorMode', newMode);
+        return newMode;
+      });
+    },
+    mode,
+    darkMode: mode === 'dark',
+  };
 
   return (
-    <ColorModeContext.Provider value={toggleColorMode}>
-      <MUIThemeProvider theme={theme}>
-        <CssBaseline enableColorScheme />
-        {children}
-      </MUIThemeProvider>
+    <ColorModeContext.Provider value={colorMode}>
+      {mounted && children}
     </ColorModeContext.Provider>
   );
 }
