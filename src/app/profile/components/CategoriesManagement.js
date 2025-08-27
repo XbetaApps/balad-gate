@@ -356,7 +356,28 @@ export default function CategoriesManagement() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ 
+      p: { xs: 0.25, sm: 1, md: 1.5 },
+      width: '100%',
+      maxWidth: '100%',
+      overflowX: 'hidden',
+      '& .MuiPaper-root': {
+        boxShadow: 'none',
+        borderRadius: 0,
+        border: 'none',
+        width: '100%',
+        maxWidth: '100%',
+        overflow: 'hidden',
+        my: { xs: 0.5, sm: 1 },
+        mx: 0,
+        px: { xs: 0.5, sm: 1 }
+      }
+    }}>
+      {/* Main Content */}
+      <Box>
+        {/* Your main content here */}
+      </Box>
+
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialog.open}
@@ -368,6 +389,24 @@ export default function CategoriesManagement() {
           sx: {
             bgcolor: isDark ? 'var(--background)' : 'background.paper',
             backgroundImage: 'none',
+            '& .MuiDialogTitle-root': {
+              textAlign: 'center', 
+              pt: 3,
+              pb: 1,
+              px: { xs: 2, sm: 3 },
+              color: isDark ? 'var(--foreground)' : 'inherit',
+              fontSize: { xs: '1.1rem', sm: '1.25rem' },
+              fontWeight: 600
+            },
+            '& .MuiDialogContent-root': {
+              px: { xs: 2, sm: 3 },
+              py: 2
+            },
+            '& .MuiDialogActions-root': {
+              px: { xs: 2, sm: 3 },
+              py: 2,
+              justifyContent: 'space-between'
+            },
             border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.12)',
             borderRadius: 2,
             boxShadow: isDark ? '0 8px 24px rgba(0, 0, 0, 0.4)' : '0 8px 24px rgba(0, 0, 0, 0.1)'
@@ -458,10 +497,12 @@ export default function CategoriesManagement() {
 
       <Box sx={{ 
         display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
         justifyContent: 'space-between', 
-        alignItems: 'center', 
-        mb: 4, 
-        p: 3,
+        alignItems: { xs: 'stretch', sm: 'center' },
+        gap: { xs: 2, sm: 0 },
+        mb: { xs: 2, sm: 3, md: 4 }, 
+        p: { xs: 2, sm: 3 },
         borderRadius: 2,
         bgcolor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
         border: '1px solid',
@@ -483,7 +524,7 @@ export default function CategoriesManagement() {
         >
           إدارة الأقسام
         </Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, width: { xs: '100%', sm: 'auto' } }}>
           <Button
             variant="outlined"
             startIcon={<RefreshIcon />}
@@ -533,19 +574,34 @@ export default function CategoriesManagement() {
       <Paper 
         elevation={0} 
         sx={{ 
-          borderRadius: 2, 
+          borderRadius: 0, 
           overflow: 'hidden', 
-          border: '1px solid',
-          borderColor: borderColor,
+          border: 'none',
           borderTop: '1px solid',
-          borderColor: borderColor,
-          bgcolor: isDark ? 'rgba(30, 30, 30, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-          boxShadow: isDark ? '0 4px 20px rgba(0, 0, 0, 0.5)' : '0 4px 20px rgba(0, 0, 0, 0.05)',
-          backdropFilter: 'blur(10px)'
+          borderBottom: '1px solid',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+          bgcolor: 'transparent',
+          boxShadow: 'none',
+          width: '100%',
+          maxWidth: '100%',
+          mx: 0
         }}
       >
-        <TableContainer>
-          <Table>
+        <TableContainer sx={{ 
+          width: '100%',
+          maxWidth: '100%',
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          '&::-webkit-scrollbar': {
+            height: '3px',
+            width: '3px'
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
+            borderRadius: '1.5px'
+          }
+        }}>
+          <Table sx={{ minWidth: '100%', tableLayout: 'auto' }}>
             <TableHead>
               <TableRow sx={{ 
                 bgcolor: 'transparent',
@@ -567,40 +623,56 @@ export default function CategoriesManagement() {
                   fontWeight: 700,
                   borderBottom: '2px solid',
                   borderColor: isDark ? 'rgba(255, 215, 0, 0.3)' : 'rgba(0, 0, 0, 0.15)',
-                  fontSize: '0.9rem',
+                  fontSize: { xs: '0.7rem', sm: '0.8rem' },
                   textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  py: 1.5
+                  letterSpacing: '0.3px',
+                  py: { xs: 0.75, sm: 1 },
+                  px: { xs: 0.5, sm: 0.75, md: 1.5 },
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
                 }}>الاسم</TableCell>
                 <TableCell sx={{ 
                   color: 'var(--text-primary)',
                   fontWeight: 700,
                   borderBottom: '2px solid',
                   borderColor: isDark ? 'rgba(255, 215, 0, 0.3)' : 'rgba(0, 0, 0, 0.15)',
-                  fontSize: '0.9rem',
+                  fontSize: { xs: '0.7rem', sm: '0.8rem' },
                   textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  py: 1.5
+                  letterSpacing: '0.3px',
+                  py: { xs: 0.75, sm: 1 },
+                  px: { xs: 0.5, sm: 0.75, md: 1.5 },
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
                 }}>القسم الأب</TableCell>
                 <TableCell sx={{ 
                   color: 'var(--text-primary)',
                   fontWeight: 700,
                   borderBottom: '2px solid',
                   borderColor: isDark ? 'rgba(255, 215, 0, 0.3)' : 'rgba(0, 0, 0, 0.15)',
-                  fontSize: '0.9rem',
+                  fontSize: { xs: '0.7rem', sm: '0.8rem' },
                   textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  py: 1.5
+                  letterSpacing: '0.3px',
+                  py: { xs: 0.75, sm: 1 },
+                  px: { xs: 0.5, sm: 0.75, md: 1.5 },
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
                 }}>الحالة</TableCell>
                 <TableCell sx={{ 
                   color: 'var(--text-primary)',
                   fontWeight: 700,
                   borderBottom: '2px solid',
                   borderColor: isDark ? 'rgba(255, 215, 0, 0.3)' : 'rgba(0, 0, 0, 0.15)',
-                  fontSize: '0.9rem',
+                  fontSize: { xs: '0.7rem', sm: '0.8rem' },
                   textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  py: 1.5
+                  letterSpacing: '0.3px',
+                  py: { xs: 0.75, sm: 1 },
+                  px: { xs: 0.5, sm: 0.75, md: 1.5 },
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
                 }}>ترتيب الفرز</TableCell>
                 <TableCell sx={{ 
                   color: 'var(--text-primary)',
@@ -611,7 +683,8 @@ export default function CategoriesManagement() {
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',
                   py: 1.5,
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  px: { xs: 1, sm: 2 }
                 }}>الإجراءات</TableCell>
               </TableRow>
             </TableHead>
@@ -659,9 +732,10 @@ export default function CategoriesManagement() {
                     }}
                   >
                     <TableCell sx={{ 
-                      py: 2, 
+                      py: { xs: 0.5, sm: 1 },
+                      px: { xs: 0.5, sm: 1 },
                       borderBottom: '1px solid', 
-                      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)'
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)'
                     }}>
                       <Typography variant="body1" fontWeight={500} sx={{ 
                         color: 'var(--text-primary)',
@@ -674,7 +748,7 @@ export default function CategoriesManagement() {
                         {category.name}
                       </Typography>
                     </TableCell>
-                    <TableCell sx={{ py: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                    <TableCell sx={{ py: 2, borderBottom: '1px solid', borderColor: 'divider', px: { xs: 1, sm: 2 } }}>
                       <Typography variant="body2" sx={{ 
                         color: 'var(--text-secondary)',
                         '&:hover': {
@@ -688,7 +762,7 @@ export default function CategoriesManagement() {
                           '--'}
                       </Typography>
                     </TableCell>
-                    <TableCell sx={{ py: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                    <TableCell sx={{ py: 2, borderBottom: '1px solid', borderColor: 'divider', px: { xs: 1, sm: 2 } }}>
                       <Chip
                         label={category.is_active ? 'نشط' : 'غير نشط'}
                         color={category.is_active ? 'success' : 'error'}
@@ -709,7 +783,7 @@ export default function CategoriesManagement() {
                         }}
                       />
                     </TableCell>
-                    <TableCell sx={{ py: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                    <TableCell sx={{ py: 2, borderBottom: '1px solid', borderColor: 'divider', px: { xs: 1, sm: 2 } }}>
                       <Typography variant="body2" sx={{ 
                         color: 'var(--text-secondary)',
                         fontWeight: 500,
@@ -718,8 +792,25 @@ export default function CategoriesManagement() {
                         {category.sort_order}
                       </Typography>
                     </TableCell>
-                    <TableCell sx={{ py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
+                    <TableCell sx={{ 
+                      py: { xs: 0.5, sm: 1 }, 
+                      px: { xs: 0.5, sm: 1 },
+                      borderBottom: '1px solid', 
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.04)',
+                      '&:last-child': {
+                        pr: { xs: 0.5, sm: 1 }
+                      }
+                    }}>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        gap: { xs: 0.5, sm: 1 },
+                        '& .MuiIconButton-root': {
+                          p: { xs: 0.5, sm: 0.75 },
+                          '& svg': {
+                            fontSize: { xs: '1rem', sm: '1.25rem' }
+                          }
+                        }
+                      }}>
                         <Tooltip title="تعديل">
                           <IconButton 
                             onClick={() => handleEdit(category)}
