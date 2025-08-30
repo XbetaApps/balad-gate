@@ -6,6 +6,10 @@ import { Pool } from 'pg';
 import { cookies as nextCookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 
+// Initialize Prisma client in a way that works with Next.js serverless functions
+const prismaGlobal = global.prisma || new (require('@prisma/client').PrismaClient)();
+if (process.env.NODE_ENV !== 'production') global.prisma = prismaGlobal;
+
 /*======================== DB ========================*/
 function getPool() {
   if (!globalThis.__PG_POOL__) {
@@ -212,8 +216,9 @@ export async function PATCH(req, context) {
   if (typeof updates?.is_visible === 'boolean') {
     valid.is_visible = updates.is_visible;
   }
-  if (updates?.rejection_reason) {
-    valid.rejection_reason = updates.rejection_reason;
+  // احتفظ بسبب الرفض حتى لو كان فارغاً
+  if (updates?.rejection_reason !== undefined) {
+    valid.rejection_reason = updates.rejection_reason || '';
   }
   if (Object.keys(valid).length === 0) {
     return NextResponse.json({ message: 'No valid updates provided' }, { status: 400 });
@@ -246,8 +251,51 @@ export async function PATCH(req, context) {
       return NextResponse.json({ message: 'Post not found' }, { status: 404 });
     }
 
+    // Send notification for both approved and rejected posts
+    if (valid.status === 'approved' || valid.status === 'rejected') {
+      try {
+        // Get post owner ID and title using the transaction client
+        const { rows: [post] } = await client.query(
+          'SELECT user_id, title FROM public.posts WHERE id = $1',
+          [postId]
+        );
+        
+        if (post && post.user_id) {
+          let message = '';
+          
+          if (valid.status === 'approved') {
+            // Fixed approval message
+            message = `تمت الموافقة على منشورك \"${post.title}\"`;
+          } else {
+            // Rejection message with optional reason
+            message = `تم رفض منشورك \"${post.title}\"`;
+            if (valid.rejection_reason && valid.rejection_reason.trim() !== '') {
+              message += ` للسبب التالي: ${valid.rejection_reason.trim()}`;
+            }
+          }
+          
+          // Insert notification within the same transaction
+          await client.query(
+            `INSERT INTO notifications (id, user_id, content, created_at, read) 
+             VALUES (gen_random_uuid(), $1, $2, NOW(), false)`,
+            [post.user_id, message]
+          );
+          
+          console.log(`Notification created for ${valid.status} post, user:`, post.user_id);
+        }
+      } catch (error) {
+        console.error('Error creating notification:', error);
+        // Continue with the transaction even if notification fails
+      }
+    }
+    
     await client.query('COMMIT');
-    return NextResponse.json({ success: true, message: 'Post updated successfully', post: rows[0] });
+    
+    return NextResponse.json({ 
+      success: true, 
+      message: 'تم تحديث حالة المنشور بنجاح',
+      post: rows[0] 
+    });
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('Error updating post:', err);

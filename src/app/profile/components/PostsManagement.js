@@ -510,7 +510,7 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
                     <TableCell>
                       <Stack spacing={0.5}>
                         <Typography fontWeight={700}>{post.title}</Typography>
-                        <Typography variant="body2" color="text.secondary" noWrap>
+                        <Typography variant="body2" sx={{ color: 'var(--muted-foreground)' }} noWrap>
                           {post.description}
                         </Typography>
                         {Array.isArray(post.tags) && post.tags.length > 0 && (
