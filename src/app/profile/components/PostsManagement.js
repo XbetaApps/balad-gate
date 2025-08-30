@@ -170,14 +170,16 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
       const desc = String(p?.description || "").toLowerCase();
       const gov = String(p?.governorate || "").toLowerCase();
       const cat = String(p?.category_name || "").toLowerCase();
-      const user = String(p?.user_name || p?.user_email || "").toLowerCase();
+      const userName = String(p?.user_name || "").toLowerCase();
+      const userEmail = String(p?.user_email || "").toLowerCase();
       const tags = Array.isArray(p?.tags) ? p.tags.join(",").toLowerCase() : "";
       return (
         title.includes(q) ||
         desc.includes(q) ||
         gov.includes(q) ||
         cat.includes(q) ||
-        user.includes(q) ||
+        userName.includes(q) ||
+        userEmail.includes(q) ||
         tags.includes(q)
       );
     });
@@ -297,6 +299,7 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
   /* Table header cells with sorting */
   const headCells = [
     { id: "title", label: "العنوان" },
+    { id: "user_name", label: "اسم المستخدم" },
     { id: "category_name", label: "التصنيف" },
     { id: "governorate", label: "المحافظة" },
     { id: "price", label: "السعر" },
@@ -386,7 +389,7 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
         </Tabs>
 
         <TextField
-          label="ابحث في العنوان/الوصف/التاغات/التصنيف/المحافظة..."
+          label="ابحث في العنوان/الوصف/التاغات/التصنيف/المحافظة/اسم المستخدم..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           fullWidth
@@ -526,8 +529,9 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
                       </Stack>
                     </TableCell>
 
-                    <TableCell>{post.category_name || "-"}</TableCell>
-                    <TableCell>{post.governorate || "-"}</TableCell>
+                    <TableCell>{post.user_name || post.user_email || '—'}</TableCell>
+                    <TableCell>{post.category_name || '—'}</TableCell>
+                    <TableCell>{post.governorate || '—'}</TableCell>
                     <TableCell>{post.price != null ? Number(post.price).toLocaleString("ar-EG") : "-"}</TableCell>
                     <TableCell>
                       {post.created_at ? new Date(post.created_at).toLocaleString("ar-EG") : "-"}
