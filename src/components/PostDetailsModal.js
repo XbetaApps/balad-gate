@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { FaTimes, FaPhone, FaMapMarkerAlt, FaCalendarAlt, FaTag, FaInfoCircle } from 'react-icons/fa';
+import { FaTimes, FaPhone, FaMapMarkerAlt, FaCalendarAlt, FaTag, FaInfoCircle ,FaUser} from 'react-icons/fa';
 
 export default function PostDetailsModal({ isOpen, onClose, post }) {
   useEffect(() => {
@@ -78,6 +78,32 @@ export default function PostDetailsModal({ isOpen, onClose, post }) {
                   </div>
                 </div>
 
+
+
+
+
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
+                  <div className="flex items-center text-gray-600 dark:text-gray-300">
+                    <FaUser className="ml-1 text-amber-500" />
+                    <span className="font-medium ml-1">الناشر:</span>
+                    <span className="mr-1">
+                      {post.is_anonymous ? 'مجهول' : (post.author_name || (post.category_name === 'خدمات' ? 'ننشر' : 'مجهول'))}
+                    </span>
+                  </div>
+                </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
                 {/* السعر */}
                 {post.price && (
                   <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg">
@@ -96,6 +122,9 @@ export default function PostDetailsModal({ isOpen, onClose, post }) {
                     <span className="mr-1">{post.governorate}</span>
                   </div>
                 </div>
+
+
+
 
                 {/* التاريخ والوقت */}
                 <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
