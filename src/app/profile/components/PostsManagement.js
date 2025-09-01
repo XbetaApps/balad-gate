@@ -8,7 +8,7 @@ import {
   Switch, FormControlLabel, Alert, Snackbar, Tooltip, Stack, CircularProgress,
   MenuItem, Select, InputLabel, FormControl, TableSortLabel
 } from "@mui/material";
-import { Edit, Delete, Visibility, Refresh } from "@mui/icons-material";
+import { Edit, Delete, Visibility, Refresh, Message } from "@mui/icons-material";
 import axios from "axios";
 
 /* ---------------- Helpers: auth & admin check ---------------- */
@@ -120,6 +120,7 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
 
   /* Snackbar */
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [isStartingChat, setIsStartingChat] = useState(false);
 
   /* Load session */
   useEffect(() => {
@@ -274,6 +275,123 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
   const showSnack = (message, severity = "success") =>
     setSnackbar({ open: true, message, severity });
   const closeSnack = () => setSnackbar((s) => ({ ...s, open: false }));
+
+  // Start or find a support conversation with a user
+  const startSupportChat = async (userId, userName) => {
+    try {
+      setIsStartingChat(true);
+      console.log('=== Starting/Retrieving support chat ===');
+      console.log('User ID:', userId);
+      console.log('User Name:', userName);
+
+      // 1. First, check if a thread already exists
+      console.log('Checking for existing thread...');
+      const checkResponse = await axios.get(`/api/support/threads?userId=${userId}`, { 
+        withCredentials: true,
+        validateStatus: status => status < 500
+      });
+
+      let threadId;
+
+      // 2. If thread exists, use it
+      if (checkResponse.data?.id || checkResponse.data?.[0]?.id) {
+        threadId = checkResponse.data.id || checkResponse.data[0].id;
+        console.log('Using existing thread:', threadId);
+      } 
+      // 3. If no thread exists, create a new one
+      else {
+        console.log('No existing thread found, creating new one...');
+        let createResponse;
+        
+        try {
+          createResponse = await axios.post(
+            '/api/support/threads',
+            {
+              targetUserId: userId,
+              firstMessage: 'مرحباً، كيف يمكنني مساعدتك اليوم؟'
+            },
+            { 
+              withCredentials: true,
+              validateStatus: () => true // Don't throw on any status code
+            }
+          );
+
+          // Log full response for debugging
+          console.log('Thread creation response:', {
+            status: createResponse.status,
+            statusText: createResponse.statusText,
+            data: createResponse.data,
+            headers: createResponse.headers,
+            config: {
+              url: createResponse.config.url,
+              method: createResponse.config.method,
+              data: createResponse.config.data
+            }
+          });
+
+          if (createResponse.status >= 400) {
+            // Try to extract error message from different response formats
+            let errorMessage = 'فشل في إنشاء محادثة جديدة';
+            
+            if (typeof createResponse.data === 'string') {
+              errorMessage = createResponse.data;
+            } else if (createResponse.data?.error) {
+              errorMessage = createResponse.data.error;
+            } else if (createResponse.data?.message) {
+              errorMessage = createResponse.data.message;
+            } else if (createResponse.data?.errors) {
+              errorMessage = JSON.stringify(createResponse.data.errors);
+            }
+            
+            const error = new Error(errorMessage);
+            error.response = createResponse;
+            throw error;
+          }
+
+          if (!createResponse.data?.id) {
+            throw new Error('لم يتم إنشاء معرف المحادثة');
+          }
+          
+          threadId = createResponse.data.id;
+          console.log('New thread created with ID:', threadId);
+          
+        } catch (error) {
+          console.error('Error creating support thread:', {
+            error: error.message,
+            response: error.response?.data,
+            stack: error.stack
+          });
+          throw error; // Re-throw to be caught by the outer catch
+        }
+      
+      }
+      
+      // 4. Redirect to the chat
+      console.log('Redirecting to chat with thread ID:', threadId);
+      window.location.href = `/support/chat?threadId=${threadId}`;
+      
+    } catch (error) {
+      console.error('=== Error in startSupportChat ===', {
+        name: error.name,
+        message: error.message,
+        response: error.response?.data,
+        stack: error.stack
+      });
+      
+      let errorMessage = 'حدث خطأ أثناء فتح المحادثة';
+      
+      if (error.response?.data?.details) {
+        console.error('Server error details:', error.response.data.details);
+        errorMessage = error.response.data.details.message || errorMessage;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      showSnack(errorMessage, 'error');
+    } finally {
+      setIsStartingChat(false);
+    }
+  };
 
   /* Auth gates */
   if (authLoading) {
@@ -529,7 +647,35 @@ export default function PostsManagement({ userData: userDataProp = null, userId 
                       </Stack>
                     </TableCell>
 
-                    <TableCell>{post.user_name || post.user_email || '—'}</TableCell>
+                    <TableCell>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <span>{post.user_name || post.user_email || '—'}</span>
+                        {post.user_id && (
+                          <Tooltip title="مراسلة المستخدم">
+                            <span>
+                              <IconButton 
+                                size="small"
+                                color="primary"
+                                disabled={isStartingChat}
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  await startSupportChat(
+                                    post.user_id, 
+                                    post.user_name || post.user_email || 'مستخدم'
+                                  );
+                                }}
+                              >
+                                {isStartingChat ? (
+                                  <CircularProgress size={20} />
+                                ) : (
+                                  <Message fontSize="small" />
+                                )}
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        )}
+                      </Stack>
+                    </TableCell>
                     <TableCell>{post.category_name || '—'}</TableCell>
                     <TableCell>{post.governorate || '—'}</TableCell>
                     <TableCell>{post.price != null ? Number(post.price).toLocaleString("ar-EG") : "-"}</TableCell>
