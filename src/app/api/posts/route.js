@@ -1,3 +1,4 @@
+// /app/api/posts/route.js
 export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
@@ -5,6 +6,9 @@ import { cookies } from 'next/headers';
 import { Pool } from 'pg';
 import jwt from 'jsonwebtoken';
 
+/* =========================
+   إعداد اتصال قاعدة البيانات
+========================= */
 function getPool() {
   if (!globalThis.__PG_POOL__) {
     globalThis.__PG_POOL__ = new Pool({
@@ -15,6 +19,20 @@ function getPool() {
   return globalThis.__PG_POOL__;
 }
 
+/* =========================
+   أدوات مساعدة
+========================= */
+// التحقق من القيم الفارغة
+function validateNoNulls(data, fields) {
+  const errors = [];
+  for (const field of fields) {
+    if (data[field] === null || data[field] === undefined) {
+      errors.push(`حقل ${field} مطلوب ولا يمكن أن يكون فارغًا`);
+    }
+  }
+  return errors.length ? errors : null;
+}
+
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -22,34 +40,6 @@ function asUuid(val) {
   const s = String(val || '').trim();
   return UUID_RE.test(s) ? s : null;
 }
-
-// خريطة slug -> مجموعة الأسماء العربية المحتملة في قاعدة البيانات للتصنيف
-// هذا يسمح بدعم مرادفات متعددة (مطابقةً لما في sections.js)
-const SLUG_TO_NAMES = {
-  'commercial-stores': ['المتاجر', 'متاجر', 'محلات'],
-  'pharmacies': ['صيدليات', 'صيدلية'],
-  'jewelry': ['مجوهرات وذهب', 'مجوهرات', 'ذهب'],
-  'malls': ['مراكز تجارية', 'مجمعات تجارية', 'مولات', 'مول'],
-  'restaurants': ['مطاعم', 'مطعم'],
-  'hotels': ['فنادق', 'فندق'],
-  'cars': ['سيارات', 'سيارة'],
-  'real-estate': ['عقارات', 'عقار'],
-  'lands': ['أراضي', 'أرض'],
-  'jobs': ['فرص عمل', 'وظائف', 'وظيفة', 'عمل'],
-  'clothing': ['ملابس وأزياء', 'ملابس', 'أزياء'],
-  'education': ['دورات دراسية', 'دورات', 'كورس', 'كورسات'],
-  'hospitals': ['مستشفيات', 'مستشفى'],
-  'clinics': ['عيادات طبية', 'عيادات', 'عيادة'],
-  'entertainment': ['أماكن ترفيهية', 'ترفيه', 'أماكن ترفيه'],
-  'wedding-halls': ['صالات أفراح', 'صالات افراح', 'قاعة أفراح', 'قاعات أفراح'],
-  'transport': ['خدمات توصيل', 'توصيل'],
-  'fuel': ['محطات وقود', 'محطة وقود', 'بنزينات', 'محطات بنزين'],
-  'sports': ['صالات رياضية', 'نوادي رياضية', 'نادي رياضي', 'جيم'],
-  'books': ['مكتبات وكتب', 'مكتبات', 'كتب', 'الكتب', 'كتب ومكتبات'],
-  'gifts': ['هدايا وتحف', 'هدايا'],
-  'beauty': ['مراكز تجميل', 'صالونات تجميل', 'تجميل'],
-  'health': ['صحة']
-};
 
 function getJwtSecret() {
   return (
@@ -120,40 +110,8 @@ export async function GET(req) {
   const url = new URL(req.url);
 
   const q = (url.searchParams.get('q') || '').trim();
-  // Support multiple governorates via repeated params or comma-separated list
-  const governorateParams = url.searchParams.getAll('governorate');
-  const governorates = Array.from(
-    new Set(
-      governorateParams
-        .flatMap((s) => String(s || '').split(','))
-        .map((s) => s.trim())
-        .filter(Boolean)
-    )
-  );
-  // Allow multiple category names via repeated params or comma-separated values
-  const categoryNameParams = url.searchParams.getAll('categoryName');
-  const categoryNames = Array.from(
-    new Set(
-      categoryNameParams
-        .flatMap((s) => String(s || '').split(','))
-        .map((s) => s.trim())
-        .filter(Boolean)
-    )
-  );
-  // Also support category slugs via 'category' param(s) and map them to Arabic names (multiple variants)
-  const categorySlugParams = url.searchParams.getAll('category');
-  const categorySlugs = Array.from(
-    new Set(
-      categorySlugParams
-        .flatMap((s) => String(s || '').split(','))
-        .map((s) => s.trim())
-        .filter(Boolean)
-    )
-  );
-  const categoryNamesFromSlugs = categorySlugs
-    .flatMap((slug) => SLUG_TO_NAMES[slug] || [])
-    .filter(Boolean);
-  const allCategoryNames = Array.from(new Set([...categoryNames, ...categoryNamesFromSlugs]));
+  const governorate = (url.searchParams.get('governorate') || '').trim();
+  const categoryName = (url.searchParams.get('categoryName') || '').trim();
 
   const tagsRaw = url.searchParams.getAll('tags');
   const tags = Array.from(
@@ -171,35 +129,37 @@ export async function GET(req) {
   let i = 1;
 
   if (q) { where.push(`(p.title ILIKE $${i} OR p.description ILIKE $${i})`); params.push(`%${q}%`); i++; }
-  if (governorates.length > 0) {
-    // استخدم ILIKE ANY مع أنماط % لإلتقاط الصيغ المختلفة (مثال: محافظة/منطقة الوسطى)
-    const govPatterns = Array.from(new Set([
-      ...governorates,
-      ...governorates.map((g) => `%${g}%`),
-      ...governorates.map((g) => `%محافظة ${g}%`),
-      ...governorates.map((g) => `%المنطقة ${g}%`),
-    ]));
-    where.push(`p.governorate ILIKE ANY($${i})`);
-    params.push(govPatterns);
-    i++;
-  }
-  if (allCategoryNames.length > 0) { where.push(`c.name = ANY($${i})`); params.push(allCategoryNames); i++; }
+  if (governorate) { where.push(`p.governorate = $${i}`); params.push(governorate); i++; }
+  if (categoryName) { where.push(`c.name = $${i}`); params.push(categoryName); i++; }
   if (tags.length > 0) { where.push(`t.name = ANY($${i})`); params.push(tags); i++; }
 
   const sql = `
+    WITH filtered AS (
+      SELECT
+        p.id, p.title, p.description, p.governorate, p.price,
+        p.status, p.is_visible, p.created_at, p.category_id,
+        COALESCE(p.is_anonymous, FALSE) AS is_anonymous,         -- ✅ NULL => FALSE
+        c.name AS category_name,
+        -- إخفاء معرف المستخدم إذا كان المنشور مجهولاً
+        CASE WHEN COALESCE(p.is_anonymous, FALSE) = FALSE THEN p.user_id END AS user_id
+      FROM public.posts p
+      LEFT JOIN public.categories c ON c.id = p.category_id
+      ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+      ORDER BY p.created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    )
     SELECT
-      p.id, p.title, p.description, p.governorate, p.price,
-      p.status, p.is_visible, p.created_at, p.user_id, p.category_id,
-      c.name AS category_name,
+      f.id, f.title, f.description, f.governorate, f.price,
+      f.status, f.is_visible, f.created_at, f.category_id,
+      f.is_anonymous, f.category_name, f.user_id,
       COALESCE(array_agg(DISTINCT t.name) FILTER (WHERE t.id IS NOT NULL), '{}') AS tags
-    FROM public.posts p
-    LEFT JOIN public.categories c ON c.id = p.category_id
-    LEFT JOIN public.post_tags pt ON pt.post_id = p.id
+    FROM filtered f
+    LEFT JOIN public.post_tags pt ON pt.post_id = f.id
     LEFT JOIN public.tags t ON t.id = pt.tag_id
-    ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
-    GROUP BY p.id, c.name
-    ORDER BY p.created_at DESC
-    LIMIT ${limit} OFFSET ${offset};
+    GROUP BY
+      f.id, f.title, f.description, f.governorate, f.price, f.status,
+      f.is_visible, f.created_at, f.user_id, f.category_id, f.is_anonymous, f.category_name
+    ORDER BY f.created_at DESC;
   `;
 
   const client = await pool.connect();
@@ -241,9 +201,18 @@ export async function POST(req) {
     ? [...new Set(body.tags.map((t) => (t || '').trim()).filter(Boolean))]
     : [];
 
-  if (!title || !description || !governorate || (!categoryIdInput && !categoryNameInput)) {
-    return NextResponse.json({ message: 'يرجى تعبئة العنوان والوصف والمحافظة واختيار التصنيف.' }, { status: 422 });
+  // التحقق من الحقول المطلوبة
+  if (!title || !description || !governorate) {
+    return NextResponse.json({ message: 'يرجى تعبئة جميع الحقول المطلوبة' }, { status: 422 });
   }
+  
+  // التحقق من وجود التصنيف
+  if (!categoryIdInput && !categoryNameInput) {
+    return NextResponse.json({ message: 'يجب اختيار التصنيف.' }, { status: 422 });
+  }
+  
+  // إذا كان isAnonymous يساوي null، يتم اعتباره false
+  const isAnonymous = body.isAnonymous === null ? false : Boolean(body.isAnonymous);
 
   let price = null;
   if (body.price !== null && body.price !== undefined && `${body.price}`.trim() !== '') {
@@ -261,7 +230,10 @@ export async function POST(req) {
     // حلّ التصنيف من الاسم إن لزم
     let categoryId = categoryIdInput || null;
     if (!categoryId && categoryNameInput) {
-      const cat = await client.query(`SELECT id FROM public.categories WHERE name = $1 LIMIT 1`, [categoryNameInput]);
+      const cat = await client.query(
+        `SELECT id FROM public.categories WHERE name = $1 LIMIT 1`,
+        [categoryNameInput]
+      );
       if (cat.rowCount === 0) {
         await client.query('ROLLBACK');
         return NextResponse.json({ message: 'التصنيف غير موجود.', category: categoryNameInput }, { status: 422 });
@@ -269,12 +241,12 @@ export async function POST(req) {
       categoryId = cat.rows[0].id;
     }
 
-    // إنشاء المنشور
+    // ✅ إنشاء المنشور مع is_anonymous
     const postRes = await client.query(
-      `INSERT INTO public.posts (user_id, category_id, title, description, governorate, price, status, is_visible)
-       VALUES ($1,$2,$3,$4,$5,$6,'pending', true)
+      `INSERT INTO public.posts (user_id, category_id, title, description, governorate, price, status, is_visible, is_anonymous)
+       VALUES ($1,$2,$3,$4,$5,$6,'pending', TRUE, $7)
        RETURNING id`,
-      [userId, categoryId, title, description, governorate, price]
+      [userId, categoryId, title, description, governorate, price, isAnonymous]
     );
     const postId = postRes.rows[0].id;
 
@@ -305,24 +277,9 @@ export async function POST(req) {
       );
     }
 
-    // إنشاء إشعار للمشرفين بوجود منشور جديد بحاجة لموافقة
-    try {
-      const content = `منشور جديد بانتظار الموافقة: ${title}`;
-      await client.query(
-        `INSERT INTO public.notifications (user_id, content, read)
-         SELECT u.id, $1, false
-         FROM public.users u
-         WHERE u.role_id = 4`,
-        [content]
-      );
-    } catch (notifErr) {
-      console.error('Failed to create admin notifications for new post', notifErr);
-      // نكمل المعاملة حتى لا نمنع إنشاء المنشور في حال فشل الإشعارات
-    }
-
     await client.query('COMMIT');
     return NextResponse.json(
-      { id: postId, status: 'pending', message: 'تم إنشاء المنشور وبانتظار الموافقة.' },
+      { id: postId, status: 'pending', is_anonymous: isAnonymous, message: 'تم إنشاء المنشور وبانتظار الموافقة.' },
       { status: 201 }
     );
   } catch (error) {

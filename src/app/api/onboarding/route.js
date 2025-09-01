@@ -1,343 +1,287 @@
-export const runtime = 'nodejs';
+import { NextResponse } from "next/server";
+import { headers, cookies } from "next/headers";
+import { PrismaClient, Prisma } from "@prisma/client";
 
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { Pool } from 'pg';
-import jwt from 'jsonwebtoken';
+const prisma = globalThis._prisma || new PrismaClient();
+if (process.env.NODE_ENV !== "production") globalThis._prisma = prisma;
 
-/* ---------- PG pool ---------- */
-function getPool() {
-  if (!globalThis.__PG_POOL__) {
-    globalThis.__PG_POOL__ = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.PGSSL === '1' ? { rejectUnauthorized: false } : undefined,
-    });
-  }
-  return globalThis.__PG_POOL__;
-}
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-function asUuid(val) {
-  const s = String(val || '').trim();
-  return UUID_RE.test(s) ? s : null;
-}
-
-function getJwtSecret() {
-  return (
-    process.env.JWT_SECRET ||
-    process.env.NEXTAUTH_SECRET ||
-    process.env.SUPABASE_JWT_SECRET ||
-    ''
-  );
-}
-
-function decodeUserIdFromToken(token) {
-  const secret = getJwtSecret();
-  if (!secret || !token) return null;
+/* ============== Helpers ============== */
+function base64UrlDecode(str) {
   try {
-    const decoded = jwt.verify(token, secret);
-    const candidates = [decoded.sub, decoded.userId, decoded.user_id, decoded.id, decoded.uid];
-    for (const c of candidates) {
-      const uid = asUuid(c);
-      if (uid) return uid;
-    }
-    return null;
+    return Buffer.from(str.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8");
   } catch {
     return null;
   }
 }
+function decodeJwtNoVerify(token) {
+  if (!token || typeof token !== "string") return null;
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+  const payload = base64UrlDecode(parts[1]);
+  if (!payload) return null;
+  try { return JSON.parse(payload); } catch { return null; }
+}
+function getUserIdFromRequest(req) {
+  const url = new URL(req.url);
+  const hdrs = headers();
 
-function getCurrentUserId(req) {
-  // 1) Authorization: Bearer <token>
-  const authHeader = req.headers.get('authorization') || '';
-  if (authHeader.startsWith('Bearer ')) {
-    const token = authHeader.slice(7).trim();
-    const uid = decodeUserIdFromToken(token);
+  const direct = hdrs.get("x-user-id") || hdrs.get("X-User-Id");
+  if (direct) return direct;
+
+  const auth = hdrs.get("authorization") || hdrs.get("Authorization");
+  if (auth?.startsWith("Bearer ")) {
+    const payload = decodeJwtNoVerify(auth.slice(7).trim());
+    const uid = payload?.userId || payload?.sub || payload?.id;
     if (uid) return uid;
   }
 
-  // 2) token cookie (JWT)
-  const tokenCookie =
-    cookies().get('token')?.value ||
-    cookies().get('auth_token')?.value ||
-    cookies().get('next-auth.session-token')?.value ||
-    '';
-  const uidFromCookie = decodeUserIdFromToken(tokenCookie);
-  if (uidFromCookie) return uidFromCookie;
-
-  // 3) x-user-id (UUID) — لأغراض خاصة/داخلية
-  const headerUid = asUuid(req.headers.get('x-user-id') || '');
-  if (headerUid) return headerUid;
-
-  // 4) dev only: testUserId
-  if (process.env.NODE_ENV !== 'production') {
-    const url = new URL(req.url);
-    const testUserId = asUuid(url.searchParams.get('testUserId') || '');
-    if (testUserId) return testUserId;
+  const ck = cookies();
+  const names = [
+    "bg_token",
+    "token",
+    "next-auth.session-token",
+    "__Secure-next-auth.session-token",
+    "session",
+  ];
+  for (const n of names) {
+    const v = ck.get(n)?.value;
+    if (!v) continue;
+    const payload = decodeJwtNoVerify(v);
+    const uid = payload?.userId || payload?.sub || payload?.id;
+    if (uid) return uid;
   }
+
+  const uidParam = url.searchParams.get("uid"); // للديبج فقط
+  if (uidParam) return uidParam;
 
   return null;
 }
 
-/* ============== GET /api/onboarding ============== */
-/* يعيد حالة الإعداد + الهاتف + التاغات المتابعة + اقتراحات تاغات */
-export async function GET(req) {
-  const pool = getPool();
-  
-  // الحصول على معرف المستخدم مع معلومات تصحيح إضافية
-  const userId = getCurrentUserId(req);
-  
-  // تسجيل معلومات التصحيح
-  console.log('Onboarding GET request:', {
-    url: req.url,
-    userId,
-    headers: Object.fromEntries(req.headers.entries())
-  });
-  
-  if (!userId) {
-    console.error('Unauthorized access - No user ID found');
-    return NextResponse.json(
-      { 
-        success: false,
-        message: 'غير مصرح: يرجى تسجيل الدخول.',
-        code: 'UNAUTHORIZED',
-        requiresAuth: true
-      }, 
-      { 
-        status: 401,
-        headers: {
-          'Cache-Control': 'no-store, max-age=0',
-          'Pragma': 'no-cache',
-          'WWW-Authenticate': 'Bearer',
-          'X-Auth-Required': 'true'
-        }
-      }
-    );
-  }
+function toDateOrNull(v) {
+  if (!v) return null;
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+}
 
-  const client = await pool.connect();
+/* ============== GET ============== */
+/**
+ * GET /api/onboarding
+ *   - action=check  → { onboarding_done, onboarding_done_at }
+ *   - بدون action  → { user, followedTags, suggestedTags }
+ */
+export async function GET(req) {
   try {
-    const u = await client.query(
-      `SELECT id, email, name, phone, onboarding_done, onboarding_done_at
-       FROM public.users
-       WHERE id = $1
-       LIMIT 1`,
-      [userId]
-    );
-    if (u.rowCount === 0) {
-      return NextResponse.json({ message: 'المستخدم غير موجود' }, { status: 404 });
+    const url = new URL(req.url);
+    const action = url.searchParams.get("action");
+    const userId = getUserIdFromRequest(req);
+
+    if (!userId) {
+      return NextResponse.json({ message: "غير مصرح: مفقود X-User-Id" }, { status: 401 });
     }
 
-    // التاغات التي يتابعها المستخدم (من user_tag_follows)
-    const myTags = await client.query(
-      `SELECT t.id, t.name
-       FROM public.user_tag_follows utf
-       JOIN public.tags t ON t.id = utf.tag_id
-       WHERE utf.user_id = $1
-         AND utf.status = 'following'
-       ORDER BY t.name ASC`,
-      [userId]
-    );
+    if (action === "check") {
+      const row = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { onboarding_done: true, onboarding_done_at: true },
+      });
+      if (!row) return NextResponse.json({ message: "المستخدم غير موجود" }, { status: 404 });
 
-    // اقتراح تاغات (مثلاً أول 30 بالاسم)
-    const suggested = await client.query(
-      `SELECT t.id, t.name
-       FROM public.tags t
-       ORDER BY t.name ASC
-       LIMIT 30`
-    );
+      return NextResponse.json(
+        { onboarding_done: !!row.onboarding_done, onboarding_done_at: row.onboarding_done_at || null },
+        { status: 200 }
+      );
+    }
 
-    return NextResponse.json({
-      user: u.rows[0],
-      followedTags: myTags.rows,
-      suggestedTags: suggested.rows,
+    // تحميل بيانات المودال
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { 
+        id: true, 
+        email: true, 
+        name: true, 
+        phone: true, 
+        city: true,
+        onboarding_done: true, 
+        onboarding_done_at: true 
+      },
     });
+    if (!user) return NextResponse.json({ message: "المستخدم غير موجود" }, { status: 404 });
+
+    let followedTags = [];
+    try {
+      const follows = await prisma.user_tag_follows.findMany({
+        where: { user_id: userId, status: "following" },
+        select: { tags: { select: { id: true, name: true } } },
+        take: 100,
+      });
+      followedTags = follows.map((f) => f.tags).filter(Boolean).map((t) => ({ id: t.id, name: t.name }));
+    } catch { followedTags = []; }
+
+    let suggestedTags = [];
+    try {
+      const prefs = await prisma.user_tag_preferences.findMany({
+        where: { user_id: userId, status: "suggested" },
+        select: { tags: { select: { id: true, name: true } } },
+        take: 20,
+      });
+      suggestedTags = prefs.map((p) => p.tags).filter(Boolean).map((t) => ({ id: t.id, name: t.name }));
+      if (suggestedTags.length === 0) {
+        const any = await prisma.tags.findMany({ select: { id: true, name: true }, take: 10 });
+        suggestedTags = any.map((t) => ({ id: t.id, name: t.name }));
+      }
+    } catch {
+      try {
+        const any = await prisma.tags.findMany({ select: { id: true, name: true }, take: 10 });
+        suggestedTags = any.map((t) => ({ id: t.id, name: t.name }));
+      } catch { suggestedTags = []; }
+    }
+
+    return NextResponse.json({ user, followedTags, suggestedTags }, { status: 200 });
   } catch (e) {
-    console.error('GET /api/onboarding error:', e);
-    return NextResponse.json({ message: 'تعذر جلب البيانات' }, { status: 500 });
-  } finally {
-    client.release();
+    console.error("onboarding GET error:", e);
+    return NextResponse.json({ message: e?.message || "Internal Server Error" }, { status: 500 });
   }
 }
 
-/* ============== POST /api/onboarding ============== */
-/* body:
-   - skip: boolean  (لتخطّي الإعداد)
-   - phone: string  (اختياري)
-   - tags: string[] أسماء لتاغات موجودة فقط (اختياري)
-*/
+/* ============== POST ============== */
+/**
+ * POST /api/onboarding?action=...
+ *  - action=update-status  : phone + (onboarding_done? true) → يحدّث users فقط
+ *  - action=update-profile : phone + tags[] + (onboarding_done? true)
+ */
 export async function POST(req) {
-  const pool = getPool();
-  let client;
-  
   try {
-    const userId = getCurrentUserId(req);
-    
-    // تسجيل معلومات التصحيح
-    console.log('Onboarding POST request:', {
-      url: req.url,
-      userId,
-      headers: Object.fromEntries(req.headers.entries())
-    });
-    
+    const url = new URL(req.url);
+    const action = url.searchParams.get("action");
+    const userId = getUserIdFromRequest(req);
+
     if (!userId) {
-      console.error('Unauthorized access - No user ID found in POST request');
+      return NextResponse.json({ message: "غير مصرح: مفقود X-User-Id" }, { status: 401 });
+    }
+    if (!action) {
+      return NextResponse.json({ message: "حدد action في الاستعلام" }, { status: 400 });
+    }
+
+    const body = await req.json().catch(() => ({}));
+
+    if (action === "update-status") {
+      const { phone, city, onboarding_done, onboarding_done_at } = body || {};
+
+      const data = {};
+      if (phone !== undefined) data.phone = phone || null;
+      if (city !== undefined) data.city = city || null;
+      if (onboarding_done === true) {
+        data.onboarding_done = true;
+        data.onboarding_done_at = toDateOrNull(onboarding_done_at) || new Date();
+      }
+
+      if (Object.keys(data).length > 0) {
+        await prisma.user.update({ where: { id: userId }, data, select: { id: true } });
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { 
+          id: true, 
+          email: true, 
+          name: true, 
+          phone: true, 
+          city: true,
+          onboarding_done: true, 
+          onboarding_done_at: true 
+        },
+      });
+
       return NextResponse.json(
-        { 
-          success: false,
-          message: 'غير مصرح: يرجى تسجيل الدخول.',
-          code: 'UNAUTHORIZED'
-        }, 
-        { 
-          status: 401,
-          headers: {
-            'Cache-Control': 'no-store, max-age=0',
-            'Pragma': 'no-cache'
+        {
+          ok: true,
+          user,
+          onboarding_done: !!user?.onboarding_done,
+          onboarding_done_at: user?.onboarding_done_at || null,
+        },
+        { status: 200 }
+      );
+    }
+
+    if (action === "update-profile") {
+      const { phone, city, tags, onboarding_done, onboarding_done_at } = body || {};
+
+      // تحديث بيانات المستخدم
+      const data = {};
+      if (phone !== undefined) data.phone = phone || null;
+      if (city !== undefined) data.city = city || null;
+      if (onboarding_done === true) {
+        data.onboarding_done = true;
+        data.onboarding_done_at = toDateOrNull(onboarding_done_at) || new Date();
+      }
+      if (Object.keys(data).length > 0) {
+        await prisma.user.update({ where: { id: userId }, data, select: { id: true } });
+      }
+
+      // مزامنة التاغات
+      if (Array.isArray(tags)) {
+        const cleanNames = [...new Set(tags.map((n) => `${n}`.trim()).filter(Boolean))];
+        if (cleanNames.length > 0) {
+          const existing = await prisma.tags.findMany({
+            where: { name: { in: cleanNames } },
+            select: { id: true, name: true },
+          });
+          const existingNames = new Set(existing.map((t) => t.name));
+          const toCreate = cleanNames.filter((n) => !existingNames.has(n));
+
+          if (toCreate.length > 0) {
+            await prisma.tags.createMany({
+              data: toCreate.map((name) => ({ name })),
+              skipDuplicates: true,
+            });
+          }
+
+          const allTags = await prisma.tags.findMany({
+            where: { name: { in: cleanNames } },
+            select: { id: true },
+          });
+          const tagIds = allTags.map((t) => t.id);
+
+          await prisma.user_tag_follows.deleteMany({ where: { user_id: userId } });
+          if (tagIds.length > 0) {
+            await prisma.user_tag_follows.createMany({
+              data: tagIds.map((tag_id) => ({ user_id: userId, tag_id })),
+              skipDuplicates: true,
+            });
           }
         }
-      );
-    }
+      }
 
-    let body;
-    try { 
-      body = await req.json(); 
-    } catch (error) {
-      console.error('Error parsing request body:', error);
-      return NextResponse.json(
-        { 
-          success: false,
-          message: 'خطأ في تنسيق الطلب',
-          code: 'INVALID_REQUEST_BODY'
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { 
+          id: true, 
+          email: true, 
+          name: true, 
+          phone: true, 
+          city: true,
+          onboarding_done: true, 
+          onboarding_done_at: true 
         },
-        { status: 400 }
-      );
-    }
-
-    const skip = !!body.skip;
-    const phone = (body.phone || '').trim();
-    const tags = Array.isArray(body.tags)
-      ? body.tags.map((s) => String(s || '').trim()).filter(Boolean)
-      : [];
-
-    client = await pool.connect();
-    await client.query('BEGIN');
-
-    // تخطّي الإعداد
-    if (skip) {
-      console.log(`Skipping onboarding for user: ${userId}`);
-      
-      const updateResult = await client.query(
-        `UPDATE public.users
-         SET onboarding_done = true, 
-             onboarding_done_at = now(),
-             updated_at = now()
-         WHERE id = $1
-         RETURNING id, onboarding_done, onboarding_done_at`,
-        [userId]
-      );
-      
-      if (updateResult.rowCount === 0) {
-        throw new Error('User not found');
-      }
-      
-      await client.query('COMMIT');
-      
-      console.log('Onboarding skipped successfully:', {
-        userId,
-        updatedUser: updateResult.rows[0]
       });
-      
-      return NextResponse.json({ 
-        success: true, 
-        done: true,
-        user: updateResult.rows[0]
-      });
-    }
 
-    // حفظ الهاتف إن أُرسل
-    if (phone) {
-      await client.query(
-        `UPDATE public.users SET phone = $1, updated_at = now() WHERE id = $2`,
-        [phone, userId]
+      return NextResponse.json(
+        {
+          ok: true,
+          user,
+          onboarding_done: !!user?.onboarding_done,
+          onboarding_done_at: user?.onboarding_done_at || null,
+        },
+        { status: 200 }
       );
     }
 
-    // ربط التاغات الموجودة فقط في user_tag_follows (UUID)
-    if (tags.length > 0) {
-      const existing = await client.query(
-        `SELECT id, name FROM public.tags WHERE name = ANY($1::text[])`,
-        [tags]
-      );
-      const tagIds = existing.rows.map((r) => r.id); // UUID[]
-
-      if (tagIds.length > 0) {
-        // upsert في user_tag_follows
-        await client.query(
-          `INSERT INTO public.user_tag_follows (user_id, tag_id, status, source, weight, notify, created_at, updated_at)
-           SELECT $1, x.id, 'following', 'manual', 1, true, now(), now()
-           FROM UNNEST($2::uuid[]) AS x(id)
-           ON CONFLICT (user_id, tag_id)
-           DO UPDATE SET
-             status = 'following',
-             source = 'manual',
-             notify = true,
-             updated_at = now()`,
-          [userId, tagIds]
-        );
-
-        // (اختياري) مزامنة تفضيلات التاغات أيضًا كـ 'following'
-        await client.query(
-          `INSERT INTO public.user_tag_preferences (user_id, tag_id, status, created_at, updated_at)
-           SELECT $1, x.id, 'following', now(), now()
-           FROM UNNEST($2::uuid[]) AS x(id)
-           ON CONFLICT (user_id, tag_id)
-           DO UPDATE SET 
-             status = 'following', 
-             updated_at = now()`,
-          [userId, tagIds]
-        );
-      }
-    }
-
-    // علّم أن الإعداد اكتمل
-    await client.query(
-      `UPDATE public.users
-       SET onboarding_done = true, 
-           onboarding_done_at = now(),
-           updated_at = now()
-       WHERE id = $1`,
-      [userId]
-    );
-
-    await client.query('COMMIT');
-    return NextResponse.json({ 
-      success: true, 
-      done: true 
-    });
-    
+    return NextResponse.json({ message: "action غير مدعوم" }, { status: 400 });
   } catch (e) {
-    console.error('POST /api/onboarding error:', e);
-    if (client) {
-      try { 
-        await client.query('ROLLBACK'); 
-      } catch (rollbackError) {
-        console.error('Error during rollback:', rollbackError);
-      }
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+      return NextResponse.json({ message: "المستخدم غير موجود" }, { status: 404 });
     }
-    return NextResponse.json(
-      { 
-        success: false,
-        message: 'تعذر حفظ الإعداد',
-        error: process.env.NODE_ENV === 'development' ? e.message : undefined
-      }, 
-      { status: 500 }
-    );
-    
-  } finally {
-    if (client) {
-      client.release();
-    }
+    console.error("onboarding POST error:", e);
+    return NextResponse.json({ message: e?.message || "Internal Server Error" }, { status: 500 });
   }
 }

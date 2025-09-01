@@ -43,7 +43,7 @@ function extractFirstImage(html) {
 }
 
 function getDefaultImage() {
-  return '/images.png';
+  return '/images/default-news.jpg';
 }
 
 async function fetchFeed(url) {
@@ -161,6 +161,7 @@ export async function GET() {
       lastUpdated: new Date().toISOString()
     };
 
+    // Cache the result
     setCache(cacheKey, result);
 
     return NextResponse.json(result);

@@ -36,6 +36,7 @@ import {
   FaRing,
   FaTshirt,
   FaBook,
+  FaUser,
   FaDumbbell,
   FaCut,
   FaChevronUp,
@@ -46,6 +47,12 @@ import {
   FaThList,
   FaGift,
   FaClock,
+  FaPhone,
+  FaEnvelope,
+  FaInfoCircle,
+  FaMapMarkerAlt,
+  FaCalendarAlt,
+  FaMoneyBillWave,
 } from "react-icons/fa";
 
 // ------------------------
@@ -79,12 +86,12 @@ const SERVICE_CATEGORIES = [
     title: "خدمات تجارية",
     icon: <FaStore className="text-xl" />,
     services: [
-      { id: "stores", title: "متاجر", icon: <FaStore className="text-2xl" />, color: "bg-amber-500" },
-      { id: "malls", title: "مراكز تجارية", icon: <FaShoppingBag className="text-2xl" />, color: "bg-amber-500" },
-      { id: "restaurants", title: "مطاعم", icon: <FaUtensils className="text-2xl" />, color: "bg-amber-500" },
-      { id: "pharmacies", title: "صيدليات", icon: <FaPills className="text-2xl" />, color: "bg-amber-500" },
-      { id: "jewelry", title: "مجوهرات", icon: <FaRing className="text-2xl" />, color: "bg-amber-500" },
-      { id: "fashion", title: "أزياء", icon: <FaTshirt className="text-2xl" />, color: "bg-amber-500" },
+      { id: "stores", title: "متاجر", icon: <FaStore className="text-2xl" />, color: "bg-blue-500" },
+      { id: "malls", title: "مراكز تجارية", icon: <FaShoppingBag className="text-2xl" />, color: "bg-purple-600" },
+      { id: "restaurants", title: "مطاعم", icon: <FaUtensils className="text-2xl" />, color: "bg-purple-500" },
+      { id: "pharmacies", title: "صيدليات", icon: <FaPills className="text-2xl" />, color: "bg-red-600" },
+      { id: "jewelry", title: "مجوهرات", icon: <FaRing className="text-2xl" />, color: "bg-yellow-500" },
+      { id: "fashion", title: "أزياء", icon: <FaTshirt className="text-2xl" />, color: "bg-indigo-600" },
     ],
   },
   {
@@ -92,10 +99,10 @@ const SERVICE_CATEGORIES = [
     title: "عقارات وأراضي",
     icon: <FaHome className="text-xl" />,
     services: [
-      { id: "real-estate", title: "عقارات", icon: <FaHome className="text-2xl" />, color: "bg-amber-500" },
+      { id: "real-estate", title: "عقارات", icon: <FaHome className="text-2xl" />, color: "bg-green-500" },
       { id: "lands", title: "أراضي", icon: <FaMapMarkedAlt className="text-2xl" />, color: "bg-amber-500" },
-      { id: "hotels", title: "فنادق", icon: <FaHotel className="text-2xl" />, color: "bg-amber-500" },
-      { id: "wedding-halls", title: "صالات أفراح", icon: <FaGlassCheers className="text-2xl" />, color: "bg-amber-500" },
+      { id: "hotels", title: "فنادق", icon: <FaHotel className="text-2xl" />, color: "bg-amber-600" },
+      { id: "wedding-halls", title: "صالات أفراح", icon: <FaGlassCheers className="text-2xl" />, color: "bg-pink-600" },
     ],
   },
   {
@@ -103,9 +110,9 @@ const SERVICE_CATEGORIES = [
     title: "مركبات ومواصلات",
     icon: <FaCar className="text-xl" />,
     services: [
-      { id: "cars", title: "سيارات", icon: <FaCar className="text-2xl" />, color: "bg-amber-500" },
-      { id: "gas-stations", title: "محطات وقود", icon: <FaGasPump className="text-2xl" />, color: "bg-amber-500" },
-      { id: "delivery", title: "توصيل", icon: <FaTruck className="text-2xl" />, color: "bg-amber-500" },
+      { id: "cars", title: "سيارات", icon: <FaCar className="text-2xl" />, color: "bg-red-500" },
+      { id: "gas-stations", title: "محطات وقود", icon: <FaGasPump className="text-2xl" />, color: "bg-blue-600" },
+      { id: "delivery", title: "توصيل", icon: <FaTruck className="text-2xl" />, color: "bg-green-600" },
     ],
   },
   {
@@ -113,10 +120,10 @@ const SERVICE_CATEGORIES = [
     title: "صحة ولياقة",
     icon: <FaClinicMedical className="text-xl" />,
     services: [
-      { id: "hospitals", title: "مستشفيات", icon: <FaHospital className="text-2xl" />, color: "bg-amber-500" },
-      { id: "clinics", title: "عيادات", icon: <FaClinicMedical className="text-2xl" />, color: "bg-amber-500" },
-      { id: "gyms", title: "نوادي رياضية", icon: <FaDumbbell className="text-2xl" />, color: "bg-amber-500" },
-      { id: "beauty-centers", title: "مراكز تجميل", icon: <FaCut className="text-2xl" />, color: "bg-amber-500" },
+      { id: "hospitals", title: "مستشفيات", icon: <FaHospital className="text-2xl" />, color: "bg-rose-500" },
+      { id: "clinics", title: "عيادات", icon: <FaClinicMedical className="text-2xl" />, color: "bg-emerald-500" },
+      { id: "gyms", title: "نوادي رياضية", icon: <FaDumbbell className="text-2xl" />, color: "bg-red-700" },
+      { id: "beauty-centers", title: "مراكز تجميل", icon: <FaCut className="text-2xl" />, color: "bg-pink-400" },
     ],
   },
   {
@@ -124,8 +131,8 @@ const SERVICE_CATEGORIES = [
     title: "تعليم وتطوير",
     icon: <FaGraduationCap className="text-xl" />,
     services: [
-      { id: "courses", title: "دورات", icon: <FaGraduationCap className="text-2xl" />, color: "bg-amber-500" },
-      { id: "libraries", title: "مكتبات", icon: <FaBook className="text-2xl" />, color: "bg-amber-500" },
+      { id: "courses", title: "دورات", icon: <FaGraduationCap className="text-2xl" />, color: "bg-pink-500" },
+      { id: "libraries", title: "مكتبات", icon: <FaBook className="text-2xl" />, color: "bg-amber-700" },
     ],
   },
   {
@@ -133,9 +140,9 @@ const SERVICE_CATEGORIES = [
     title: "خدمات أخرى",
     icon: <FaBoxes className="text-xl" />,
     services: [
-      { id: "jobs", title: "وظائف", icon: <FaBriefcase className="text-2xl" />, color: "bg-amber-500" },
-      { id: "entertainment", title: "ترفيه", icon: <FaTheaterMasks className="text-2xl" />, color: "bg-amber-500" },
-      { id: "gifts", title: "هدايا", icon: <FaGift className="text-2xl" />, color: "bg-amber-500" },
+      { id: "jobs", title: "وظائف", icon: <FaBriefcase className="text-2xl" />, color: "bg-indigo-500" },
+      { id: "entertainment", title: "ترفيه", icon: <FaTheaterMasks className="text-2xl" />, color: "bg-cyan-500" },
+      { id: "gifts", title: "هدايا", icon: <FaGift className="text-2xl" />, color: "bg-rose-400" },
     ],
   },
 ];
@@ -225,7 +232,17 @@ const QUICK_ADD = [
    إضافة عرض المنشورات فقط
    (لا تغييرات على التصميم)
 ========================= */
-function PostCard({ post, onShowDetails }) {
+function PostCard({ post }) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  const openModal = (e) => {
+    e.preventDefault();
+    setIsModalOpen(true);
+  };
+  
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
   const price =
     post?.price != null && post?.price !== ""
       ? Number(post.price).toLocaleString("ar-EG")
@@ -238,71 +255,316 @@ function PostCard({ post, onShowDetails }) {
       })
     : "-";
 
-  // Resolve category meta (icon/color) by id or name
-  const categoryById = SERVICE_CATEGORIES.flatMap(cat => 
-    cat.services.filter(s => s.id === post.category_id)
-  )[0];
-  const categoryByName = SERVICE_CATEGORIES.flatMap(cat =>
-    cat.services.filter(s => s.title === post.category_name)
-  )[0];
-  const category = categoryById || categoryByName;
-  const categoryColor = category?.color || 'bg-blue-500';
+  // Get service icon based on category with more specific icons
+  const getServiceIcon = (category, iconClass = '') => {
+    if (!category) return <FaStore className={iconClass} />;
+    
+    // Try to find the service in our categories
+    const allServices = SERVICE_CATEGORIES.flatMap(cat => cat.services);
+    const service = allServices.find(s => s.id === category);
+    
+    // If we found a matching service with an icon, use it
+    if (service?.icon) {
+      const IconComponent = service.icon.type || FaStore;
+      return <IconComponent className={iconClass} />;
+    }
+    
+    // Fallback to specific icons based on category name
+    const categoryLower = String(category).toLowerCase();
+    
+    // Exact mapping of service names to icons
+    const serviceIcons = {
+      // Commercial Services
+      'متاجر': FaStore,
+      'stores': FaStore,
+      'مراكز تجارية': FaShoppingBag,
+      'malls': FaShoppingBag,
+      'مطاعم': FaUtensils,
+      'restaurants': FaUtensils,
+      'صيدليات': FaPills,
+      'pharmacies': FaPills,
+      'مجوهرات': FaRing,
+      'jewelry': FaRing,
+      'أزياء': FaTshirt,
+      'fashion': FaTshirt,
+      
+      // Real Estate & Lands
+      'عقارات': FaHome,
+      'real-estate': FaHome,
+      'أراضي': FaMapMarkedAlt,
+      'lands': FaMapMarkedAlt,
+      'فنادق': FaHotel,
+      'hotels': FaHotel,
+      'صالات أفراح': FaGlassCheers,
+      'wedding-halls': FaGlassCheers,
+      
+      // Vehicles & Transportation
+      'سيارات': FaCar,
+      'cars': FaCar,
+      'محطات وقود': FaGasPump,
+      'gas-stations': FaGasPump,
+      'توصيل': FaTruck,
+      'delivery': FaTruck,
+      
+      // Health & Fitness
+      'مستشفيات': FaHospital,
+      'hospitals': FaHospital,
+      'عيادات': FaClinicMedical,
+      'clinics': FaClinicMedical,
+      'نوادي رياضية': FaDumbbell,
+      'gyms': FaDumbbell,
+      'مراكز تجميل': FaCut,
+      'beauty-centers': FaCut,
+      
+      // Education & Development
+      'دورات': FaGraduationCap,
+      'courses': FaGraduationCap,
+      'مكتبات': FaBook,
+      'libraries': FaBook,
+      
+      // Other Services
+      'وظائف': FaBriefcase,
+      'jobs': FaBriefcase,
+      'ترفيه': FaTheaterMasks,
+      'entertainment': FaTheaterMasks,
+      'هدايا': FaGift,
+      'gifts': FaGift
+    };
+    
+    // Try to find exact match first, then fallback to pattern matching
+    const iconMap = Object.entries(serviceIcons).map(([key, component]) => ({
+      pattern: `^${key}$`,
+      component
+    }));
+    
+    // Find the first matching icon
+    const matchedIcon = iconMap.find(({ pattern }) => 
+      new RegExp(pattern, 'i').test(categoryLower)
+    );
+    
+    const IconComponent = matchedIcon ? matchedIcon.component : FaStore;
+    return <IconComponent className={iconClass} />;
+  };
+
+  // Get service name for display
+  const getServiceName = (category) => {
+    const service = SERVICE_CATEGORIES.flatMap(cat => cat.services).find(s => s.id === category);
+    return service?.name || category;
+  };
+
+  // Get category color if available
+  const category = SERVICE_CATEGORIES.flatMap(cat => 
+    cat.services.find(s => s.id === post.category_name)
+  ).find(Boolean);
+
+  // Determine publisher name based on anonymous status
+  const publisherName = post.is_anonymous 
+    ? "مجهول" 
+    : post.user_name || (post.user_id ? `مستخدم ${post.user_id.substring(0, 4)}` : "مستخدم");
 
   return (
-    <div className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border-2 border-amber-400/80 dark:border-amber-400/60 flex flex-col h-full transform hover:-translate-y-1 hover:brightness-95 dark:hover:brightness-90">
-      {/* Header Section */}
-      <div className="relative h-40 bg-gradient-to-b from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-900/10 flex items-center justify-center overflow-hidden">
-        {/* Category Badge */}
-        <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-medium text-white ${categoryColor} shadow-md`}>
-          {post.category_name || 'تصنيف'}
+    <div className="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 dark:border-gray-700 flex flex-col h-full transform hover:-translate-y-1">
+      {/* Service Icon Section */}
+      <div className="relative h-40 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <div className="text-7xl text-amber-400 dark:text-amber-500 opacity-90">
+          {getServiceIcon(post.category_name)}
         </div>
-        {/* Centered category icon */}
-        <div className="z-0 text-amber-500/80">
-          {category?.icon || (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M2 5a2 2 0 012-2h2a2 2 0 012 2v10a1 1 0 01-1.447.894L4 14.118l-3.553 1.776A1 1 0 01-1 15V5a2 2 0 012-2h1z" />
-            </svg>
-          )}
-        </div>
-        {/* Status Badge (optional) */}
         
+        {/* Category Badge */}
+        <div className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-medium text-white ${category?.color || 'bg-blue-500'} shadow-md flex items-center gap-2`}>
+          {getServiceIcon(post.category_name, 'text-sm')}
+          <span className="text-xs">{getServiceName(post.category_name) || 'تصنيف'}</span>
+        </div>
+        
+        {/* Status Badge */}
+        <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium ${
+          post.is_visible 
+            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
+            : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+        }`}>
+          {post.is_visible ? 'ظاهر' : 'مخفي'}
+        </div>
       </div>
 
       {/* Content Section */}
       <div className="p-4 flex-1 flex flex-col">
         {/* Title */}
-        <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-3 line-clamp-1">
+        <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-2 line-clamp-2 min-h-[3rem]">
           {post.title || 'عنوان غير محدد'}
         </h3>
-
-        {/* Compact location row */}
-        <div className="mt-1 flex items-center gap-2 text-gray-700 dark:text-gray-300 text-sm">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-          <FaMapMarkedAlt className="text-amber-500" />
-          <span className="truncate">
-            {post.governorate || 'غير محدد'}{post.address ? `، ${post.address}` : ''}
-          </span>
+        
+        {/* Basic Info - Always Visible */}
+        <div className="space-y-2 mb-3">
+          <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <FaUser className="text-blue-500 flex-shrink-0" />
+            <span className="truncate">
+              {publisherName}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <FaMapMarkedAlt className="text-amber-500 flex-shrink-0" />
+            <span>{post.governorate || 'غير محدد'}</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+            <FaClock className="text-gray-400" />
+            <span>أضيف {created}</span>
+          </div>
         </div>
-
+        
+        
         {/* Action Button */}
-        <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+        <div className="mt-auto pt-3 border-t border-gray-100 dark:border-gray-700">
           <button
-            type="button"
-            onClick={() => onShowDetails && onShowDetails(post)}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+            onClick={openModal}
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md"
           >
-            عرض المزيد
+            عرض التفاصيل
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
           </button>
-          {price && (
-            <div className="flex items-center gap-1 text-amber-700 dark:text-amber-400">
-              <span className="font-semibold">{price}</span>
-              <span className="text-xs">شيكل</span>
-            </div>
-          )}
         </div>
+        
+        {/* Modal for Full Details */}
+        <Dialog
+          open={isModalOpen}
+          onClose={closeModal}
+          maxWidth="md"
+          fullWidth
+          className="rtl"
+        >
+          <DialogTitle className="bg-gradient-to-r from-amber-500 to-amber-600 text-white p-4 flex justify-between items-center">
+            <span>تفاصيل {post.title}</span>
+            <button 
+              onClick={closeModal}
+              className="text-white hover:text-gray-200"
+            >
+              <FaTimes />
+            </button>
+          </DialogTitle>
+          <DialogContent className="p-0">
+            <div className="grid md:grid-cols-2 gap-6 p-6">
+              {/* Left Column - Image with Service Icon */}
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-lg h-64 md:h-full flex items-center justify-center p-4">
+                <div className="text-6xl text-amber-500">
+                  {getServiceIcon(post.category_name, 'w-20 h-20')}
+                </div>
+              </div>
+              
+              {/* Right Column - Details */}
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                    {post.title || 'عنوان غير محدد'}
+                  </h3>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 mb-4">
+                    <FaUser className="text-blue-500" />
+                    <span>نشر بواسطة: {publisherName}</span>
+                    <span className="mx-2">•</span>
+                    <FaCalendarAlt className="text-amber-500" />
+                    <span>تاريخ النشر: {created}</span>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <FaInfoCircle className="text-blue-500 mt-1 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-medium text-gray-900 dark:text-white">الوصف</h4>
+                      <p className="text-gray-600 dark:text-gray-300 text-sm">
+                        {post.description || 'لا يوجد وصف متوفر'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <FaMapMarkerAlt className="text-green-500" />
+                    <div>
+                      <h4 className="font-medium text-gray-900 dark:text-white">الموقع</h4>
+                      <p className="text-gray-600 dark:text-gray-300 text-sm">
+                        {post.governorate || 'غير محدد'}
+                        {post.city ? `، ${post.city}` : ''}
+                        {post.area ? `، ${post.area}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {price && (
+                    <div className="flex items-center gap-3">
+                      <FaMoneyBillWave className="text-amber-500" />
+                      <div>
+                        <h4 className="font-medium text-gray-900 dark:text-white">السعر</h4>
+                        <p className="text-gray-600 dark:text-gray-300 text-sm">
+                          {price} شيكل
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {post.phone && (
+                    <div className="flex items-center gap-3">
+                      <FaPhone className="text-green-500" />
+                      <div>
+                        <h4 className="font-medium text-gray-900 dark:text-white">رقم الهاتف</h4>
+                        <a 
+                          href={`tel:${post.phone}`}
+                          className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
+                        >
+                          {post.phone}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {post.email && (
+                    <div className="flex items-center gap-3">
+                      <FaEnvelope className="text-amber-500" />
+                      <div>
+                        <h4 className="font-medium text-gray-900 dark:text-white">البريد الإلكتروني</h4>
+                        <a 
+                          href={`mailto:${post.email}`}
+                          className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 text-sm break-all"
+                        >
+                          {post.email}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Tags */}
+                {Array.isArray(post.tags) && post.tags.length > 0 && (
+                  <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">تاغات</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {post.tags.map((t, i) => {
+                        // Split by comma and trim each tag
+                        const tagItems = t.split(',').map(tag => tag.trim()).filter(Boolean);
+                        return tagItems.map((tag, idx) => (
+                          <span 
+                            key={`${i}-${idx}`}
+                            className="px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 text-xs font-medium hover:bg-amber-200 dark:hover:bg-amber-800/60 transition-colors"
+                          >
+                            #{tag}
+                          </span>
+                        ));
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </DialogContent>
+          <DialogActions className="bg-gray-50 dark:bg-gray-800 px-6 py-3">
+            <button
+              onClick={closeModal}
+              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              إغلاق
+            </button>
+           
+          </DialogActions>
+        </Dialog>
       </div>
     </div>
   );
@@ -317,8 +579,6 @@ function ServicePosts({ serviceId, governorate, search }) {
   const [loading, setLoading] = useState(false);
   const [firstLoaded, setFirstLoaded] = useState(false);
   const [error, setError] = useState(null);
-  const [openDetails, setOpenDetails] = useState(false);
-  const [selectedPost, setSelectedPost] = useState(null);
 
   const limit = 8;
   const hasMore = items.length < total;
@@ -367,18 +627,8 @@ function ServicePosts({ serviceId, governorate, search }) {
     fetchPage(1);
   }, [fetchPage]);
 
-  const handleShowDetails = useCallback((post) => {
-    setSelectedPost(post || null);
-    setOpenDetails(true);
-  }, []);
-
-  const handleCloseDetails = useCallback(() => {
-    setOpenDetails(false);
-    setSelectedPost(null);
-  }, []);
-
   return (
-    <div className="rounded-xl shadow p-6">
+    <div className=" rounded-lg shadow p-6">
       {!firstLoaded && loading && (
         <div className="py-8 text-center text-gray-600 dark:text-gray-300">جارٍ التحميل...</div>
       )}
@@ -398,7 +648,7 @@ function ServicePosts({ serviceId, governorate, search }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {items.map((post) => (
               <div key={post.id} className="h-full">
-                <PostCard post={post} onShowDetails={handleShowDetails} />
+                <PostCard post={post} />
               </div>
             ))}
           </div>
@@ -437,153 +687,6 @@ function ServicePosts({ serviceId, governorate, search }) {
               </div>
             )}
           </div>
-
-          {/* Details Modal */}
-          <Dialog
-            open={openDetails}
-            onClose={handleCloseDetails}
-            fullWidth
-            maxWidth="md"
-            PaperProps={{ className: "bg-white text-gray-900 dark:bg-gray-900 dark:text-white" }}
-          >
-            <DialogTitle className="!pb-2 dark:text-white">
-              <div className="flex items-center justify-between gap-3">
-                {/* Title on the right for RTL */}
-                <span className="ms-auto font-bold line-clamp-1 dark:text-white">
-                  تفاصيل الإعلان
-                </span>
-                <button onClick={handleCloseDetails} className="me-auto p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-white/10">
-                  <FaTimes />
-                </button>
-              </div>
-            </DialogTitle>
-            <DialogContent dividers className="dark:text-white">
-              {selectedPost && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {/* Left column: textual details */}
-                  <div className="order-2 sm:order-1 space-y-5">
-                    {/* Title and small category pill */}
-                    <div>
-                      <h3 className="text-xl font-bold dark:text-white">{selectedPost.title}</h3>
-                      {selectedPost.category_name && (
-                        <div className="mt-1 flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-white">
-                            {selectedPost.category_name}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Price badge */}
-                    {selectedPost.price != null && selectedPost.price !== '' && (
-                      <div className="rounded-lg px-4 py-3 inline-flex items-center gap-2 bg-amber-50 text-gray-800 dark:bg-white/10 dark:text-white">
-                        <span className="text-sm dark:text-white">السعر</span>
-                        <span className="font-extrabold text-amber-600 dark:text-white text-lg">
-                          {Number(selectedPost.price).toLocaleString('ar-EG')}
-                        </span>
-                        <span className="text-sm dark:text-white">₪</span>
-                      </div>
-                    )}
-
-                    {/* Location */}
-                    <div className="flex items-center">
-                      <div className="w-full rounded-lg bg-gray-100 text-gray-700 px-3 py-2 flex items-center gap-2 dark:bg-white/5 dark:text-white">
-                        <FaMapMarkedAlt className="text-amber-500 shrink-0" />
-                        <span className="font-medium dark:text-white">الموقع:</span>
-                        <span className="truncate">
-                          {selectedPost.governorate || 'غير محدد'}{selectedPost.address ? ` - ${selectedPost.address}` : ''}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Created date */}
-                    <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-white">
-                      <FaClock className="text-gray-400 dark:text-white/70" />
-                      <span>
-                        نُشر في {selectedPost.created_at ? new Date(selectedPost.created_at).toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' }) : '-'}
-                      </span>
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                      <h4 className="font-semibold mb-2 dark:text-white">تفاصيل الإعلان:</h4>
-                      <p className="leading-7 whitespace-pre-line text-gray-700 dark:text-white/90">
-                        {selectedPost.description || 'لا يوجد تفاصيل إضافية'}
-                      </p>
-                    </div>
-
-                    {/* Contact Info */}
-                    <div className="pt-2 border-t border-gray-100 dark:border-white/10 ">
-                      <h4 className="font-semibold mb-2 dark:text-white">معلومات الاتصال:</h4>
-                      <div className="space-y-1 text-gray-700 dark:text-white">
-                        {selectedPost.phone && (
-                          <div>☎️ {selectedPost.phone}</div>
-                        )}
-                        {selectedPost.working_hours && (
-                          <div>⏰ {selectedPost.working_hours}</div>
-                        )}
-                        {selectedPost.website && (
-                          <div className="truncate">🌐 <a className="text-amber-600 hover:underline dark:text-white" href={selectedPost.website} target="_blank" rel="noreferrer noopener">{selectedPost.website}</a></div>
-                        )}
-                        {!selectedPost.phone && !selectedPost.website && !selectedPost.working_hours && (
-                          <div className="text-gray-500 dark:text-white/80 text-sm flex flex-col gap-2">
-                            <button
-                              type="button"
-                              onClick={() => { window.location.href = '/profile?section=chat'; }}
-                              className="self-start inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium shadow-sm"
-                            >
-                              ابدأ دردشة
-                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                                <path d="M2.25 12c0-5.108 4.142-9.25 9.25-9.25s9.25 4.142 9.25 9.25-4.142 9.25-9.25 9.25a9.19 9.19 0 01-4.017-.913l-3.493.88a.75.75 0 01-.916-.916l.88-3.493A9.19 9.19 0 012.25 12zm6.5-1.25a1 1 0 100 2h6.5a1 1 0 100-2H8.75z" />
-                              </svg>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Tags */}
-                    {Array.isArray(selectedPost.tags) && selectedPost.tags.length > 0 && (
-                      <div className="pt-2 border-t border-gray-100 dark:border-white/10 ">
-                        <h4 className="font-semibold mb-2 dark:text-white">تاغات</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedPost.tags.map((t, i) => (
-                            <span key={i} className="px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 text-xs dark:bg-white/10 dark:text-white">
-                              {t}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Right column: image placeholder */}
-                  <div className="order-1 sm:order-2">
-                    <div className="w-full h-56 sm:h-64 rounded-xl bg-gray-100 dark:bg-gray-700/50 flex items-center justify-center">
-                      {(() => {
-                        const byId = SERVICE_CATEGORIES.flatMap(cat => cat.services.filter(s => s.id === selectedPost?.category_id))[0];
-                        const byName = SERVICE_CATEGORIES.flatMap(cat => cat.services.filter(s => s.title === selectedPost?.category_name))[0];
-                        const selectedCategory = byId || byName;
-                        if (selectedCategory?.icon) {
-                          return React.cloneElement(selectedCategory.icon, { className: "w-24 h-24 text-amber-500" });
-                        }
-                        return (
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12 text-gray-400">
-                            <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm0 3a1.5 1.5 0 011.5 1.5v4.5a1.5 1.5 0 01-3 0V6.75A1.5 1.5 0 0112 5.25zm0 9a1.5 1.5 0 100 3h.008a1.5 1.5 0 100-3H12z" clipRule="evenodd" />
-                          </svg>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleCloseDetails} variant="contained" color="warning">
-                إغلاق
-              </Button>
-            </DialogActions>
-          </Dialog>
         </>
       )}
     </div>
@@ -612,10 +715,6 @@ export default function ServicesPage() {
   // دالة للتحقق من تسجيل الدخول مع اختبار الجلسة
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [authError, setAuthError] = useState(null);
-  // حوار التغذية الراجعة (نجاح/خطأ) بدل alert
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [feedbackTitle, setFeedbackTitle] = useState("");
-  const [feedbackMessage, setFeedbackMessage] = useState("");
   
   // تأثير للتحقق من حالة المصادقة عند التحميل
   useEffect(() => {
@@ -715,6 +814,7 @@ export default function ServicesPage() {
     description: "",
     governorate: "",
     price: "",
+    isAnonymous: false
   });
 
   // التاغات
@@ -832,6 +932,7 @@ export default function ServicesPage() {
       description: "",
       governorate: "",
       price: "",
+      isAnonymous: false
     });
     setSelectedTags([]);
     setTagQuery("");
@@ -841,45 +942,79 @@ export default function ServicesPage() {
   // دالة مساعدة للحصول على المستخدم من الطلب مع تسجيل تفصيلي
   const getCurrentUser = async () => {
     try {
-      // 1) localStorage
-      const localStorageToken = localStorage.getItem('token');
-      if (localStorageToken) return { token: localStorageToken };
-
-      // 2) cookies -> localStorage
-      const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-        const [key, value] = cookie.trim().split('=');
-        acc[key] = value;
-        return acc;
-      }, {});
-      const cookieToken = cookies.token || cookies['token'];
-      if (cookieToken) {
-        localStorage.setItem('token', cookieToken);
-        return { token: cookieToken };
+      // 1) Check if we have a valid user from auth context first
+      if (user && user.token) {
+        return { token: user.token };
       }
+
+      // 2) Try to get token from localStorage
+      let token = null;
+      if (typeof window !== 'undefined') {
+        token = localStorage.getItem('token');
+      }
+      
+      // 3) If no token in localStorage, try to get from cookies
+      if (!token && typeof document !== 'undefined') {
+        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+          const [key, value] = cookie.trim().split('=');
+          acc[key] = value;
+          return acc;
+        }, {});
+        token = cookies.token || cookies['token'] || '';
+        
+        // If found in cookies, save to localStorage for future use
+        if (token && typeof window !== 'undefined') {
+          localStorage.setItem('token', token);
+        }
+      }
+
+      // 4) If we have a token, verify it's valid
+      if (token) {
+        // Simple validation that it looks like a JWT
+        const tokenParts = token.split('.');
+        if (tokenParts.length === 3) {
+          return { token };
+        } else {
+          // Invalid token format, clean up
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('token');
+          }
+          return null;
+        }
+      }
+
       return null;
-    } catch {
+    } catch (error) {
+      console.error('Error getting current user:', error);
       return null;
     }
   };
 
-  
-
   const submitForm = async (e) => {
     e.preventDefault();
+    console.log('Starting form submission...');
 
-    const currentUser = await getCurrentUser();
-    if (!currentUser || !currentUser.token) {
+    // Check if user is authenticated using the auth context
+    if (!isAuthenticated) {
+      console.log('User not authenticated - showing login prompt');
       setAuthError('يجب تسجيل الدخول أولاً');
       setShowLoginPrompt(true);
       return;
     }
-    const token = currentUser.token;
+    
+    // Get the token from the auth context
+    const token = user?.token || localStorage.getItem('token');
+    if (!token) {
+      console.error('No authentication token found');
+      setAuthError('لم يتم العثور على رمز المصادقة');
+      setShowLoginPrompt(true);
+      return;
+    }
 
     const categoryName = SERVICE_TO_CATEGORY_NAME[currentService];
     if (!categoryName) {
-      setFeedbackTitle("خطأ");
-      setFeedbackMessage("تعذر تحديد التصنيف لهذه الخدمة.");
-      setFeedbackOpen(true);
+      console.error('Could not determine category for service:', currentService);
+      alert("تعذر تحديد التصنيف لهذه الخدمة.");
       return;
     }
 
@@ -887,29 +1022,39 @@ export default function ServicesPage() {
       title: formData.title.trim(),
       description: formData.description?.trim() || "",
       governorate: formData.governorate || "",
-      price:
-        formData.price !== "" && formData.price !== null
-          ? Number(formData.price)
-          : null,
+      price: formData.price !== "" && formData.price !== null
+        ? Number(formData.price)
+        : null,
       categoryName,
       tags: selectedTags,
+      isAnonymous: formData.isAnonymous || false
     };
+
+    console.log('Sending payload:', JSON.stringify(payload, null, 2));
 
     try {
       const res = await fetch("/api/posts", {
         method: "POST",
+        credentials: 'include',
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify(payload),
       });
 
+      console.log('Response status:', res.status);
+      
+      const responseData = await res.json().catch(() => ({}));
+      console.log('Response data:', responseData);
+
       if (res.status === 401) {
+        console.log('Authentication required, attempting to refresh token...');
         try {
           await refreshUser();
           const again = await getCurrentUser();
           if (again?.token) {
+            console.log('Retrying with new token...');
             const retry = await fetch("/api/posts", {
               method: "POST",
               headers: {
@@ -918,37 +1063,40 @@ export default function ServicesPage() {
               },
               body: JSON.stringify(payload),
             });
-            const retryData = await retry.json();
-            if (!retry.ok) throw new Error(retryData.message || "فشل في إضافة المنشور");
+            
+            const retryData = await retry.json().catch(() => ({}));
+            console.log('Retry response:', { status: retry.status, data: retryData });
+            
+            if (!retry.ok) {
+              throw new Error(retryData.message || `فشل في إضافة المنشور (${retry.status})`);
+            }
+            
             resetForm();
-            setFeedbackTitle("تم الإرسال");
-            setFeedbackMessage("تم إرسال منشورك للمراجعة. بانتظار موافقة الإدارة.");
-            setFeedbackOpen(true);
+            alert("تم إرسال منشورك للمراجعة. بانتظار موافقة الإدارة.");
             return;
           }
           throw new Error("انتهت صلاحية الجلسة");
         } catch (err) {
+          console.error('Token refresh failed:', err);
           setAuthError('انتهت جلستك. يرجى تسجيل الدخول مرة أخرى');
           setShowLoginPrompt(true);
           return;
         }
       }
 
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.message || `خطأ (${res.status})`);
+      if (!res.ok) {
+        throw new Error(responseData.message || `خطأ في الخادم (${res.status})`);
+      }
 
       resetForm();
-      setFeedbackTitle("تم الإرسال");
-      setFeedbackMessage("تم إرسال منشورك للمراجعة. بانتظار موافقة الإدارة.");
-      setFeedbackOpen(true);
+      alert("تم إرسال منشورك للمراجعة. بانتظار موافقة الإدارة.");
     } catch (err) {
-      if (err.message.includes("جلسة")) {
+      console.error('Submission error:', err);
+      if (err.message.includes("جلسة") || err.message.includes("انتهت")) {
         setAuthError('انتهت جلستك. يرجى تسجيل الدخول مرة أخرى');
         setShowLoginPrompt(true);
       } else {
-        setFeedbackTitle("خطأ");
-        setFeedbackMessage(err.message || "حدث خطأ أثناء محاولة إضافة المنشور. يرجى المحاولة مرة أخرى.");
-        setFeedbackOpen(true);
+        alert(err.message || "حدث خطأ أثناء محاولة إضافة المنشور. يرجى المحاولة مرة أخرى.");
       }
     }
   };
@@ -1145,11 +1293,11 @@ export default function ServicesPage() {
   // JSX
   // ------------------------
   return (
-    <div className="flex flex-col md:flex-row">
+    <div className=" flex flex-col md:flex-row">
       {/* --- Sidebar (Desktop) --- */}
       <aside
         ref={sidebarRef}
-        className="sidebar-container hidden md:block w-64 overflow-y-auto h-screen sticky top-0"
+        className="sidebar-container hidden md:block w-64  border-l border-gray-200 dark:border-gray-700 overflow-y-auto h-screen sticky top-0"
       >
         <div className="p-4 space-y-1">
           <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
@@ -1465,6 +1613,22 @@ export default function ServicesPage() {
                 </select>
               </div>
 
+              {/* Anonymous Toggle */}
+              <div className="flex items-center justify-between p-2 border border-gray-200 dark:border-gray-700 rounded-md">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  نشر بشكل مجهول
+                </label>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer"
+                    checked={formData.isAnonymous}
+                    onChange={(e) => setFormData(prev => ({...prev, isAnonymous: e.target.checked}))}
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-amber-500"></div>
+                </label>
+              </div>
+
               {/* التاغات */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">
@@ -1660,27 +1824,6 @@ export default function ServicesPage() {
             autoFocus
           >
             تسجيل الدخول
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* نافذة تأكيد/خطأ بعد الإرسال */}
-      <Dialog
-        open={feedbackOpen}
-        onClose={() => setFeedbackOpen(false)}
-        aria-labelledby="feedback-dialog-title"
-        aria-describedby="feedback-dialog-description"
-        dir="rtl"
-      >
-        <DialogTitle id="feedback-dialog-title">{feedbackTitle}</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="feedback-dialog-description">
-            {feedbackMessage}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setFeedbackOpen(false)} variant="contained" color="warning">
-            إغلاق
           </Button>
         </DialogActions>
       </Dialog>

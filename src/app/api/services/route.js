@@ -141,18 +141,21 @@ export async function GET(req) {
       p.is_visible,
       p.created_at,
       p.user_id,
+      p.is_anonymous,
       p.category_id,
       c.name AS category_name,
+      u.name AS user_name,
       COALESCE(
         array_agg(DISTINCT t.name) FILTER (WHERE t.id IS NOT NULL),
         '{}'
       ) AS tags
     FROM public.posts p
     LEFT JOIN public.categories c ON c.id = p.category_id
+    LEFT JOIN public.users u ON u.id = p.user_id
     LEFT JOIN public.post_tags pt ON pt.post_id = p.id
     LEFT JOIN public.tags t ON t.id = pt.tag_id
     ${whereSql}
-    GROUP BY p.id, c.name
+    GROUP BY p.id, c.name, u.name
     ORDER BY ${sortBy} ${order}
     LIMIT ${limit} OFFSET ${offset};
   `;

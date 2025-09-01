@@ -5,9 +5,9 @@ import {
   Container, Box, Typography, TextField, Button,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Paper, IconButton, Dialog, DialogTitle, DialogContent, DialogActions,
-  Select, MenuItem, FormControl, InputLabel, Alert, Snackbar, Tooltip, Pagination
+  Select, MenuItem, FormControl, InputLabel, Alert, Snackbar, Tooltip, Pagination, Chip
 } from '@mui/material';
-import { Edit, Delete, Refresh, Add } from '@mui/icons-material';
+import { Edit, Delete, Refresh, Add, CheckCircleOutline, ErrorOutline, WarningAmberOutlined, InfoOutlined } from '@mui/icons-material';
 
 // ===== Helpers =====
 function isAdmin(userData) {
@@ -312,47 +312,185 @@ const UsersManagement = ({ userData: userDataProp = null }) => {
   return (
     <Container maxWidth="lg">
       <Box sx={{ mt: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h5" component="h2">
-            إدارة المستخدمين {listLoading ? '…' : ''}
-          </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<Add />}
-            onClick={() => {
-              setEditingUser({ id: '', name: '', email: '', role: 'user' });
-              setOpenDialog(true);
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          mb: 4, 
+          p: 3,
+          borderRadius: 2,
+          bgcolor: 'var(--card-bg)',
+          border: '1px solid',
+          borderColor: 'var(--border)',
+          boxShadow: 'var(--shadow-sm)',
+          transition: 'all 0.2s ease-in-out'
+        }}>
+          <Typography 
+            variant="h5" 
+            component="h2"
+            sx={{ 
+              fontWeight: 700,
+              color: 'var(--text-primary)',
+              fontSize: '1.5rem',
+              letterSpacing: '0.5px'
             }}
           >
-            إضافة مستخدم جديد
-          </Button>
+            إدارة المستخدمين {listLoading ? '…' : ''}
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="outlined"
+              startIcon={<Refresh />}
+              onClick={fetchUsers}
+              disabled={listLoading}
+              sx={{
+                color: 'var(--text-primary)',
+                borderColor: 'var(--primary)',
+                '&:hover': {
+                  borderColor: 'var(--gold-border)',
+                  backgroundColor: 'var(--muted)',
+                },
+                '&.Mui-disabled': {
+                  borderColor: 'var(--border)',
+                  color: 'var(--muted-foreground)'
+                },
+                fontWeight: 600,
+                textTransform: 'none',
+                borderRadius: 1,
+                px: 3,
+                py: 1,
+                transition: 'all 0.2s ease-in-out',
+              }}
+            >
+              تحديث
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => {
+                setEditingUser({ id: '', name: '', email: '', role: 'user' });
+                setOpenDialog(true);
+              }}
+              sx={{
+                bgcolor: 'var(--primary)',
+                color: 'var(--primary-foreground)',
+                '&:hover': {
+                  bgcolor: 'var(--primary-hover)',
+                  boxShadow: '0 4px 12px -1px rgba(255, 213, 0, 0.3)'
+                },
+                '&.Mui-disabled': {
+                  bgcolor: 'var(--muted)',
+                  color: 'var(--muted-foreground)'
+                },
+                fontWeight: 600,
+                textTransform: 'none',
+                borderRadius: 1,
+                px: 3,
+                py: 1,
+                transition: 'all 0.2s ease-in-out',
+              }}
+            >
+              إضافة مستخدم جديد
+            </Button>
+          </Box>
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2, 
+          mb: 3, 
+          alignItems: 'center',
+          p: 2,
+          borderRadius: 1,
+          bgcolor: 'var(--card-bg)',
+          border: '1px solid',
+          borderColor: 'var(--border)',
+          boxShadow: 'var(--shadow-sm)'
+        }}>
           <TextField
             fullWidth
             label="بحث عن مستخدم..."
             variant="outlined"
             value={searchTerm}
             onChange={handleSearch}
+            size="small"
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': {
+                  borderColor: 'var(--border)',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'var(--primary)',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: 'var(--primary)',
+                },
+              },
+              '& .MuiInputLabel-root': {
+                color: 'var(--muted-foreground)',
+              },
+              '& .MuiInputBase-input': {
+                color: 'var(--text-primary)',
+              },
+            }}
           />
           <FormControl size="small" sx={{ width: 140 }}>
-            <InputLabel>حجم الصفحة</InputLabel>
+            <InputLabel sx={{ color: 'var(--muted-foreground)' }}>حجم الصفحة</InputLabel>
             <Select
               value={pageSize}
               label="حجم الصفحة"
               onChange={(e) => { setPage(1); setPageSize(Number(e.target.value)); }}
+              sx={{
+                '& .MuiSelect-select': {
+                  color: 'var(--text-primary)',
+                },
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'var(--border)',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'var(--primary)',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'var(--primary)',
+                },
+              }}
             >
-              {[10, 20, 50, 100].map(sz => <MenuItem key={sz} value={sz}>{sz}</MenuItem>)}
+              {[10, 20, 50, 100].map(sz => 
+                <MenuItem key={sz} value={sz} sx={{ color: 'var(--text-primary)' }}>{sz}</MenuItem>
+              )}
             </Select>
           </FormControl>
         </Box>
 
-        <TableContainer component={Paper}>
+        <TableContainer 
+          component={Paper} 
+          elevation={0}
+          sx={{
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'var(--border)',
+            bgcolor: 'var(--card-bg)',
+            boxShadow: 'var(--shadow-sm)',
+            mb: 3
+          }}
+        >
           <Table>
             <TableHead>
-              <TableRow>
+              <TableRow sx={{ 
+                '& th': {
+                  color: 'var(--text-primary)',
+                  fontWeight: 700,
+                  borderBottom: '2px solid',
+                  borderColor: 'var(--border)',
+                  fontSize: '0.95rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  py: 1.5
+                },
+                '&:hover': {
+                  bgcolor: 'transparent !important'
+                }
+              }}>
                 <TableCell>الاسم</TableCell>
                 <TableCell>البريد الإلكتروني</TableCell>
                 <TableCell>الدور</TableCell>
@@ -361,36 +499,93 @@ const UsersManagement = ({ userData: userDataProp = null }) => {
             </TableHead>
             <TableBody>
               {filteredRows.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell>{row.name}</TableCell>
-                  <TableCell>{row.email}</TableCell>
-                  <TableCell>{row.role === 'admin' ? 'مدير' : 'مستخدم'}</TableCell>
+                <TableRow 
+                  key={row.id}
+                  sx={{
+                    '&:hover': {
+                      bgcolor: 'var(--muted)'
+                    },
+                    '&:last-child td': {
+                      borderBottom: 'none'
+                    }
+                  }}
+                >
+                  <TableCell sx={{ color: 'var(--text-primary)' }}>{row.name}</TableCell>
+                  <TableCell sx={{ color: 'var(--text-secondary)' }}>{row.email}</TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={row.role === 'admin' ? 'مدير' : 'مستخدم'}
+                      size="small"
+                      sx={{
+                        bgcolor: row.role === 'admin' ? 'rgba(46, 125, 50, 0.1)' : 'rgba(30, 136, 229, 0.1)',
+                        color: row.role === 'admin' ? 'var(--success)' : 'var(--primary)',
+                        fontWeight: 500,
+                        px: 1
+                      }}
+                    />
+                  </TableCell>
                   <TableCell align="center">
-                    <Tooltip title="تعديل">
-                      <IconButton onClick={() => handleEditClick(row)} color="primary" sx={{ mr: 0.5 }}>
-                        <Edit />
-                      </IconButton>
-                    </Tooltip>
-
-                    <Tooltip title="إعادة تعيين كلمة المرور">
-                      <IconButton onClick={() => handleResetPassword(row)} color="secondary" sx={{ mr: 0.5 }}>
-                        <Refresh />
-                      </IconButton>
-                    </Tooltip>
-
-                    {row.id !== currentUserId && (
-                      <Tooltip title="حذف">
-                        <IconButton onClick={() => handleDeleteClick(row)} color="error">
-                          <Delete />
+                    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
+                      <Tooltip title="تعديل">
+                        <IconButton 
+                          onClick={() => handleEditClick(row)} 
+                          sx={{ 
+                            color: 'var(--text-secondary)',
+                            '&:hover': {
+                              color: 'var(--primary)',
+                              bgcolor: 'var(--muted)'
+                            }
+                          }}
+                        >
+                          <Edit fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                    )}
+
+                      <Tooltip title="إعادة تعيين كلمة المرور">
+                        <IconButton 
+                          onClick={() => handleResetPassword(row)}
+                          sx={{ 
+                            color: 'var(--text-secondary)',
+                            '&:hover': {
+                              color: 'var(--warning)',
+                              bgcolor: 'var(--muted)'
+                            }
+                          }}
+                        >
+                          <Refresh fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+
+                      {row.id !== currentUserId && (
+                        <Tooltip title="حذف">
+                          <IconButton 
+                            onClick={() => handleDeleteClick(row)}
+                            sx={{ 
+                              color: 'var(--text-secondary)',
+                              '&:hover': {
+                                color: 'var(--destructive)',
+                                bgcolor: 'var(--muted)'
+                              }
+                            }}
+                          >
+                            <Delete fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </Box>
                   </TableCell>
                 </TableRow>
               ))}
               {filteredRows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} align="center">
+                  <TableCell 
+                    colSpan={4} 
+                    align="center" 
+                    sx={{ 
+                      py: 4,
+                      color: 'var(--muted-foreground)'
+                    }}
+                  >
                     {listLoading ? 'جاري التحميل…' : 'لا توجد نتائج مطابقة'}
                   </TableCell>
                 </TableRow>
@@ -400,8 +595,18 @@ const UsersManagement = ({ userData: userDataProp = null }) => {
         </TableContainer>
 
         {/* Pagination controls */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', my: 2 }}>
-          <Typography variant="body2">
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          p: 2,
+          borderRadius: 1,
+          bgcolor: 'var(--card-bg)',
+          border: '1px solid',
+          borderColor: 'var(--border)',
+          boxShadow: 'var(--shadow-sm)'
+        }}>
+          <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>
             إجمالي: {total} مستخدم
           </Typography>
           <Pagination
@@ -409,20 +614,171 @@ const UsersManagement = ({ userData: userDataProp = null }) => {
             page={page}
             onChange={(_, value) => setPage(value)}
             color="primary"
+            shape="rounded"
+            sx={{
+              '& .MuiPaginationItem-root': {
+                color: 'var(--text-primary)',
+                '&:hover': {
+                  backgroundColor: 'var(--muted)'
+                },
+                '&.Mui-selected': {
+                  backgroundColor: 'var(--primary)',
+                  color: 'var(--primary-foreground)',
+                  '&:hover': {
+                    backgroundColor: 'var(--primary-hover)'
+                  }
+                },
+                '&.Mui-disabled': {
+                  color: 'var(--muted-foreground)'
+                }
+              }
+            }}
           />
         </Box>
 
         {/* Add/Edit User Dialog */}
-        <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-          <DialogTitle>{editingUser.id ? 'تعديل مستخدم' : 'إضافة مستخدم جديد'}</DialogTitle>
-          <DialogContent>
-            <Box sx={{ mt: 2, minWidth: 400 }}>
+        <Dialog 
+          open={openDialog} 
+          onClose={() => setOpenDialog(false)}
+          PaperProps={{
+            component: 'div',
+            sx: (theme) => ({
+              '& .MuiDialog-container': {
+                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.5)',
+                '& .MuiPaper-root': {
+                  backgroundColor: 'var(--background) !important',
+                  background: 'var(--background) !important',
+                  backgroundImage: 'none !important',
+                  opacity: '1 !important',
+                  minWidth: '500px',
+                  borderRadius: 2,
+                  boxShadow: 'var(--shadow-lg)',
+                  border: '1px solid var(--border)',
+                  '& *': {
+                    backgroundColor: 'transparent !important',
+                    background: 'transparent !important',
+                    backgroundImage: 'none !important',
+                    opacity: '1 !important',
+                    color: 'var(--foreground) !important',
+                    '&::before, &::after': {
+                      backgroundColor: 'transparent !important',
+                      background: 'transparent !important',
+                      opacity: '1 !important',
+                    }
+                  },
+                  '& input, & select, & textarea': {
+                    backgroundColor: 'var(--background) !important',
+                    background: 'var(--background) !important',
+                    color: 'var(--foreground) !important',
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'var(--muted-foreground) !important',
+                    '&.Mui-focused': {
+                      color: 'var(--primary) !important',
+                    }
+                  },
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: 'var(--input) !important',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'var(--primary) !important',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'var(--primary) !important',
+                    },
+                  },
+                  '& .MuiSelect-select': {
+                    backgroundColor: 'var(--background) !important',
+                    color: 'var(--foreground) !important',
+                  },
+                  '& .MuiMenuItem-root': {
+                    '&:hover': {
+                      backgroundColor: 'var(--muted) !important',
+                    }
+                  }
+                }
+              },
+              '& .MuiBackdrop-root': {
+                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.7) !important' : 'rgba(0, 0, 0, 0.5) !important',
+                backdropFilter: 'blur(2px)'
+              },
+              '& .MuiDialog-paper': {
+                backgroundColor: 'var(--background) !important',
+                background: 'var(--background) !important',
+                color: 'var(--foreground) !important',
+                opacity: '1 !important',
+              }
+            })
+          }}
+        >
+          <DialogTitle sx={{ 
+            borderBottom: '1px solid',
+            borderColor: 'var(--border)',
+            bgcolor: 'var(--background)',
+            color: 'var(--foreground)',
+            fontWeight: 700,
+            py: 2,
+            px: 3,
+            fontSize: '1.25rem',
+            textAlign: 'center',
+            m: 0
+          }}>
+            {editingUser.id ? 'تعديل مستخدم' : 'إضافة مستخدم جديد'}
+          </DialogTitle>
+          <DialogContent sx={{ 
+            py: 3, 
+            px: 3,
+            bgcolor: 'var(--background)',
+            color: 'var(--foreground)'
+          }}>
+            <Box sx={{ 
+              minWidth: 400,
+              '& .MuiFormLabel-root': {
+                color: 'var(--muted-foreground)'
+              },
+              '& .MuiInputBase-input': {
+                color: 'var(--foreground)',
+                '&::placeholder': {
+                  color: 'var(--muted-foreground)',
+                  opacity: 0.8
+                }
+              },
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'var(--input)'
+              },
+              '& .MuiSvgIcon-root': {
+                color: 'var(--muted-foreground)'
+              }
+            }}>
               <TextField
                 fullWidth
                 label="الاسم"
                 value={editingUser.name}
                 onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
                 margin="normal"
+                variant="outlined"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: 'var(--border)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'var(--primary)',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'var(--primary)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'var(--text-secondary)',
+                  },
+                  '& .MuiInputBase-input': {
+                    color: 'var(--text-primary)',
+                    backgroundColor: 'var(--card-bg)'
+                  },
+                  mb: 2
+                }}
               />
               <TextField
                 fullWidth
@@ -431,72 +787,394 @@ const UsersManagement = ({ userData: userDataProp = null }) => {
                 value={editingUser.email}
                 onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
                 margin="normal"
+                variant="outlined"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: 'var(--border)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'var(--primary)',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'var(--primary)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'var(--text-secondary)',
+                  },
+                  '& .MuiInputBase-input': {
+                    color: 'var(--text-primary)',
+                    backgroundColor: 'var(--card-bg)'
+                  },
+                  mb: 2
+                }}
               />
-              <FormControl fullWidth margin="normal">
-                <InputLabel>الدور</InputLabel>
+              <FormControl fullWidth margin="normal" variant="outlined">
+                <InputLabel 
+                  sx={{ 
+                    color: 'var(--muted-foreground)',
+                    '&.Mui-focused': {
+                      color: 'var(--primary)'
+                    }
+                  }}
+                >
+                  الدور
+                </InputLabel>
                 <Select
                   value={editingUser.role}
                   label="الدور"
                   onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                  sx={{
+                    '& .MuiSelect-select': {
+                      color: 'var(--foreground)',
+                      backgroundColor: 'var(--background)',
+                      '&:focus': {
+                        backgroundColor: 'transparent'
+                      }
+                    },
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'var(--input)',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'var(--primary)',
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'var(--primary)',
+                    },
+                    '& .MuiSvgIcon-root': {
+                      color: 'var(--muted-foreground)'
+                    }
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        bgcolor: 'var(--background)',
+                        color: 'var(--foreground)',
+                        '& .MuiMenuItem-root': {
+                          '&:hover': {
+                            backgroundColor: 'var(--muted)'
+                          },
+                          '&.Mui-selected': {
+                            backgroundColor: 'var(--muted)',
+                            '&:hover': {
+                              backgroundColor: 'var(--muted)'
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }}
                 >
-                  <MenuItem value="user">مستخدم عادي</MenuItem>
-                  <MenuItem value="admin">مدير</MenuItem>
+                  <MenuItem value="user" sx={{ color: 'var(--foreground)' }}>مستخدم عادي</MenuItem>
+                  <MenuItem value="admin" sx={{ color: 'var(--foreground)' }}>مدير</MenuItem>
                 </Select>
               </FormControl>
             </Box>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenDialog(false)}>إلغاء</Button>
-            <Button onClick={handleSaveUser} variant="contained" color="primary" disabled={saving}>
-              {saving ? 'جارٍ الحفظ…' : 'حفظ'}
+          <DialogActions sx={{ 
+            px: 3, 
+            py: 2, 
+            borderTop: '1px solid',
+            borderColor: 'var(--border)',
+            bgcolor: 'var(--background)',
+            '& .MuiButton-root': {
+              textTransform: 'none',
+              fontWeight: 600,
+              '&.MuiButton-contained': {
+                bgcolor: 'var(--primary)',
+                color: 'var(--primary-foreground)',
+                '&:hover': {
+                  bgcolor: 'var(--primary-hover)'
+                },
+                '&.Mui-disabled': {
+                  bgcolor: 'var(--muted)',
+                  color: 'var(--muted-foreground)'
+                }
+              },
+              '&.MuiButton-outlined': {
+                color: 'var(--primary)',
+                borderColor: 'var(--border)',
+                '&:hover': {
+                  borderColor: 'var(--primary)',
+                  bgcolor: 'var(--muted)'
+                }
+              }
+            }
+          }}>
+            <Button 
+              onClick={() => setOpenDialog(false)}
+              sx={{
+                color: 'var(--text-secondary)',
+                '&:hover': {
+                  backgroundColor: 'var(--muted)'
+                }
+              }}
+            >
+              إلغاء
+            </Button>
+            <Button 
+              onClick={handleSaveUser} 
+              variant="contained" 
+              disabled={saving}
+              sx={{
+                bgcolor: 'var(--primary)',
+                color: 'var(--primary-foreground)',
+                '&:hover': {
+                  bgcolor: 'var(--primary-hover)'
+                },
+                '&.Mui-disabled': {
+                  bgcolor: 'var(--muted)',
+                  color: 'var(--muted-foreground)'
+                },
+                fontWeight: 500,
+                px: 3,
+                py: 0.5,
+                borderRadius: 1
+              }}
+            >
+              {editingUser.id ? 'حفظ التغييرات' : 'إضافة مستخدم'}
             </Button>
           </DialogActions>
         </Dialog>
 
-        {/* Delete Confirmation Dialog */}
-        <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
-          <DialogTitle>تأكيد الحذف</DialogTitle>
-          <DialogContent>
-            <Typography>هل أنت متأكد من رغبتك في حذف المستخدم {selectedUser?.name}؟</Typography>
+        {/* Reset Password Dialog */}
+        <Dialog 
+          open={openResetDialog} 
+          onClose={() => setOpenResetDialog(false)}
+          PaperProps={{
+            sx: {
+              bgcolor: 'var(--card-bg)',
+              color: 'var(--text-primary)',
+              minWidth: '400px',
+              borderRadius: 2,
+              boxShadow: 'var(--shadow-lg)'
+            }
+          }}
+        >
+          <DialogTitle sx={{ 
+            borderBottom: '1px solid',
+            borderColor: 'var(--border)',
+            bgcolor: 'var(--card-bg)',
+            color: 'var(--text-primary)',
+            fontWeight: 600,
+            py: 2
+          }}>
+            إعادة تعيين كلمة المرور
+          </DialogTitle>
+          <DialogContent sx={{ py: 3 }}>
+            <Typography sx={{ color: 'var(--text-primary)', mb: 2 }}>
+              سيتم تعيين كلمة المرور الجديدة لـ <strong>{selectedUser?.name}</strong> إلى:
+            </Typography>
+            <Box 
+              sx={{ 
+                bgcolor: 'var(--muted)', 
+                p: 2, 
+                borderRadius: 1,
+                textAlign: 'center',
+                mb: 2
+              }}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'var(--warning)', fontFamily: 'monospace' }}>
+                123456
+              </Typography>
+            </Box>
+            <Typography variant="body2" sx={{ color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: 1 }}>
+              سيتم إرسال بريد إلكتروني إلى المستخدم يحتوي على تعليمات تغيير كلمة المرور.
+            </Typography>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenDeleteDialog(false)}>إلغاء</Button>
-            <Button onClick={handleDeleteUser} color="error" variant="contained">
-              حذف
+          <DialogActions sx={{ 
+            px: 3, 
+            py: 2, 
+            borderTop: '1px solid',
+            borderColor: 'var(--border)',
+            bgcolor: 'var(--background)',
+            '& .MuiButton-root': {
+              textTransform: 'none',
+              fontWeight: 600,
+              '&.MuiButton-contained': {
+                bgcolor: 'var(--primary)',
+                color: 'var(--primary-foreground)',
+                '&:hover': {
+                  bgcolor: 'var(--primary-hover)'
+                },
+                '&.Mui-disabled': {
+                  bgcolor: 'var(--muted)',
+                  color: 'var(--muted-foreground)'
+                }
+              },
+              '&.MuiButton-outlined': {
+                color: 'var(--primary)',
+                borderColor: 'var(--border)',
+                '&:hover': {
+                  borderColor: 'var(--primary)',
+                  bgcolor: 'var(--muted)'
+                }
+              }
+            }
+          }}>
+            <Button 
+              onClick={() => setOpenResetDialog(false)}
+              sx={{
+                color: 'var(--text-secondary)',
+                '&:hover': {
+                  backgroundColor: 'var(--muted)'
+                }
+              }}
+            >
+              إلغاء
             </Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Reset Password Confirmation Dialog (واجهة فقط) */}
-        <Dialog open={openResetDialog} onClose={() => setOpenResetDialog(false)}>
-          <DialogTitle>إعادة تعيين كلمة المرور</DialogTitle>
-          <DialogContent>
-            <Typography gutterBottom>
-              سيتم تعيين كلمة المرور الجديدة للمستخدم <strong>{selectedUser?.name}</strong> إلى:
-            </Typography>
-            <Typography variant="h6" align="center" color="primary" sx={{ my: 2 }}>
-              123456
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              سيتمكن المستخدم من تسجيل الدخول باستخدام هذه الكلمة ومن ثم تغييرها من إعدادات الحساب.
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenResetDialog(false)}>إلغاء</Button>
-            <Button onClick={handleResetPasswordConfirm} color="primary" variant="contained">
+            <Button 
+              onClick={handleResetPasswordConfirm} 
+              variant="contained" 
+              sx={{
+                bgcolor: 'var(--warning)',
+                color: 'var(--warning-foreground)',
+                '&:hover': {
+                  bgcolor: 'var(--warning-hover)'
+                },
+                fontWeight: 500,
+                px: 3,
+                py: 0.5,
+                borderRadius: 1
+              }}
+            >
               تأكيد
             </Button>
           </DialogActions>
         </Dialog>
 
-        {/* Snackbar */}
+        {/* Delete Confirmation Dialog */}
+        <Dialog
+          open={openDeleteDialog}
+          onClose={() => setOpenDeleteDialog(false)}
+          PaperProps={{
+            sx: {
+              bgcolor: 'var(--card-bg)',
+              color: 'var(--text-primary)',
+              minWidth: '400px',
+              borderRadius: 2,
+              boxShadow: 'var(--shadow-lg)'
+            }
+          }}
+        >
+          <DialogTitle sx={{ 
+            borderBottom: '1px solid',
+            borderColor: 'var(--border)',
+            bgcolor: 'var(--card-bg)',
+            color: 'var(--text-primary)',
+            fontWeight: 600,
+            py: 2
+          }}>
+            تأكيد الحذف
+          </DialogTitle>
+          <DialogContent sx={{ py: 3 }}>
+            <Typography sx={{ color: 'var(--text-primary)' }}>
+              هل أنت متأكد من رغبتك في حذف المستخدم <strong>{selectedUser?.name}</strong>؟
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'var(--destructive)', mt: 1 }}>
+              لا يمكن التراجع عن هذا الإجراء.
+            </Typography>
+          </DialogContent>
+          <DialogActions sx={{ 
+            px: 3, 
+            py: 2, 
+            borderTop: '1px solid',
+            borderColor: 'var(--border)',
+            bgcolor: 'var(--background)',
+            '& .MuiButton-root': {
+              textTransform: 'none',
+              fontWeight: 600,
+              '&.MuiButton-contained': {
+                bgcolor: 'var(--primary)',
+                color: 'var(--primary-foreground)',
+                '&:hover': {
+                  bgcolor: 'var(--primary-hover)'
+                },
+                '&.Mui-disabled': {
+                  bgcolor: 'var(--muted)',
+                  color: 'var(--muted-foreground)'
+                }
+              },
+              '&.MuiButton-outlined': {
+                color: 'var(--primary)',
+                borderColor: 'var(--border)',
+                '&:hover': {
+                  borderColor: 'var(--primary)',
+                  bgcolor: 'var(--muted)'
+                }
+              }
+            }
+          }}>
+            <Button 
+              onClick={() => setOpenDeleteDialog(false)}
+              sx={{
+                color: 'var(--text-secondary)',
+                '&:hover': {
+                  backgroundColor: 'var(--muted)'
+                }
+              }}
+            >
+              إلغاء
+            </Button>
+            <Button 
+              onClick={handleDeleteUser} 
+              variant="contained" 
+              color="error"
+              sx={{
+                bgcolor: 'var(--destructive)',
+                color: 'var(--destructive-foreground)',
+                '&:hover': {
+                  bgcolor: 'var(--destructive-hover)'
+                },
+                fontWeight: 500,
+                px: 3,
+                py: 0.5,
+                borderRadius: 1
+              }}
+            >
+              حذف
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Snackbar for notifications */}
         <Snackbar
           open={snackbar.open}
           autoHideDuration={6000}
           onClose={handleCloseSnackbar}
           anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          sx={{
+            '& .MuiPaper-root': {
+              bgcolor: snackbar.severity === 'error' ? 'var(--destructive)' : 
+                       snackbar.severity === 'success' ? 'var(--success)' : 
+                       snackbar.severity === 'warning' ? 'var(--warning)' : 'var(--primary)',
+              color: 'white',
+              fontWeight: 500,
+              boxShadow: 'var(--shadow-lg)'
+            }
+          }}
         >
-          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          <Alert 
+            onClose={handleCloseSnackbar} 
+            severity={snackbar.severity} 
+            sx={{ 
+              width: '100%',
+              '& .MuiAlert-message': {
+                color: 'white',
+                fontWeight: 500
+              },
+              '& .MuiAlert-icon': {
+                color: 'white'
+              }
+            }}
+            iconMapping={{
+              success: <CheckCircleOutline fontSize="inherit" />,
+              error: <ErrorOutline fontSize="inherit" />,
+              warning: <WarningAmberOutlined fontSize="inherit" />,
+              info: <InfoOutlined fontSize="inherit" />
+            }}
+          >
             {snackbar.message}
           </Alert>
         </Snackbar>
