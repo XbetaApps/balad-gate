@@ -66,15 +66,53 @@ const DynamicSection = ({ section }) => {
     try {
       setLoading(true);
       setError(null);
+      
+      console.log('جاري جلب البيانات للقسم:', section.title);
+      console.log('API Endpoint:', section.apiEndpoint || 'غير محدد');
 
-      const url = section.apiEndpoint || `/api/posts?category=${encodeURIComponent(section.id || '')}`;
+      // إذا كان هناك apiEndpoint مخصص، استخدمه مباشرة
+      if (section.apiEndpoint) {
+        console.log('جاري جلب البيانات من API المخصص');
+        const response = await fetch(section.apiEndpoint);
+        console.log('حالة الاستجابة:', response.status, response.statusText);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('خطأ في الاستجابة:', errorText);
+          throw new Error('فشل في تحميل البيانات: ' + response.status);
+        }
+        
+        const data = await response.json();
+        console.log('تم استلام البيانات:', data);
+        
+        const itemsData = Array.isArray(data?.items) ? data.items : [];
+        console.log('عدد العناصر المستلمة:', itemsData.length);
+        
+        setItems(itemsData);
+        return;
+      }
+
+      // إذا لم يكن هناك apiEndpoint، استخدم عنوان URL الافتراضي مع اسم القسم
+      const url = `/api/posts?categoryName=${encodeURIComponent(section.title || '')}`;
+      console.log('جاري جلب البيانات من URL:', url);
+      
       const response = await fetch(url);
-      if (!response.ok) throw new Error('فشل في تحميل البيانات');
+      console.log('حالة الاستجابة:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('خطأ في الاستجابة:', errorText);
+        throw new Error('فشل في تحميل البيانات: ' + response.status);
+      }
 
       const data = await response.json();
+      console.log('تم استلام البيانات:', data);
+      
       const itemsData = Array.isArray(data?.items) ? data.items : [];
+      console.log('عدد العناصر المستلمة:', itemsData.length);
       setItems(itemsData);
     } catch (err) {
+      console.error('Error fetching items:', err);
       setError(err.message || 'حدث خطأ أثناء تحميل البيانات');
       setItems([]);
     } finally {

@@ -45,6 +45,7 @@ import {
   FaBoxes,
   FaTimes,
   FaThList,
+  FaTags,
   FaGift,
   FaClock,
   FaPhone,
@@ -432,137 +433,181 @@ function PostCard({ post }) {
           maxWidth="md"
           fullWidth
           className="rtl"
+          PaperProps={{
+            className: 'bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-700'
+          }}
         >
-          <DialogTitle className="bg-gradient-to-r from-amber-500 to-amber-600 text-white p-4 flex justify-between items-center">
-            <span>تفاصيل {post.title}</span>
+          <DialogTitle className="bg-gradient-to-r from-amber-500 to-amber-600 text-white p-6 flex justify-between items-center shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-full">
+                {getServiceIcon(post.category_name, 'w-6 h-6 text-white')}
+              </div>
+              <h2 className="text-xl font-bold">تفاصيل {post.title}</h2>
+            </div>
             <button 
               onClick={closeModal}
-              className="text-white hover:text-gray-200"
+              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              aria-label="إغلاق"
             >
-              <FaTimes />
+              <FaTimes className="w-5 h-5" />
             </button>
           </DialogTitle>
-          <DialogContent className="p-0">
-            <div className="grid md:grid-cols-2 gap-6 p-6">
+          
+          <DialogContent className="p-0 overflow-hidden">
+            <div className="grid md:grid-cols-2 gap-0 h-full">
               {/* Left Column - Image with Service Icon */}
-              <div className="bg-gray-100 dark:bg-gray-700 rounded-lg h-64 md:h-full flex items-center justify-center p-4">
-                <div className="text-6xl text-amber-500">
-                  {getServiceIcon(post.category_name, 'w-20 h-20')}
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-gray-800 dark:to-gray-900 p-8 flex flex-col items-center justify-center relative overflow-hidden">
+                <div className="absolute inset-0 opacity-10">
+                  <div className="absolute -top-20 -right-20 w-40 h-40 bg-amber-300 dark:bg-amber-800 rounded-full filter blur-3xl opacity-50"></div>
+                  <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-blue-300 dark:bg-blue-900 rounded-full filter blur-3xl opacity-30"></div>
+                </div>
+                <div className="relative z-10 text-center">
+                  <div className="w-32 h-32 bg-white dark:bg-gray-800 rounded-2xl shadow-lg flex items-center justify-center mx-auto mb-6 transform transition-transform duration-500 hover:scale-105">
+                    {getServiceIcon(post.category_name, 'w-16 h-16 text-amber-500 dark:text-amber-400')}
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    {post.title || 'عنوان غير محدد'}
+                  </h3>
+                  <p className="text-amber-600 dark:text-amber-400 font-medium">
+                    {getServiceName(post.category_name) || 'خدمة'}
+                  </p>
+                  
+                  {price && (
+                    <div className="mt-6 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md">
+                      <div className="flex items-center justify-center gap-2">
+                        <FaMoneyBillWave className="text-amber-500 text-xl" />
+                        <span className="text-lg font-bold text-gray-900 dark:text-white">
+                          {price} شيكل
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               
               {/* Right Column - Details */}
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                    {post.title || 'عنوان غير محدد'}
-                  </h3>
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 mb-4">
-                    <FaUser className="text-blue-500" />
-                    <span>نشر بواسطة: {publisherName}</span>
-                    <span className="mx-2">•</span>
-                    <FaCalendarAlt className="text-amber-500" />
-                    <span>تاريخ النشر: {created}</span>
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <FaInfoCircle className="text-blue-500 mt-1 flex-shrink-0" />
-                    <div>
-                      <h4 className="font-medium text-gray-900 dark:text-white">الوصف</h4>
-                      <p className="text-gray-600 dark:text-gray-300 text-sm">
-                        {post.description || 'لا يوجد وصف متوفر'}
-                      </p>
+              <div className="p-6 overflow-y-auto max-h-[70vh]">
+                <div className="space-y-6">
+                  {/* Meta Info */}
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center gap-2 text-sm">
+                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                          <FaUser className="text-blue-500" />
+                        </div>
+                        <div>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">الناشر</p>
+                          <p className="font-medium text-gray-900 dark:text-white">{publisherName}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                          <FaCalendarAlt className="text-amber-500" />
+                        </div>
+                        <div>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">تاريخ النشر</p>
+                          <p className="font-medium text-gray-900 dark:text-white">{created}</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-3">
-                    <FaMapMarkerAlt className="text-green-500" />
-                    <div>
-                      <h4 className="font-medium text-gray-900 dark:text-white">الموقع</h4>
-                      <p className="text-gray-600 dark:text-gray-300 text-sm">
-                        {post.governorate || 'غير محدد'}
-                        {post.city ? `، ${post.city}` : ''}
-                        {post.area ? `، ${post.area}` : ''}
-                      </p>
-                    </div>
+                  {/* Description */}
+                  <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h4 className="font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <FaInfoCircle className="text-blue-500" />
+                      <span>الوصف</span>
+                    </h4>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                      {post.description || 'لا يوجد وصف متوفر'}
+                    </p>
                   </div>
                   
-                  {price && (
-                    <div className="flex items-center gap-3">
-                      <FaMoneyBillWave className="text-amber-500" />
-                      <div>
-                        <h4 className="font-medium text-gray-900 dark:text-white">السعر</h4>
-                        <p className="text-gray-600 dark:text-gray-300 text-sm">
-                          {price} شيكل
-                        </p>
+                  {/* Location */}
+                  <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h4 className="font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <FaMapMarkerAlt className="text-green-500" />
+                      <span>الموقع</span>
+                    </h4>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm">
+                      {[post.governorate, post.city, post.area].filter(Boolean).join('، ') || 'غير محدد'}
+                    </p>
+                  </div>
+                  
+                  {/* Contact Information */}
+                  {(post.phone || post.email) && (
+                    <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                      <h4 className="font-bold text-gray-900 dark:text-white mb-3">معلومات التواصل</h4>
+                      <div className="space-y-3">
+                        {post.phone && (
+                          <a 
+                            href={`tel:${post.phone}`}
+                            className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group"
+                          >
+                            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg group-hover:bg-blue-200 dark:group-hover:bg-blue-800/50 transition-colors">
+                              <FaPhone className="text-blue-500" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm text-gray-500 dark:text-gray-400">اتصل الآن</p>
+                              <p className="font-medium text-blue-600 dark:text-blue-400">{post.phone}</p>
+                            </div>
+                            <FaChevronUp className="text-blue-400 text-xs transform rotate-90" />
+                          </a>
+                        )}
+                        
+                        {post.email && (
+                          <a 
+                            href={`mailto:${post.email}`}
+                            className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/20 transition-colors group"
+                          >
+                            <div className="p-2 bg-amber-100 dark:bg-amber-900/20 rounded-lg group-hover:bg-amber-200 dark:group-hover:bg-amber-800/30 transition-colors">
+                              <FaEnvelope className="text-amber-500" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-500 dark:text-gray-400">البريد الإلكتروني</p>
+                              <p className="font-medium text-amber-600 dark:text-amber-400 truncate">{post.email}</p>
+                            </div>
+                            <FaChevronUp className="text-amber-400 text-xs transform rotate-90" />
+                          </a>
+                        )}
                       </div>
                     </div>
                   )}
                   
-                  {post.phone && (
-                    <div className="flex items-center gap-3">
-                      <FaPhone className="text-green-500" />
-                      <div>
-                        <h4 className="font-medium text-gray-900 dark:text-white">رقم الهاتف</h4>
-                        <a 
-                          href={`tel:${post.phone}`}
-                          className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
-                        >
-                          {post.phone}
-                        </a>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {post.email && (
-                    <div className="flex items-center gap-3">
-                      <FaEnvelope className="text-amber-500" />
-                      <div>
-                        <h4 className="font-medium text-gray-900 dark:text-white">البريد الإلكتروني</h4>
-                        <a 
-                          href={`mailto:${post.email}`}
-                          className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 text-sm break-all"
-                        >
-                          {post.email}
-                        </a>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Tags */}
-                {Array.isArray(post.tags) && post.tags.length > 0 && (
-                  <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
-                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">تاغات</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {post.tags.map((t, i) => {
-                        // Split by comma and trim each tag
-                        const tagItems = t.split(',').map(tag => tag.trim()).filter(Boolean);
-                        return tagItems.map((tag, idx) => (
+                  {/* Tags */}
+                  {Array.isArray(post.tags) && post.tags.length > 0 && (
+                    <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                      <h4 className="font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                        <FaTags className="text-purple-500" />
+                        <span>الوسوم</span>
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {post.tags.flatMap(t => 
+                          t.split(',').map(tag => tag.trim()).filter(Boolean)
+                        ).map((tag, idx) => (
                           <span 
-                            key={`${i}-${idx}`}
-                            className="px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 text-xs font-medium hover:bg-amber-200 dark:hover:bg-amber-800/60 transition-colors"
+                            key={idx}
+                            className="px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-100 to-amber-50 dark:from-amber-900/30 dark:to-amber-900/10 text-amber-800 dark:text-amber-200 text-xs font-medium hover:from-amber-200 hover:to-amber-100 dark:hover:from-amber-800/40 dark:hover:to-amber-800/20 transition-all duration-300 shadow-sm"
                           >
                             #{tag}
                           </span>
-                        ));
-                      })}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </DialogContent>
-          <DialogActions className="bg-gray-50 dark:bg-gray-800 px-6 py-3">
+          
+          <DialogActions className="bg-gray-50 dark:bg-gray-800/80 p-4 border-t border-gray-100 dark:border-gray-700">
             <button
               onClick={closeModal}
-              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg text-sm font-medium transition-colors"
+              className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2"
             >
-              إغلاق
+              <FaTimes className="text-sm" />
+              إغلاق النافذة
             </button>
-           
           </DialogActions>
         </Dialog>
       </div>
@@ -714,7 +759,8 @@ export default function ServicesPage() {
 
   // دالة للتحقق من تسجيل الدخول مع اختبار الجلسة
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [authError, setAuthError] = useState(null);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [authError, setAuthError] = useState('');
   
   // تأثير للتحقق من حالة المصادقة عند التحميل
   useEffect(() => {
@@ -1089,7 +1135,7 @@ export default function ServicesPage() {
       }
 
       resetForm();
-      alert("تم إرسال منشورك للمراجعة. بانتظار موافقة الإدارة.");
+      setShowSuccessDialog(true);
     } catch (err) {
       console.error('Submission error:', err);
       if (err.message.includes("جلسة") || err.message.includes("انتهت")) {
@@ -1826,6 +1872,71 @@ export default function ServicesPage() {
             تسجيل الدخول
           </Button>
         </DialogActions>
+      </Dialog>
+
+      {/* Success Dialog */}
+      <Dialog
+        open={showSuccessDialog}
+        onClose={() => setShowSuccessDialog(false)}
+        aria-labelledby="success-dialog-title"
+        dir="rtl"
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          className: 'bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/20 rounded-2xl overflow-hidden border-0 shadow-2xl transform transition-all duration-300 scale-95 hover:scale-100',
+          style: {
+            background: 'linear-gradient(145deg, #fff8e1 0%, #fff3e0 100%)',
+            border: '1px solid rgba(245, 158, 11, 0.1)'
+          }
+        }}
+      >
+        <div className="relative">
+          {/* Animated Background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-yellow-300 opacity-5 -z-10"></div>
+          
+          {/* Header with Icon */}
+          <div className="relative pt-10 pb-6 px-8 text-center">
+            <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 shadow-lg mb-4 transform transition-transform duration-300 hover:rotate-12">
+              <svg className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <div className="absolute inset-0 rounded-full bg-amber-400/20 animate-ping"></div>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">تم بنجاح!</h3>
+            <p className="text-gray-600 dark:text-gray-300 text-sm">تم إرسال طلبك بنجاح</p>
+          </div>
+          
+          {/* Content */}
+          <div className="px-8 pb-8 text-center">
+            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 mb-6 border border-amber-200 dark:border-amber-800/30">
+              <p className="text-sm text-amber-800 dark:text-amber-200">
+                <span className="font-medium">تم استلام طلبك بنجاح!</span> سيتم مراجعته من قبل الإدارة. سيتم إشعارك فور الموافقة عليه.
+              </p>
+            </div>
+            
+            <button
+              onClick={() => setShowSuccessDialog(false)}
+              className="relative inline-flex items-center justify-center px-6 py-3 overflow-hidden font-medium text-white transition duration-300 ease-out bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full shadow-lg group hover:ring-2 hover:ring-offset-2 hover:ring-amber-300 focus:outline-none"
+            >
+              <span className="absolute inset-0 flex items-center justify-center w-full h-full text-white duration-300 -translate-x-full bg-gradient-to-r from-yellow-500 to-amber-600 group-hover:translate-x-0 ease">
+                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </span>
+              <span className="absolute flex items-center justify-center w-full h-full text-white transition-all duration-300 transform group-hover:translate-x-full ease">
+                تم الفهم
+              </span>
+              <span className="relative invisible">تم الفهم</span>
+            </button>
+            
+            
+          </div>
+          
+          {/* Decorative Elements */}
+          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-400 rounded-full opacity-10 -mr-12 -mt-12"></div>
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-yellow-400 rounded-full opacity-10 -ml-16 mb-6"></div>
+          <div className="absolute -top-6 -right-6 w-16 h-16 bg-yellow-200 rounded-full opacity-20 animate-pulse"></div>
+        </div>
       </Dialog>
 
       <style jsx global>{`

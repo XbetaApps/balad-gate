@@ -111,7 +111,12 @@ export async function GET(req) {
 
   const q = (url.searchParams.get('q') || '').trim();
   const governorate = (url.searchParams.get('governorate') || '').trim();
-  const categoryName = (url.searchParams.get('categoryName') || '').trim();
+  
+  // الحصول على أسماء الفئات كقائمة
+  const categoryNames = (url.searchParams.get('categoryName') || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
 
   const tagsRaw = url.searchParams.getAll('tags');
   const tags = Array.from(
@@ -130,7 +135,16 @@ export async function GET(req) {
 
   if (q) { where.push(`(p.title ILIKE $${i} OR p.description ILIKE $${i})`); params.push(`%${q}%`); i++; }
   if (governorate) { where.push(`p.governorate = $${i}`); params.push(governorate); i++; }
-  if (categoryName) { where.push(`c.name = $${i}`); params.push(categoryName); i++; }
+  
+  // دعم البحث بعدة أسماء فئات
+  if (categoryNames.length > 0) { 
+    // إنشاء مصفوفة من العناصر النائبة للفئات
+    const categoryPlaceholders = categoryNames.map((_, idx) => `$${i + idx}`).join(',');
+    where.push(`c.name IN (${categoryPlaceholders})`);
+    params.push(...categoryNames);
+    i += categoryNames.length;
+  }
+  
   if (tags.length > 0) { where.push(`t.name = ANY($${i})`); params.push(tags); i++; }
 
   const sql = `

@@ -114,24 +114,11 @@ export default function PostDetailsModal({ isOpen, onClose, post }) {
                 )}
 
                 {/* معلومات الاتصال */}
-                <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
-                  <h4 className="font-medium text-gray-700 dark:text-gray-200 mb-3">معلومات الاتصال:</h4>
-                  <div className="space-y-2">
-                    {post.phone && (
-                      <a 
-                        href={`tel:${post.phone}`}
-                        className="flex items-center justify-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-                      >
-                        <FaPhone className="ml-2" />
-                        <span>اتصال: {post.phone}</span>
-                      </a>
-                    )}
-                  </div>
+                  
                 </div>
               </div>
             </div>
         </div>
       </div>
-    </div>
   );
 }
