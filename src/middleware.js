@@ -44,6 +44,7 @@ const publicPaths = [
   '/api/auth/check-session',
   '/api/auth/session-test',
   '/api/logout',
+  '/api/fetch-news',
   
   // Static files and assets
   '/_next',

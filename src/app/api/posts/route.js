@@ -111,7 +111,12 @@ export async function GET(req) {
 
   const q = (url.searchParams.get('q') || '').trim();
   const governorate = (url.searchParams.get('governorate') || '').trim();
-  const categoryName = (url.searchParams.get('categoryName') || '').trim();
+  
+  // الحصول على أسماء الفئات كقائمة
+  const categoryNames = (url.searchParams.get('categoryName') || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
 
   const tagsRaw = url.searchParams.getAll('tags');
   const tags = Array.from(
@@ -130,7 +135,16 @@ export async function GET(req) {
 
   if (q) { where.push(`(p.title ILIKE $${i} OR p.description ILIKE $${i})`); params.push(`%${q}%`); i++; }
   if (governorate) { where.push(`p.governorate = $${i}`); params.push(governorate); i++; }
-  if (categoryName) { where.push(`c.name = $${i}`); params.push(categoryName); i++; }
+  
+  // دعم البحث بعدة أسماء فئات
+  if (categoryNames.length > 0) { 
+    // إنشاء مصفوفة من العناصر النائبة للفئات
+    const categoryPlaceholders = categoryNames.map((_, idx) => `$${i + idx}`).join(',');
+    where.push(`c.name IN (${categoryPlaceholders})`);
+    params.push(...categoryNames);
+    i += categoryNames.length;
+  }
+  
   if (tags.length > 0) { where.push(`t.name = ANY($${i})`); params.push(tags); i++; }
 
   const sql = `
@@ -138,12 +152,13 @@ export async function GET(req) {
       SELECT
         p.id, p.title, p.description, p.governorate, p.price,
         p.status, p.is_visible, p.created_at, p.category_id,
-        COALESCE(p.is_anonymous, FALSE) AS is_anonymous,         -- ✅ NULL => FALSE
+        COALESCE(p.is_anonymous, FALSE) AS is_anonymous,
         c.name AS category_name,
-        -- إخفاء معرف المستخدم إذا كان المنشور مجهولاً
-        CASE WHEN COALESCE(p.is_anonymous, FALSE) = FALSE THEN p.user_id END AS user_id
+        u.name AS author_name,  -- Always get the user's name
+        p.user_id
       FROM public.posts p
       LEFT JOIN public.categories c ON c.id = p.category_id
+      LEFT JOIN public.users u ON u.id = p.user_id
       ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
       ORDER BY p.created_at DESC
       LIMIT ${limit} OFFSET ${offset}
@@ -151,20 +166,22 @@ export async function GET(req) {
     SELECT
       f.id, f.title, f.description, f.governorate, f.price,
       f.status, f.is_visible, f.created_at, f.category_id,
-      f.is_anonymous, f.category_name, f.user_id,
+      f.is_anonymous, f.category_name, f.user_id, f.author_name,
       COALESCE(array_agg(DISTINCT t.name) FILTER (WHERE t.id IS NOT NULL), '{}') AS tags
     FROM filtered f
     LEFT JOIN public.post_tags pt ON pt.post_id = f.id
     LEFT JOIN public.tags t ON t.id = pt.tag_id
     GROUP BY
       f.id, f.title, f.description, f.governorate, f.price, f.status,
-      f.is_visible, f.created_at, f.user_id, f.category_id, f.is_anonymous, f.category_name
+      f.is_visible, f.created_at, f.user_id, f.category_id, f.is_anonymous, 
+      f.category_name, f.author_name
     ORDER BY f.created_at DESC;
   `;
 
   const client = await pool.connect();
   try {
     const { rows } = await client.query(sql, params);
+    console.log('Posts API Response:', JSON.stringify(rows, null, 2)); // Debug log
     return NextResponse.json({ page, limit, count: rows.length, items: rows });
   } catch (e) {
     console.error(e);

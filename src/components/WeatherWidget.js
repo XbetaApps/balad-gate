@@ -11,131 +11,88 @@ const CITIES = [
   { id: 4, name: 'جنين', country: 'PS', lat: 32.4608, lon: 35.3020 },
 ];
 
-// Using a direct API key for now - in production, this should be in environment variables
 const API_KEY = 'eb5423add9f28d7d1485a07e3f6a9c56';
 const BASE_URL = 'https://api.openweathermap.org/data/2.5';
 
 // Weather Background Component
-const WeatherBackground = ({ weatherType, isDaytime }) => {
+const WeatherBackground = ({ isDaytime }) => {
   return (
     <div className="absolute inset-0 overflow-hidden -z-10">
       <div className="absolute inset-0">
-        {/* Day Theme - White background with sun */}
-        {isDaytime && (
-          <div className="absolute inset-0 bg-white">
-            <div className="sun absolute top-1/4 left-1/4 w-24 h-24 bg-yellow-300 rounded-full shadow-[0_0_60px_30px_rgba(253,230,138,0.8)]"></div>
+        {isDaytime ? (
+          <div className="absolute inset-0 bg-gradient-to-br from-sky-50 via-blue-100 to-cyan-100">
+            {/* Sun with pulse animation */}
+            <div className="absolute top-1/4 left-1/4 w-32 h-32">
+              <div className="absolute inset-0 bg-yellow-300 rounded-full animate-pulse"></div>
+              <div className="absolute inset-0 bg-yellow-200 rounded-full animate-ping opacity-40"></div>
+              <div className="absolute inset-0 bg-yellow-100 rounded-full animate-pulse"></div>
+            </div>
+            
+            {/* Subtle moving clouds */}
+            <div className="absolute inset-0 opacity-30">
+              <div className="absolute top-1/3 left-1/4 w-48 h-16 bg-white rounded-full opacity-70 animate-float"></div>
+              <div className="absolute top-1/2 right-1/4 w-32 h-12 bg-white rounded-full opacity-70 animate-float animation-delay-2000"></div>
+              <div className="absolute top-1/4 right-1/3 w-24 h-10 bg-white rounded-full opacity-70 animate-float animation-delay-3000"></div>
+            </div>
           </div>
-        )}
-        
-        {/* Night Clear Sky */}
-        {weatherType === 'clear' && !isDaytime && (
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-gray-800">
-            <div className="moon absolute top-1/4 right-1/4 w-20 h-20 bg-gray-200 rounded-full shadow-[0_0_40px_15px_rgba(255,255,255,0.2)]"></div>
-            <div className="stars absolute inset-0">
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+            {/* Moon with subtle glow */}
+            <div className="absolute top-1/4 right-1/4 w-24 h-24 bg-gray-200 rounded-full shadow-[0_0_50px_20px_rgba(255,255,255,0.1)]">
+              <div className="absolute top-2 right 2 w-4 h-4 bg-gray-300 rounded-full opacity-70"></div>
+              <div className="absolute top-6 right-8 w-3 h-3 bg-gray-400 rounded-full opacity-50"></div>
+            </div>
+            
+            {/* Stars */}
+            <div className="absolute inset-0">
               {[...Array(30)].map((_, i) => (
                 <div 
                   key={`star-${i}`}
-                  className="absolute bg-white rounded-full"
+                  className="absolute bg-white rounded-full animate-twinkle"
                   style={{
                     width: `${Math.random() * 3 + 1}px`,
                     height: `${Math.random() * 3 + 1}px`,
                     left: `${Math.random() * 100}%`,
                     top: `${Math.random() * 100}%`,
                     opacity: Math.random() * 0.8 + 0.2,
+                    animationDelay: `${Math.random() * 5}s`,
+                    animationDuration: `${Math.random() * 3 + 2}s`
                   }}
                 ></div>
               ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Rain - Day/Night */}
-        {weatherType === 'rain' && (
-          <div className={`absolute inset-0 ${isDaytime ? 'bg-gradient-to-b from-gray-400 to-gray-600' : 'bg-gradient-to-b from-gray-800 to-gray-900'}`}>
-            <div className="rain absolute w-full h-full">
-              {[...Array(50)].map((_, i) => (
-                <div 
-                  key={`rain-${i}`}
-                  className="absolute w-0.5 h-8 opacity-70"
-                  style={{
-                    backgroundColor: isDaytime ? '#bfdbfe' : '#93c5fd',
-                    left: `${Math.random() * 100}%`,
-                    animation: `rain ${0.5 + Math.random() * 0.5}s linear infinite`,
-                    animationDelay: `${Math.random() * 1}s`,
-                    top: '-20%',
-                  }}
-                ></div>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Clouds - Day/Night */}
-        {weatherType === 'clouds' && (
-          <div className={`absolute inset-0 ${isDaytime ? 'bg-gradient-to-b from-gray-200 to-gray-400' : 'bg-gradient-to-b from-gray-800 to-gray-900'}`}>
-            <div className="clouds">
-              <div className="cloud cloud-1"></div>
-              <div className="cloud cloud-2"></div>
-              <div className="cloud cloud-3"></div>
             </div>
           </div>
         )}
       </div>
-      <style jsx>{`
-        .sun {
-          animation: pulse 4s ease-in-out infinite;
-        }
-        
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.1); }
-        }
-        
-        .rain {
-          background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 0 L62 20 L50 40 L38 20 Z' fill='%23ffffff' fill-opacity='0.5'/%3E%3C/svg%3E");
-          background-size: 50px 50px;
-          animation: rain 0.5s linear infinite;
-        }
-        
-        @keyframes rain {
-          to { background-position: 0 50px; }
-        }
-        
-        .cloud {
-          position: absolute;
-          background: rgba(255, 255, 255, 0.8);
-          border-radius: 1000px;
-          filter: blur(8px);
-          opacity: 0.8;
-        }
-        
-        .cloud-1 {
-          width: 200px;
-          height: 60px;
-          top: 20%;
-          left: 10%;
-          animation: float 25s linear infinite;
-        }
-        
-        .cloud-2 {
-          width: 300px;
-          height: 80px;
-          top: 40%;
-          right: 10%;
-          animation: float 30s linear infinite reverse;
-        }
-        
-        .cloud-3 {
-          width: 250px;
-          height: 70px;
-          bottom: 30%;
-          left: 20%;
-          animation: float 35s linear infinite;
-        }
-        
+      
+      {/* Global animations */}
+      <style jsx global>{`
         @keyframes float {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(calc(100vw + 100%)); }
+          0%, 100% { transform: translateX(0) translateY(0); }
+          25% { transform: translateX(10px) translateY(-5px); }
+          50% { transform: translateX(0) translateY(-10px); }
+          75% { transform: translateX(-10px) translateY(-5px); }
+        }
+        
+        @keyframes twinkle {
+          0%, 100% { opacity: 0.2; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.5); }
+        }
+        
+        .animate-float {
+          animation: float 15s ease-in-out infinite;
+        }
+        
+        .animate-twinkle {
+          animation: twinkle 3s ease-in-out infinite;
+        }
+        
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        
+        .animation-delay-3000 {
+          animation-delay: 3s;
         }
       `}</style>
     </div>
@@ -143,186 +100,159 @@ const WeatherBackground = ({ weatherType, isDaytime }) => {
 };
 
 const WeatherWidget = ({ darkMode }) => {
-  const [selectedCity, setSelectedCity] = useState(CITIES[0]);
-  const [weatherData, setWeatherData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const [currentCityIndex, setCurrentCityIndex] = useState(0);
   const [isSliding, setIsSliding] = useState(false);
   
-  // Use darkMode prop to determine if it's day or night
-  // darkMode = true means night mode (moon), false means day mode (sun)
+  // Initialize with default data to avoid loading state
+  const [cachedWeather, setCachedWeather] = useState(
+    CITIES.map(city => ({
+      ...city,
+      main: { 
+        temp: 25, 
+        humidity: 50,
+        temp_max: 28,
+        temp_min: 22
+      },
+      weather: [{ 
+        description: 'مشمس', 
+        icon: '01d',
+        main: 'Clear'
+      }],
+      wind: { speed: 5 },
+      loaded: false
+    }))
+  );
+  
+  // Determine if it's day or night based on darkMode prop
   const isDaytime = !darkMode;
 
-  // Get weather type for styling
-  const getWeatherType = () => {
-    if (!weatherData) return 'clear';
-    const main = weatherData.weather[0].main.toLowerCase();
-    if (['rain', 'drizzle', 'thunderstorm'].includes(main)) return 'rain';
-    if (['clouds', 'mist', 'haze', 'fog'].includes(main)) return 'clouds';
-    return 'clear';
-  };
-
-  // Text and border colors based on darkMode
-  const textColor = !darkMode ? 'text-black' : 'text-white';
-  const borderColor = !darkMode ? 'border-black' : 'border-amber-300';
-  const buttonBg = !darkMode ? 'bg-black hover:bg-gray-800' : 'bg-white/10 hover:bg-white/20';
-  const buttonText = 'text-white';
-
-  // Fetch weather data
+  // Fetch weather data for all cities
   useEffect(() => {
-    const fetchWeather = async () => {
-      try {
-        if (!API_KEY) {
-          throw new Error('مفتاح API غير موجود. يرجى إضافة NEXT_PUBLIC_OPENWEATHERMAP_API_KEY إلى ملف .env.local');
-        }
-
-        setLoading(true);
-        setError(null);
-        
-        const response = await fetch(
-          `${BASE_URL}/weather?lat=${selectedCity.lat}&lon=${selectedCity.lon}&appid=${API_KEY}&units=metric&lang=ar`
-        );
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'فشل في جلب بيانات الطقس');
-        }
-        
-        const data = await response.json();
-        setWeatherData(data);
-      } catch (err) {
-        console.error('Weather API Error:', err);
-        setError(err.message || 'حدث خطأ غير متوقع');
-      } finally {
-        setLoading(false);
-      }
+    const fetchWeatherForAllCities = async () => {
+      const updatedCities = await Promise.all(
+        CITIES.map(async (city) => {
+          try {
+            const response = await fetch(
+              `${BASE_URL}/weather?lat=${city.lat}&lon=${city.lon}&appid=${API_KEY}&units=metric&lang=ar`
+            );
+            
+            if (!response.ok) return { ...city, loaded: false };
+            
+            const data = await response.json();
+            return {
+              ...city,
+              ...data,
+              loaded: true
+            };
+          } catch (err) {
+            console.error(`Error fetching weather for ${city.name}:`, err);
+            return { ...city, loaded: false };
+          }
+        })
+      );
+      
+      setCachedWeather(updatedCities);
     };
 
-    fetchWeather();
-  }, [selectedCity]);
+    fetchWeatherForAllCities();
+    const interval = setInterval(fetchWeatherForAllCities, 300000); // Refresh every 5 minutes
+    return () => clearInterval(interval);
+  }, []);
 
-  // Auto slide every 7 seconds
+  // Auto slide between cities every 7 seconds
   useEffect(() => {
     const slideInterval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % CITIES.length);
+      setIsSliding(true);
+      setTimeout(() => {
+        setCurrentCityIndex((prev) => (prev + 1) % CITIES.length);
+        setIsSliding(false);
+      }, 300);
     }, 7000);
 
     return () => clearInterval(slideInterval);
   }, []);
 
-  // Update selected city when slide changes
-  useEffect(() => {
-    setSelectedCity(CITIES[currentSlide]);
-  }, [currentSlide]);
-
-  // Manual slide navigation
-  const goToSlide = (index) => {
-    setCurrentSlide(index);
-  };
-
-  // Slide animation effect
-  useEffect(() => {
-    setIsSliding(true);
-    const timer = setTimeout(() => setIsSliding(false), 500);
-    return () => clearTimeout(timer);
-  }, [currentSlide]);
-
-  // Get weather icon URL with day/night variants
-  const getWeatherIcon = (iconCode, isDaytime) => {
-    // Replace 'n' with 'd' for day icons if it's daytime
-    const adjustedIconCode = isDaytime ? iconCode.replace('n', 'd') : iconCode;
-    return `https://openweathermap.org/img/wn/${adjustedIconCode}@4x.png`;
-  };
-
-  if (loading) {
-    return (
-      <div className="relative overflow-hidden rounded-2xl shadow-xl min-h-[400px] flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-200 dark:from-gray-800 dark:to-gray-900">
-        <WeatherBackground weatherType="clear" isDaytime={isDaytime} />
-        <div className="relative z-10 flex flex-col items-center">
-          <div className="w-16 h-16 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-lg font-medium text-gray-700 dark:text-gray-200">جاري تحميل بيانات الطقس...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="relative overflow-hidden rounded-2xl p-6 min-h-[400px] flex items-center justify-center bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900/30 dark:to-red-800/30">
-        <div className="relative z-10 flex flex-col items-center text-center">
-          <div className="text-5xl mb-4">⚠️</div>
-          <h3 className="text-xl font-bold mb-2">عذراً، حدث خطأ</h3>
-          <p className="mb-4">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  const weatherType = getWeatherType();
+  // Get current weather data
+  const currentWeather = cachedWeather[currentCityIndex] || cachedWeather[0];
   
+  // Get weather icon with day/night variants
+  const getWeatherIcon = (iconCode) => {
+    if (!iconCode) return '01d';
+    return isDaytime 
+      ? iconCode.replace('n', 'd')
+      : iconCode.replace('d', 'n');
+  };
+
   return (
-    <div className={`relative overflow-hidden rounded-2xl shadow-xl min-h-[500px] transition-all duration-500 ${isSliding ? 'opacity-0' : 'opacity-100'}`}>
-      <WeatherBackground weatherType={getWeatherType()} isDaytime={isDaytime} />
+    <div className={`relative overflow-hidden rounded-2xl shadow-xl min-h-[500px] transition-all duration-300 ${
+      isSliding ? 'opacity-0' : 'opacity-100'
+    } ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'}`}>
       
-      <div className="relative z-10 h-full flex flex-col">
-        {/* City Indicators */}
-        <div className="flex justify-center space-x-2 p-4">
-          {CITIES.map((city, index) => (
-            <button
-              key={city.id}
-              onClick={() => goToSlide(index)}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                currentSlide === index 
-                  ? `w-8 ${isDaytime ? 'bg-amber-600' : 'bg-white'}` 
-                  : `w-2 ${isDaytime ? 'bg-amber-600/50' : 'bg-white/50'} hover:${isDaytime ? 'bg-amber-600/70' : 'bg-white/70'}`
-              }`}
-              aria-label={`عرض طقس ${city.name}`}
-            />
-          ))}
+      <WeatherBackground isDaytime={isDaytime} />
+      
+      <div className="relative z-10 flex flex-col h-full">
+        {/* City name as title */}
+        <div className="text-center pt-6">
+        
         </div>
 
         {/* Main Weather Content */}
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-          <h2 className={`text-4xl font-bold mb-2 ${textColor} drop-shadow-lg`}>
-            {weatherData.name}
+          <h2 className="text-3xl font-bold mb-2">
+            {currentWeather.name}
           </h2>
           
-          <p className={`${isDaytime ? 'text-black' : 'text-gray-200'} mb-8 text-lg`}>
-            {new Date().toLocaleDateString('ar-PS', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
+          <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-6`}>
+            {new Date().toLocaleDateString('ar-PS', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
             })}
           </p>
           
-          <div className="relative w-48 h-48 mb-6">
+          <div className="relative w-40 h-40 my-4">
             <Image
-              src={getWeatherIcon(weatherData.weather[0].icon, isDaytime)}
-              alt={weatherData.weather[0].description}
-              width={192}
-              height={192}
+              src={`https://openweathermap.org/img/wn/${getWeatherIcon(currentWeather.weather?.[0]?.icon || '01d')}@2x.png`}
+              alt={currentWeather.weather?.[0]?.description || 'حالة الطقس'}
+              width={160}
+              height={160}
               className="drop-shadow-lg"
             />
           </div>
           
-          <div className={`text-7xl font-bold mb-2 ${textColor} drop-shadow-lg`}>
-            {Math.round(weatherData.main.temp)}°
+          <div className="text-6xl font-bold my-2">
+            {Math.round(currentWeather.main?.temp || 0)}°
           </div>
           
-          <div className={`text-2xl font-medium mb-8 capitalize ${!darkMode ? 'text-amber-700' : 'text-amber-300'} drop-shadow-lg`}>
-            {weatherData.weather[0].description}
+          <div className={`text-xl font-medium mb-6 ${
+            darkMode ? 'text-amber-300' : 'text-amber-600'
+          }`}>
+            {currentWeather.weather?.[0]?.description || 'مشمس'}
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4 w-full max-w-xs mb-6">
+            <div className="bg-white/10 dark:bg-gray-700/50 p-3 rounded-lg">
+            </div>
           </div>
           
           {/* More Details Button */}
           <Link 
-            href="/weather" 
-            className={`${buttonBg} ${buttonText} font-bold py-3 px-8 rounded-full border-2 ${borderColor} hover:border-opacity-70 transition-all duration-300 flex items-center space-x-2 space-x-reverse`}
+            href="/weather"
+            className={`px-9 py-3 rounded-2xl font-medium transition-all duration-300 border-2 ${
+              darkMode 
+                ? 'bg-gray-700 text-white border-amber-400 hover:bg-gray-600' 
+                : 'bg-white text-gray-800 border-amber-400 hover:bg-gray-50'
+            } shadow-md hover:shadow-lg flex items-center`}
           >
             <span>المزيد من التفاصيل</span>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 rtl:rotate-180" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+            <svg 
+              className="mr-2 w-4 h-4 rtl:rotate-180" 
+              fill="currentColor" 
+              viewBox="0 0 20 20" 
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
             </svg>
           </Link>
         </div>

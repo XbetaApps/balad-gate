@@ -22,20 +22,6 @@ export function AuthProvider({ children }) {
     } catch {}
   };
 
-  const updateUser = useCallback(async (userData) => {
-    try {
-      console.log('Updating user data in context:', userData);
-      setUser(prevUser => ({
-        ...prevUser,
-        ...userData
-      }));
-      return userData;
-    } catch (error) {
-      console.error('Error updating user:', error);
-      throw error;
-    }
-  }, []);
-
   const checkAuth = useCallback(async () => {
     if (checkingRef.current) return checkingRef.current;
     
@@ -67,29 +53,16 @@ export function AuthProvider({ children }) {
           if (data?.authenticated && data?.user) {
             console.log('User authenticated via session:', data.user);
             currentUser = data.user;
-            
-            // تحويل القيم النصية إلى قيم منطقية
-            if (typeof currentUser.onboarding_done === 'string') {
-              currentUser.onboarding_done = currentUser.onboarding_done === 'true' || currentUser.onboarding_done === '1';
-            }
-            
             // تعيين قيمة افتراضية لحالة الإعداد إذا لم تكن محددة
-            if (currentUser.onboarding_done === undefined || currentUser.onboarding_done === null) {
+            if (currentUser.onboarding_done === undefined) {
               console.log('Setting default onboarding_done to false');
               currentUser.onboarding_done = false;
-              
               // تحديث حالة المستخدم في الخادم
               try {
-                await fetch('/api/user/update-onboarding', {
+                await fetch('/api/onboarding', {
                   method: 'POST',
-                  headers: { 
-                    'Content-Type': 'application/json',
-                    'x-user-id': currentUser.id
-                  },
-                  body: JSON.stringify({ 
-                    onboarding_done: false,
-                    onboarding_done_at: null
-                  })
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ skip: true })
                 });
               } catch (error) {
                 console.error('Error updating user onboarding status:', error);
@@ -181,6 +154,9 @@ export function AuthProvider({ children }) {
     }
   }, [checkAuth]);
 
+  // Expose a lightweight refreshUser that simply re-runs checkAuth
+  const refreshUser = useCallback(() => checkAuth(), [checkAuth]);
+
   const logout = useCallback(async () => {
     // تنظيف محلي دائمًا
     writeToken(null);
@@ -231,9 +207,9 @@ export function AuthProvider({ children }) {
     loading,
     login,
     logout,
+    refreshUser,
     checkAuth,
-    updateUser,
-    getToken: readToken,
+    getToken,
     isAuthenticated: !!user,
   };
 

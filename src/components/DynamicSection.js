@@ -1,237 +1,281 @@
 'use client';
-import Link from 'next/link';
-import React, { useState, useEffect, useRef, useCallback, useContext } from 'react';
-import { FaStore, FaHome, FaCar, FaUtensils, FaBriefcase, FaTshirt, FaMobileAlt, FaLaptop, FaGamepad, FaTshirt as FaShirt } from 'react-icons/fa';
-import { getMockData } from '@/mockData';
-import { useTheme } from '../app/nav/theme/ThemeProvider';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { 
+  FaChevronLeft, FaChevronRight, FaStore, FaHome, FaCar, FaUtensils, FaBriefcase, FaTshirt, FaMobileAlt, 
+  FaLaptop, FaGamepad, FaPills, FaGem, FaShoppingBag, FaHotel, FaGlassCheers, FaGasPump, FaTruck, 
+  FaHospital, FaClinicMedical, FaSprayCan, FaDumbbell, FaGraduationCap, FaBook, FaGift, FaMapMarkerAlt,
+  FaRing, FaCut, FaTheaterMasks, FaMapMarkedAlt 
+} from 'react-icons/fa';
+import { useTheme } from 'next-themes';
+import dynamic from 'next/dynamic';
 
-// دالة لتحويل اسم الأيقونة إلى مكون React
+const PostDetailsModal = dynamic(() => import('./PostDetailsModal'), { ssr: false });
+
+// احتفظنا بالخريطة كاحتياطي، لكن العرض سيعتمد على section.icon و section.title
+const categoryIcons = {
+  'commercial-stores': { name: 'متاجر', icon: 'FaStore' },
+  'pharmacies': { name: 'صيدليات', icon: 'FaPills' },
+  'jewelry': { name: 'مجوهرات وذهب', icon: 'FaRing' },
+  'malls': { name: 'مراكز تجارية', icon: 'FaShoppingBag' },
+  'restaurants': { name: 'مطاعم', icon: 'FaUtensils' },
+  'hotels': { name: 'فنادق', icon: 'FaHotel' },
+  'cars': { name: 'سيارات', icon: 'FaCar' },
+  'real-estate': { name: 'عقارات', icon: 'FaHome' },
+  'lands': { name: 'أراضي', icon: 'FaMapMarkedAlt' },
+  'jobs': { name: 'فرص عمل', icon: 'FaBriefcase' },
+  'clothing': { name: 'ملابس وأزياء', icon: 'FaTshirt' },
+  'education': { name: 'دورات دراسية', icon: 'FaGraduationCap' },
+  'hospitals': { name: 'مستشفيات', icon: 'FaHospital' },
+  'clinics': { name: 'عيادات طبية', icon: 'FaClinicMedical' },
+  'entertainment': { name: 'أماكن ترفيهية', icon: 'FaTheaterMasks' },
+  'wedding-halls': { name: 'صالات أفراح', icon: 'FaGlassCheers' },
+  'transport': { name: 'خدمات توصيل', icon: 'FaTruck' },
+  'fuel': { name: 'محطات وقود', icon: 'FaGasPump' },
+  'sports': { name: 'صالات رياضية', icon: 'FaDumbbell' },
+  'books': { name: 'مكتبات وكتب', icon: 'FaBook' },
+  'gifts': { name: 'هدايا وتحف', icon: 'FaGift' },
+  'beauty': { name: 'مراكز تجميل', icon: 'FaCut' },
+  'health': { name: 'صحة', icon: 'FaClinicMedical' }
+};
+
 const getIconComponent = (iconName) => {
   const iconMap = {
-    'FaStore': FaStore,
-    'FaHome': FaHome,
-    'FaCar': FaCar,
-    'FaUtensils': FaUtensils,
-    'FaBriefcase': FaBriefcase,
-    'FaTshirt': FaShirt,
-    'FaMobileAlt': FaMobileAlt,
-    'FaLaptop': FaLaptop,
-    'FaGamepad': FaGamepad
+    FaStore, FaHome, FaCar, FaUtensils, FaBriefcase, FaTshirt, FaMobileAlt, FaLaptop, FaGamepad,
+    FaPills, FaGem, FaShoppingBag, FaHotel, FaGlassCheers, FaGasPump, FaTruck,
+    FaHospital, FaClinicMedical, FaSprayCan, FaDumbbell, FaGraduationCap, FaBook, FaGift, FaMapMarkerAlt,
+    FaRing, FaCut, FaTheaterMasks, FaMapMarkedAlt
   };
-  
   return iconMap[iconName] || FaStore;
 };
 
 const DynamicSection = ({ section }) => {
-  const { darkMode } = useTheme();
+  const { theme } = useTheme();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedPost, setSelectedPost] = useState(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
-
   const containerRef = useRef(null);
   const isDragging = useRef(false);
   const startX = useRef(0);
-  const scrollLeftStart = useRef(0);
+  const scrollLeft = useRef(0);
 
-  const handleScroll = useCallback(() => {
-    if (containerRef.current) {
-      const { scrollLeft, clientWidth, scrollWidth } = containerRef.current;
-      setShowLeftArrow(scrollLeft > 0);
-      setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10);
+  // جلب البيانات (من apiEndpoint إن وجد)
+  const fetchItems = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('جاري جلب البيانات للقسم:', section.title);
+      console.log('API Endpoint:', section.apiEndpoint || 'غير محدد');
+
+      // إذا كان هناك apiEndpoint مخصص، استخدمه مباشرة
+      if (section.apiEndpoint) {
+        console.log('جاري جلب البيانات من API المخصص');
+        const response = await fetch(section.apiEndpoint);
+        console.log('حالة الاستجابة:', response.status, response.statusText);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('خطأ في الاستجابة:', errorText);
+          throw new Error('فشل في تحميل البيانات: ' + response.status);
+        }
+        
+        const data = await response.json();
+        console.log('تم استلام البيانات:', data);
+        
+        const itemsData = Array.isArray(data?.items) ? data.items : [];
+        console.log('عدد العناصر المستلمة:', itemsData.length);
+        
+        setItems(itemsData);
+        return;
+      }
+
+      // إذا لم يكن هناك apiEndpoint، استخدم عنوان URL الافتراضي مع اسم القسم
+      const url = `/api/posts?categoryName=${encodeURIComponent(section.title || '')}`;
+      console.log('جاري جلب البيانات من URL:', url);
+      
+      const response = await fetch(url);
+      console.log('حالة الاستجابة:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('خطأ في الاستجابة:', errorText);
+        throw new Error('فشل في تحميل البيانات: ' + response.status);
+      }
+
+      const data = await response.json();
+      console.log('تم استلام البيانات:', data);
+      
+      const itemsData = Array.isArray(data?.items) ? data.items : [];
+      console.log('عدد العناصر المستلمة:', itemsData.length);
+      setItems(itemsData);
+    } catch (err) {
+      console.error('Error fetching items:', err);
+      setError(err.message || 'حدث خطأ أثناء تحميل البيانات');
+      setItems([]);
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  }, [section.id, section.title]);
 
-  // Handle wheel event for horizontal scrolling
-  const handleWheel = useCallback((e) => {
-    e.preventDefault();
-    if (containerRef.current) {
-      containerRef.current.scrollLeft += e.deltaY;
-    }
-  }, []);
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
 
-  const scroll = useCallback((direction) => {
+  const scrollTo = (direction) => {
     if (!containerRef.current) return;
-    
-    const container = containerRef.current;
-    const cards = container.querySelectorAll('.carousel-card');
-    if (!cards.length) return;
-    
-    const card = cards[0];
-    const cardWidth = card.offsetWidth + 16; // 16px for gap-4
-    const scrollAmount = direction === 'left' ? -cardWidth : cardWidth;
-    
-    // Calculate new scroll position
-    const currentScroll = container.scrollLeft;
-    let newScroll = currentScroll + scrollAmount;
-    
-    // Ensure we don't scroll past the start or end
-    newScroll = Math.max(0, Math.min(newScroll, container.scrollWidth - container.clientWidth));
-    
-    container.scrollTo({
-      left: newScroll,
+    const { scrollLeft: currentScroll, clientWidth } = containerRef.current;
+    containerRef.current.scrollTo({
+      left: currentScroll + (direction === 'left' ? -clientWidth : clientWidth),
       behavior: 'smooth'
     });
-    
-    // Update arrow visibility after scroll completes
-    setTimeout(handleScroll, 300);
-  }, [handleScroll]);
+  };
+
+  const updateArrows = useCallback(() => {
+    if (!containerRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = containerRef.current;
+    setShowLeftArrow(scrollLeft > 0);
+    setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 1);
+  }, []);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('scroll', updateArrows);
+      updateArrows();
+      return () => container.removeEventListener('scroll', updateArrows);
+    }
+  }, [updateArrows]);
 
   const startDrag = (e) => {
     isDragging.current = true;
-    startX.current = e.pageX - containerRef.current.offsetLeft;
-    scrollLeftStart.current = containerRef.current.scrollLeft;
+    startX.current = e.pageX || e.touches[0].pageX;
+    scrollLeft.current = containerRef.current.scrollLeft;
+    document.body.style.cursor = 'grabbing';
+    document.body.style.userSelect = 'none';
   };
 
   const onDrag = (e) => {
     if (!isDragging.current) return;
     e.preventDefault();
-    const x = e.pageX - containerRef.current.offsetLeft;
-    const walk = (x - startX.current) * 1.5; 
-    containerRef.current.scrollLeft = scrollLeftStart.current - walk;
+    const x = e.pageX || e.touches[0].pageX;
+    containerRef.current.scrollLeft = scrollLeft.current - (x - startX.current) * 2;
   };
 
   const stopDrag = () => {
     isDragging.current = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
   };
 
-  useEffect(() => {
-    const fetchItems = async () => {
-      try {
-        setLoading(true);
-        const { id: category } = section;
-        const data = getMockData(category);
-        setItems(Array.isArray(data) ? data.slice(0, 15) : []);
-      } catch (err) {
-        console.error('Error fetching items:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const handleWheel = (e) => {
+    if (e.deltaY === 0) return;
+    e.preventDefault();
+    containerRef.current.scrollLeft += e.deltaY + e.deltaX;
+  };
 
-    fetchItems();
-  }, [section]);
+  if (loading) return <div className="py-10 flex justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500"></div></div>;
+  if (error) return (
+    <div className="py-6 text-center">
+      <p className="text-red-500 mb-2">حدث خطأ: {error}</p>
+      <button onClick={fetchItems} className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors">
+        إعادة المحاولة
+      </button>
+    </div>
+  );
 
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    container.addEventListener('scroll', handleScroll);
-    handleScroll();
-
-    return () => {
-      container.removeEventListener('scroll', handleScroll);
-    };
-  }, [handleScroll]);
-
-  if (loading) {
-    return (
-      <div className="py-6 border-b border-gray-200 last:border-0">
-        <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-gray-200 rounded w-1/4"></div>
-          <div className="flex gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white rounded-lg shadow overflow-hidden border-2 border-amber-100 flex-shrink-0 w-64">
-                <div className="h-48 bg-gray-100"></div>
-                <div className="p-4">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="py-6 border-b border-gray-200 last:border-0">
-        <div className="text-center py-8">
-          <div className="text-red-500 mb-2">حدث خطأ أثناء تحميل البيانات</div>
-          <button 
-            onClick={() => window.location.reload()}
-            className="text-sm text-amber-600 hover:text-amber-800"
-          >
-            إعادة المحاولة
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const Icon = getIconComponent(section.icon);
+  const Icon = getIconComponent(section.icon || categoryIcons[section.id]?.icon);
 
   return (
-    <div className="py-6 border-b border-gray-200 dark:border-gray-700 last:border-0 relative">
-      {/* Navigation Arrows */}
-     
-       
-      
-     
-
-      <div className="flex items-center mb-4 pr-120">
-        <Icon className="ml-2 text-2xl text-amber-600" />
-        <h2 className="text-3xl font-bold ">
-          {section.title}
-        </h2>
-      </div>
-
-      <div 
-        ref={containerRef}
-        className="flex overflow-x-auto scrollbar-hide px-4 py-8"
-        style={{
-            
-
-
-            scrollbarWidth: 'auto',
-          msOverflowStyle: 'none',
-          WebkitOverflowScrolling: 'touch',
-          scrollBehavior: 'auto',
-          gap: '1rem',
-       
-        }}
-        onMouseDown={startDrag}
-        onMouseMove={onDrag}
-        onMouseUp={stopDrag}
-        onMouseLeave={stopDrag}
-        onTouchStart={startDrag}
-        onTouchMove={onDrag}
-        onTouchEnd={stopDrag}
-        onWheel={handleWheel}
-      >
-        {items.map((item, index) => (
-          <div 
-            key={item.id || index} 
-            className="group flex-shrink-0 w-64 bg-white dark:bg-gray-800 text-black dark:text-white border-2 border-amber-400 hover:border-amber-500 dark:border-amber-400 dark:hover:border-amber-500 rounded-lg shadow transition-all duration-300 hover:shadow-lg hover:-translate-y-1 carousel-card"
-          >
-            <div className="relative h-48 bg-gray-100 overflow-hidden">
-              {item.image && (
-                <img
-                  src={item.image}
-                  alt={item.title}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+    <div className="relative py-10 border-b border-gray-200 last:border-0 overflow-hidden group">
+      {/* Section Header */}
+      <div className="container mx-auto px-4 mb-8">
+        <div className="flex flex-col items-center justify-center text-center mb-2">
+          <div className="flex items-center justify-center gap-3">
+            <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-full">
+              <Icon className="text-2xl text-amber-600" />
             </div>
-            <div className="p-4 flex flex-col justify-between">
-              <div>
-                <h3 className="font-medium mb-2 line-clamp-2 h-14">{item.title}</h3>
-                {item.price && <p className="font-bold">{item.price}</p>}
-                {item.location && <p className="text-sm">{item.location}</p>}
-                {item.year && <p className="text-sm">{item.year}</p>}
-              </div>
-              <button className="mt-4 w-full py-2 px-4 bg-amber-100 hover:bg-amber-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-amber-900 dark:text-white rounded text-sm font-medium transition-colors">
-                عرض التفاصيل
-              </button>
-            </div>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-amber-400 bg-clip-text text-transparent">
+              {section.title}
+            </h2>
           </div>
-        ))}
+          <div className="w-32 h-1 bg-gradient-to-r from-amber-500 to-amber-300 mt-4 rounded-full"></div>
+        </div>
       </div>
+
+      {/* Cards Container */}
+      <div className="relative">
+        {(showLeftArrow || showRightArrow) && (
+          <>
+            <button onClick={() => scrollTo('left')} className={`absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-white dark:hover:bg-gray-700 transition-all duration-300 transform hover:scale-110 ${!showLeftArrow ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
+              <FaChevronLeft className="text-amber-600 text-xl" />
+            </button>
+            <button onClick={() => scrollTo('right')} className={`absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-white dark:hover:bg-gray-700 transition-all duration-300 transform hover:scale-110 ${!showRightArrow ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
+              <FaChevronRight className="text-amber-600 text-xl" />
+            </button>
+          </>
+        )}
+
+        <div 
+          ref={containerRef}
+          className="flex overflow-x-auto scrollbar-hide px-8 py-8 gap-6 snap-x snap-mandatory"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth', scrollSnapType: 'x mandatory' }}
+          onMouseDown={startDrag}
+          onMouseMove={onDrag}
+          onMouseUp={stopDrag}
+          onMouseLeave={stopDrag}
+          onTouchStart={startDrag}
+          onTouchMove={onDrag}
+          onTouchEnd={stopDrag}
+          onWheel={handleWheel}
+        >
+          {items.map(item => (
+            <div key={item.id} className="flex-none w-72 bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-2 cursor-pointer snap-center flex-shrink-0 border border-gray-100 dark:border-gray-700 hover:border-amber-200 dark:hover:border-amber-800" onClick={() => setSelectedPost(item)}>
+              <div className="relative h-56 flex-shrink-0 bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                {item.image ? <img src={item.image} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" /> : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-50 to-amber-100 dark:from-gray-700 dark:to-gray-800">
+                    <span className="text-4xl text-amber-400">
+                      {React.createElement(getIconComponent(section.icon || categoryIcons[section.id]?.icon))}
+                    </span>
+                  </div>
+                )}
+                <div className="absolute bottom-3 left-3 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                  {section.title || categoryIcons[section.id]?.name}
+                </div>
+              </div>
+              <div className="p-5 flex flex-col flex-grow">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3 leading-relaxed break-words min-h-[3.5rem] flex items-center">
+                  <span className="bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                    {item.title}
+                  </span>
+                </h3>
+                <div className="flex items-center text-gray-600 dark:text-gray-300 text-sm mb-4">
+                  <FaMapMarkerAlt className="ml-1 text-amber-500 flex-shrink-0" />
+                  <span className="line-clamp-1 rtl:mr-1">{item.governorate || item.location || 'غير محدد'}</span>
+                </div>
+                <div className="mt-auto pt-3 border-t border-gray-100 dark:border-gray-700">
+                  <div className="flex justify-between items-center">
+                    {item.price && (
+                      <div className="flex items-center">
+                        <span className="text-amber-600 dark:text-amber-400 font-bold text-lg">{parseFloat(item.price).toLocaleString()}</span>
+                        <span className="mr-1 text-gray-500 text-sm">شيكل</span>
+                      </div>
+                    )}
+                    <button className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-sm font-medium rounded-lg hover:from-amber-600 hover:to-amber-700 transition-all duration-300 flex items-center gap-1" onClick={(e) => { e.stopPropagation(); setSelectedPost(item); }}>
+                      <span>عرض التفاصيل</span>
+                      <FaChevronLeft className="text-xs mt-0.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {selectedPost && <PostDetailsModal isOpen={!!selectedPost} onClose={() => setSelectedPost(null)} post={selectedPost} />}
     </div>
   );
 };

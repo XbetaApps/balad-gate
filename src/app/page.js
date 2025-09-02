@@ -6,6 +6,9 @@ import Script from 'next/script';
 import dynamic from 'next/dynamic';
 import { useTheme } from './nav/theme/ThemeProvider';
 import { getEnabledSections } from '@/config/sections';
+import { FaArrowUp } from 'react-icons/fa';
+import HomePostCard from '@/components/HomePostCard';
+import { useAuth } from './auth/AuthProvider';
 
 // تحميل المكونات الديناميكية
 const DynamicSection = dynamic(
@@ -46,8 +49,10 @@ export default function HomePage() {
   const [time, setTime] = useState(new Date());
   const [mounted, setMounted] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const scrollContainerRef = useRef(null);
   const featuredNewsRef = useRef(null);
+  const scrollToTopRef = useRef(null);
   
   // Save scroll position before page unload
   useEffect(() => {
@@ -72,6 +77,7 @@ export default function HomePage() {
   // Featured news state
   const [featuredNews, setFeaturedNews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { isAuthenticated } = useAuth();
   
   // Handle image loading errors
   const handleImageError = (e, itemId) => {
@@ -393,8 +399,29 @@ export default function HomePage() {
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 60000);
-    return () => clearInterval(timer);
+    
+    // التحقق من موضع التمرير لإظهار/إخفاء زر الانتقال للأعلى
+    const handleScroll = () => {
+      if (window.scrollY > 300) {
+        setShowScrollButton(true);
+      } else {
+        setShowScrollButton(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
 
   const allCards = [
     { title: 'المتاجر', icon: FaStore, path: '/services#commercial-stores' },
@@ -427,29 +454,7 @@ export default function HomePage() {
         {/* Search and Services Section */}
         <div className="w-full max-w-6xl mx-auto py-8">
           {/* 🔍 Search Bar */}
-          <div className="mb-12 px-4">
-            <div className="relative max-w-2xl mx-auto">
-              <div className="relative">
-                <input
-                  type="text"
-                  dir="rtl"
-                  placeholder="ابحث عن الخدمات..."
-                  className={`
-                    w-full p-4 pr-14 rounded-full border-2 outline-none transition-all duration-300 text-lg
-                    shadow-sm
-                    ${darkMode 
-                      ? 'bg-gray-900 text-white border-gray-700 hover:border-amber-500 focus:border-amber-500' 
-                      : 'bg-white text-gray-800 border-amber-100 hover:border-amber-300 focus:border-amber-400'}
-                  `}
-                />
-                <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-amber-400' : 'text-amber-500'}`}>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </div>
+         
 
 
 
@@ -526,38 +531,43 @@ export default function HomePage() {
 
         {/* Featured News Section */}
         <div id="news" className="my-8 px-4">
-          <div className="relative rounded-xl overflow-hidden shadow-2xl" ref={featuredNewsRef}>
-            <div className="relative h-[500px] w-full">
+          <div className={`relative rounded-xl overflow-hidden shadow-2xl ${darkMode ? 'ring-1 ring-gray-700' : 'ring-1 ring-amber-100 shadow-lg'}`} ref={featuredNewsRef}>
+            <div className="relative h-[400px] md:h-[500px] w-full">
               {featuredNews.map((news, index) => (
                 <div 
                   key={news.id}
                   className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}
                 >
                   <div className="relative h-full w-full">
-                    <Image
-                      src={news.image}
-                      alt={news.title}
-                      fill
-                      className="object-cover"
-                      priority
-                      onError={(e) => handleImageError(e, news.id)}
-                      unoptimized={!news.image.startsWith('/')}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                    <div className="absolute inset-0">
+                      <Image
+                        src={news.image}
+                        alt={news.title}
+                        fill
+                        className="object-cover"
+                        priority
+                        onError={(e) => handleImageError(e, news.id)}
+                        unoptimized={!news.image.startsWith('/')}
+                        style={{
+                          filter: darkMode ? 'brightness(0.9)' : 'brightness(0.95)'
+                        }}
+                      />
+                    </div>
+                    <div className={`absolute inset-0 ${darkMode ? 'bg-gradient-to-t from-black/80 to-transparent' : 'bg-gradient-to-t from-gray-900/70 to-transparent'}`}></div>
                     <div className="absolute bottom-0 right-0 left-0 p-6 text-white">
-                      <span className="inline-block bg-amber-500 text-white text-sm font-medium px-3 py-1 rounded-full mb-2">
+                      <span className={`inline-block ${darkMode ? 'bg-amber-500' : 'bg-amber-600'} text-white text-sm font-medium px-3 py-1 rounded-full mb-3 shadow-md`}>
                         {news.category}
                       </span>
-                      <h2 className="text-2xl md:text-3xl font-bold mb-2">{news.title}</h2>
-                      <p className="text-gray-200 mb-4">{news.excerpt}</p>
+                      <h2 className="text-2xl md:text-3xl font-bold mb-2 text-white drop-shadow-lg">{news.title}</h2>
+                      <p className="text-gray-100 mb-4 text-lg drop-shadow-md">{news.excerpt}</p>
                       <a 
                         href={news.link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center text-amber-300 hover:text-amber-200 font-medium transition-colors"
+                        className="inline-flex items-center text-amber-300 hover:text-white font-medium transition-colors group"
                       >
                         اقرأ المزيد
-                        <FaLeft className="mr-2" />
+                        <FaLeft className="mr-2 group-hover:translate-x-1 transition-transform" />
                       </a>
                     </div>
                   </div>
@@ -567,17 +577,17 @@ export default function HomePage() {
               {/* Navigation Arrows */}
               <button 
                 onClick={prevSlide}
-                className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-3 rounded-full hover:bg-black/70 transition-colors z-10"
+                className={`absolute left-4 top-1/2 -translate-y-1/2 ${darkMode ? 'bg-black/50 hover:bg-black/70' : 'bg-black/40 hover:bg-black/60'} text-white p-3 rounded-full transition-colors z-10 shadow-lg`}
                 aria-label="Previous slide"
               >
-                <FaRight />
+                <FaRight className="text-xl" />
               </button>
               <button 
                 onClick={nextSlide}
-                className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-3 rounded-full hover:bg-black/70 transition-colors z-10"
+                className={`absolute right-4 top-1/2 -translate-y-1/2 ${darkMode ? 'bg-black/50 hover:bg-black/70' : 'bg-black/40 hover:bg-black/60'} text-white p-3 rounded-full transition-colors z-10 shadow-lg`}
                 aria-label="Next slide"
               >
-                <FaLeft />
+                <FaLeft className="text-xl" />
               </button>
               
               {/* Indicators */}
@@ -586,8 +596,10 @@ export default function HomePage() {
                   <button
                     key={index}
                     onClick={() => setCurrentSlide(index)}
-                    className={`w-3 h-3 rounded-full transition-colors ${
-                      index === currentSlide ? 'bg-amber-500 w-6' : 'bg-white/50 hover:bg-white/75'
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      index === currentSlide 
+                        ? `${darkMode ? 'bg-amber-500' : 'bg-amber-600'} w-8` 
+                        : 'bg-white/50 hover:bg-white/75 w-3'
                     }`}
                     aria-label={`Go to slide ${index + 1}`}
                   />
@@ -598,33 +610,16 @@ export default function HomePage() {
 
           {/* Secondary News Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-            {featuredNews.slice(0, 2).map((news, index) => (
-              <a 
-                href={news.link}
-                target="_blank"
-                rel="noopener noreferrer"
+            {featuredNews.slice(0, 2).map((news) => (
+              <HomePostCard 
                 key={`secondary-${news.id}`}
-                className="group relative h-64 rounded-xl overflow-hidden shadow-md"
-              >
-                <div className="relative h-full w-full">
-                  <Image
-                    src={news.image}
-                    alt={news.title}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    onError={(e) => handleImageError(e, news.id)}
-                    unoptimized={!news.image.startsWith('/')}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                  <div className="absolute bottom-0 p-4 text-white">
-                    <span className="text-sm text-amber-300">{news.category}</span>
-                    <h3 className="text-xl font-bold mt-1 group-hover:text-amber-300 transition-colors">
-                      {news.title}
-                    </h3>
-                    <p className="text-sm text-gray-200 mt-1">{news.date}</p>
-                  </div>
-                </div>
-              </a>
+                post={{
+                  ...news,
+                  user_id: news.user_id || '1', // Ensure user_id exists for the contact button
+                  id: news.id || Date.now().toString() // Ensure id exists
+                }}
+                isAuthenticated={isAuthenticated}
+              />
             ))}
           </div>
         </div>
@@ -649,17 +644,31 @@ export default function HomePage() {
         </div>
 
         {/* Dynamic Sections */}
-        <div className="w-full pr-2">
-          <div className="max-w-7xl mx-auto">
-            {getEnabledSections().map((section) => (
-              <DynamicSection 
-                key={section.id}
-                section={section}
-              />
-            ))}
-          </div>
+        <div className="w-full">
+          {getEnabledSections().map((section) => (
+            <DynamicSection 
+              key={section.id}
+              section={section}
+            />
+          ))}
         </div>
       </div>
+      
+      {/* زر الانتقال للأعلى */}
+      <button
+        ref={scrollToTopRef}
+        onClick={scrollToTop}
+        className={`fixed bottom-8 right-8 z-50 p-3 rounded-full shadow-xl transition-all duration-300 transform ${
+          showScrollButton ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'
+        } ${
+          darkMode 
+            ? 'bg-amber-600 hover:bg-amber-700 text-white' 
+            : 'bg-amber-600 text-white hover:bg-amber-50 border border-amber-200'
+        }`}
+        aria-label="الانتقال إلى الأعلى"
+      >
+        <FaArrowUp className="text-xl" />
+      </button>
     </div>
   );
 }

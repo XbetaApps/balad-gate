@@ -518,7 +518,7 @@ export default function AccountPage() {
       case 'favorites':
         return <Favorites />;
       case 'chat':
-        return <Chat userData={userData} token={localStorage.getItem('token')} />;
+        return <Chat userData={userData} token={localStorage.getItem('token')} searchParams={searchParams} />;
       case 'preferences':
         return <Preferences />;
       case 'support':

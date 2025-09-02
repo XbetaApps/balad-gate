@@ -43,7 +43,7 @@ function extractFirstImage(html) {
 }
 
 function getDefaultImage() {
-  return '/images/default-news.jpg';
+  return '/images.png';
 }
 
 async function fetchFeed(url) {

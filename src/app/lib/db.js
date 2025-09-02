@@ -19,8 +19,6 @@ async function testConnection() {
   }
 }
 
-// اختبار الاتصال بقاعدة البيانات
 testConnection();
 
-// تصدير pool للاستخدام في الملفات الأخرى
 export { pool };

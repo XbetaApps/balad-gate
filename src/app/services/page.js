@@ -45,8 +45,15 @@ import {
   FaBoxes,
   FaTimes,
   FaThList,
+  FaTags,
   FaGift,
   FaClock,
+  FaPhone,
+  FaEnvelope,
+  FaInfoCircle,
+  FaMapMarkerAlt,
+  FaCalendarAlt,
+  FaMoneyBillWave,
 } from "react-icons/fa";
 
 // ------------------------
@@ -226,7 +233,55 @@ const QUICK_ADD = [
    إضافة عرض المنشورات فقط
    (لا تغييرات على التصميم)
 ========================= */
-function PostCard({ post }) {
+function PostCard({ post, isAuthenticated }) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isStartingChat, setIsStartingChat] = useState(false);
+  const router = useRouter();
+  
+  const openModal = (e) => {
+    e.preventDefault();
+    setIsModalOpen(true);
+  };
+  
+  const startChat = async (e) => {
+    e.stopPropagation();
+    if (!isAuthenticated || !post.user_id) return;
+    
+    setIsStartingChat(true);
+    try {
+      // Create or get conversation with the post author
+      const response = await fetch('/api/conversations/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          participantId: post.user_id,
+          message: `مرحباً، أنا مهتم بمنشورك: ${post.title}`,
+          postId: post.id
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.conversationId) {
+        // Redirect to the chat section with the conversation ID
+        // Use window.location to force a full page reload to ensure chat state is properly initialized
+        window.location.href = `/profile?section=chat&conversation=${data.conversationId}`;
+      } else {
+        throw new Error(data.error || 'فشل في بدء المحادثة');
+      }
+    } catch (error) {
+      console.error('Error starting chat:', error);
+      alert(error.message || 'حدث خطأ أثناء محاولة بدء المحادثة');
+    } finally {
+      setIsStartingChat(false);
+    }
+  };
+  
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
   const price =
     post?.price != null && post?.price !== ""
       ? Number(post.price).toLocaleString("ar-EG")
@@ -239,6 +294,103 @@ function PostCard({ post }) {
       })
     : "-";
 
+  // Get service icon based on category with more specific icons
+  const getServiceIcon = (category, iconClass = '') => {
+    if (!category) return <FaStore className={iconClass} />;
+    
+    // Try to find the service in our categories
+    const allServices = SERVICE_CATEGORIES.flatMap(cat => cat.services);
+    const service = allServices.find(s => s.id === category);
+    
+    // If we found a matching service with an icon, use it
+    if (service?.icon) {
+      const IconComponent = service.icon.type || FaStore;
+      return <IconComponent className={iconClass} />;
+    }
+    
+    // Fallback to specific icons based on category name
+    const categoryLower = String(category).toLowerCase();
+    
+    // Exact mapping of service names to icons
+    const serviceIcons = {
+      // Commercial Services
+      'متاجر': FaStore,
+      'stores': FaStore,
+      'مراكز تجارية': FaShoppingBag,
+      'malls': FaShoppingBag,
+      'مطاعم': FaUtensils,
+      'restaurants': FaUtensils,
+      'صيدليات': FaPills,
+      'pharmacies': FaPills,
+      'مجوهرات': FaRing,
+      'jewelry': FaRing,
+      'أزياء': FaTshirt,
+      'fashion': FaTshirt,
+      
+      // Real Estate & Lands
+      'عقارات': FaHome,
+      'real-estate': FaHome,
+      'أراضي': FaMapMarkedAlt,
+      'lands': FaMapMarkedAlt,
+      'فنادق': FaHotel,
+      'hotels': FaHotel,
+      'صالات أفراح': FaGlassCheers,
+      'wedding-halls': FaGlassCheers,
+      
+      // Vehicles & Transportation
+      'سيارات': FaCar,
+      'cars': FaCar,
+      'محطات وقود': FaGasPump,
+      'gas-stations': FaGasPump,
+      'توصيل': FaTruck,
+      'delivery': FaTruck,
+      
+      // Health & Fitness
+      'مستشفيات': FaHospital,
+      'hospitals': FaHospital,
+      'عيادات': FaClinicMedical,
+      'clinics': FaClinicMedical,
+      'نوادي رياضية': FaDumbbell,
+      'gyms': FaDumbbell,
+      'مراكز تجميل': FaCut,
+      'beauty-centers': FaCut,
+      
+      // Education & Development
+      'دورات': FaGraduationCap,
+      'courses': FaGraduationCap,
+      'مكتبات': FaBook,
+      'libraries': FaBook,
+      
+      // Other Services
+      'وظائف': FaBriefcase,
+      'jobs': FaBriefcase,
+      'ترفيه': FaTheaterMasks,
+      'entertainment': FaTheaterMasks,
+      'هدايا': FaGift,
+      'gifts': FaGift
+    };
+    
+    // Try to find exact match first, then fallback to pattern matching
+    const iconMap = Object.entries(serviceIcons).map(([key, component]) => ({
+      pattern: `^${key}$`,
+      component
+    }));
+    
+    // Find the first matching icon
+    const matchedIcon = iconMap.find(({ pattern }) => 
+      new RegExp(pattern, 'i').test(categoryLower)
+    );
+    
+    const IconComponent = matchedIcon ? matchedIcon.component : FaStore;
+    return <IconComponent className={iconClass} />;
+  };
+
+  // Get service name for display
+  const getServiceName = (category) => {
+    const service = SERVICE_CATEGORIES.flatMap(cat => cat.services).find(s => s.id === category);
+    return service?.name || category;
+  };
+
   // Get category color if available
   const category = SERVICE_CATEGORIES.flatMap(cat => 
     cat.services.find(s => s.id === post.category_name)
@@ -248,19 +400,22 @@ function PostCard({ post }) {
   const publisherName = post.is_anonymous 
     ? "مجهول" 
     : post.user_name || (post.user_id ? `مستخدم ${post.user_id.substring(0, 4)}` : "مستخدم");
+    
+  // Check if we should show contact button (not anonymous and user is logged in)
+  const showContactButton = !post.is_anonymous && isAuthenticated;
 
   return (
     <div className="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 dark:border-gray-700 flex flex-col h-full transform hover:-translate-y-1">
-      {/* Image Section */}
-      <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent z-10"></div>
-        <span className="text-gray-400 dark:text-gray-500 text-sm z-0">
-          {post.title?.charAt(0) || 'ص'}
-        </span>
+      {/* Service Icon Section */}
+      <div className="relative h-40 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <div className="text-7xl text-amber-400 dark:text-amber-500 opacity-90">
+          {getServiceIcon(post.category_name)}
+        </div>
         
         {/* Category Badge */}
-        <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-medium text-white ${category?.color || 'bg-blue-500'} shadow-md`}>
-          {post.category_name || 'تصنيف'}
+        <div className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-medium text-white ${category?.color || 'bg-blue-500'} shadow-md flex items-center gap-2`}>
+          {getServiceIcon(post.category_name, 'text-sm')}
+          <span className="text-xs">{getServiceName(post.category_name) || 'تصنيف'}</span>
         </div>
         
         {/* Status Badge */}
@@ -276,83 +431,282 @@ function PostCard({ post }) {
       {/* Content Section */}
       <div className="p-4 flex-1 flex flex-col">
         {/* Title */}
-        <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-2 line-clamp-1">
+        <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-2 line-clamp-2 min-h-[3rem]">
           {post.title || 'عنوان غير محدد'}
         </h3>
         
-        {/* Description */}
-        <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2 flex-grow">
-          {post.description || 'لا يوجد وصف متوفر'}
-        </p>
-        
-        {/* Details Grid */}
-        <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3 mb-4">
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            {/* Publisher - always show */}
-            <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300 col-span-2">
-              <FaUser className="text-blue-500" />
+        {/* Basic Info - Always Visible */}
+        <div className="space-y-2 mb-3">
+          <div className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <FaUser className="text-blue-500 flex-shrink-0" />
               <span className="truncate">
-                {post.is_anonymous ? 'مجهول' : post.user_name || `مستخدم ${post.user_id ? post.user_id.substring(0, 4) : 'غير معروف'}`}
+                {publisherName}
               </span>
             </div>
-            
-            <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
-              <FaMapMarkedAlt className="text-amber-500" />
-              <span className="truncate">{post.governorate || 'غير محدد'}</span>
-            </div>
-            {price && (
-              <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
-                <span className="font-medium text-amber-600 dark:text-amber-400">{price}</span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">شيكل</span>
-              </div>
+            {showContactButton && (
+              <button 
+                onClick={startChat}
+                disabled={isStartingChat}
+                className="text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-md flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="تواصل مع الناشر"
+              >
+                {isStartingChat ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-1 h-3 w-3 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    جاري التحميل...
+                  </>
+                ) : (
+                  <>
+                    <FaEnvelope className="text-xs" />
+                    <span>تواصل</span>
+                  </>
+                )}
+              </button>
             )}
-            <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-xs col-span-2">
-              <FaClock className="text-gray-400" />
-              <span>أضيف {created}</span>
-            </div>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <FaMapMarkedAlt className="text-amber-500 flex-shrink-0" />
+            <span>{post.governorate || 'غير محدد'}</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+            <FaClock className="text-gray-400" />
+            <span>أضيف {created}</span>
           </div>
         </div>
         
-        {/* Tags */}
-        {Array.isArray(post.tags) && post.tags.length > 0 && (
-          <div className="mt-auto flex flex-wrap gap-1.5">
-            {post.tags.slice(0, 3).map((t, i) => (
-              <span 
-                key={i} 
-                className="px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs font-medium flex items-center gap-1"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                {t}
-              </span>
-            ))}
-            {post.tags.length > 3 && (
-              <span className="px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs">
-                +{post.tags.length - 3}
-              </span>
-            )}
-          </div>
-        )}
         
         {/* Action Button */}
-        <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
-          <a
-            href={`/posts/${post.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
+        <div className="mt-auto pt-3 border-t border-gray-100 dark:border-gray-700">
+          <button
+            onClick={openModal}
             className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md"
           >
             عرض التفاصيل
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
-          </a>
+          </button>
         </div>
+        
+        {/* Modal for Full Details */}
+        <Dialog
+          open={isModalOpen}
+          onClose={closeModal}
+          maxWidth="md"
+          fullWidth
+          className="rtl"
+          PaperProps={{
+            className: 'bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-700'
+          }}
+        >
+          <DialogTitle className="bg-gradient-to-r from-amber-500 to-amber-600 text-white p-6 flex justify-between items-center shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-full">
+                {getServiceIcon(post.category_name, 'w-6 h-6 text-white')}
+              </div>
+              <h2 className="text-xl font-bold">تفاصيل {post.title}</h2>
+            </div>
+            <button 
+              onClick={closeModal}
+              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              aria-label="إغلاق"
+            >
+              <FaTimes className="w-5 h-5" />
+            </button>
+          </DialogTitle>
+          
+          <DialogContent className="p-0 overflow-hidden">
+            <div className="grid md:grid-cols-2 gap-0 h-full">
+              {/* Left Column - Image with Service Icon */}
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-gray-800 dark:to-gray-900 p-8 flex flex-col items-center justify-center relative overflow-hidden">
+                <div className="absolute inset-0 opacity-10">
+                  <div className="absolute -top-20 -right-20 w-40 h-40 bg-amber-300 dark:bg-amber-800 rounded-full filter blur-3xl opacity-50"></div>
+                  <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-blue-300 dark:bg-blue-900 rounded-full filter blur-3xl opacity-30"></div>
+                </div>
+                <div className="relative z-10 text-center">
+                  <div className="w-32 h-32 bg-white dark:bg-gray-800 rounded-2xl shadow-lg flex items-center justify-center mx-auto mb-6 transform transition-transform duration-500 hover:scale-105">
+                    {getServiceIcon(post.category_name, 'w-16 h-16 text-amber-500 dark:text-amber-400')}
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    {post.title || 'عنوان غير محدد'}
+                  </h3>
+                  <p className="text-amber-600 dark:text-amber-400 font-medium">
+                    {getServiceName(post.category_name) || 'خدمة'}
+                  </p>
+                  
+                  {price && (
+                    <div className="mt-6 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md">
+                      <div className="flex items-center justify-center gap-2">
+                        <FaMoneyBillWave className="text-amber-500 text-xl" />
+                        <span className="text-lg font-bold text-gray-900 dark:text-white">
+                          {price} شيكل
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Right Column - Details */}
+              <div className="p-6 overflow-y-auto max-h-[70vh]">
+                <div className="space-y-6">
+                  {/* Meta Info */}
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center gap-2 text-sm">
+                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                          <FaUser className="text-blue-500" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">الناشر</p>
+                          <div className="flex items-center justify-between">
+                            <p className="font-medium text-gray-900 dark:text-white">{publisherName}</p>
+                            {showContactButton && (
+                              <button 
+                                onClick={startChat}
+                                disabled={isStartingChat}
+                                className="text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-md flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="تواصل مع الناشر"
+                              >
+                                {isStartingChat ? (
+                                  <>
+                                    <svg className="animate-spin -ml-1 mr-1 h-3 w-3 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    جاري التحميل...
+                                  </>
+                                ) : (
+                                  <>
+                                    <FaEnvelope className="text-xs" />
+                                    <span>تواصل</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                          <FaCalendarAlt className="text-amber-500" />
+                        </div>
+                        <div>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">تاريخ النشر</p>
+                          <p className="font-medium text-gray-900 dark:text-white">{created}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Description */}
+                  <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h4 className="font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <FaInfoCircle className="text-blue-500" />
+                      <span>الوصف</span>
+                    </h4>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                      {post.description || 'لا يوجد وصف متوفر'}
+                    </p>
+                  </div>
+                  
+                  {/* Location */}
+                  <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h4 className="font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <FaMapMarkerAlt className="text-green-500" />
+                      <span>الموقع</span>
+                    </h4>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm">
+                      {[post.governorate, post.city, post.area].filter(Boolean).join('، ') || 'غير محدد'}
+                    </p>
+                  </div>
+                  
+                  {/* Contact Information */}
+                  {(post.phone || post.email) && (
+                    <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                      <h4 className="font-bold text-gray-900 dark:text-white mb-3">معلومات التواصل</h4>
+                      <div className="space-y-3">
+                        {post.phone && (
+                          <a 
+                            href={`tel:${post.phone}`}
+                            className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group"
+                          >
+                            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg group-hover:bg-blue-200 dark:group-hover:bg-blue-800/50 transition-colors">
+                              <FaPhone className="text-blue-500" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm text-gray-500 dark:text-gray-400">اتصل الآن</p>
+                              <p className="font-medium text-blue-600 dark:text-blue-400">{post.phone}</p>
+                            </div>
+                            <FaChevronUp className="text-blue-400 text-xs transform rotate-90" />
+                          </a>
+                        )}
+                        
+                        {post.email && (
+                          <a 
+                            href={`mailto:${post.email}`}
+                            className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/20 transition-colors group"
+                          >
+                            <div className="p-2 bg-amber-100 dark:bg-amber-900/20 rounded-lg group-hover:bg-amber-200 dark:group-hover:bg-amber-800/30 transition-colors">
+                              <FaEnvelope className="text-amber-500" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-500 dark:text-gray-400">البريد الإلكتروني</p>
+                              <p className="font-medium text-amber-600 dark:text-amber-400 truncate">{post.email}</p>
+                            </div>
+                            <FaChevronUp className="text-amber-400 text-xs transform rotate-90" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Tags */}
+                  {Array.isArray(post.tags) && post.tags.length > 0 && (
+                    <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                      <h4 className="font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                        <FaTags className="text-purple-500" />
+                        <span>الوسوم</span>
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {post.tags.flatMap(t => 
+                          t.split(',').map(tag => tag.trim()).filter(Boolean)
+                        ).map((tag, idx) => (
+                          <span 
+                            key={idx}
+                            className="px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-100 to-amber-50 dark:from-amber-900/30 dark:to-amber-900/10 text-amber-800 dark:text-amber-200 text-xs font-medium hover:from-amber-200 hover:to-amber-100 dark:hover:from-amber-800/40 dark:hover:to-amber-800/20 transition-all duration-300 shadow-sm"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+          
+          <DialogActions className="bg-gray-50 dark:bg-gray-800/80 p-4 border-t border-gray-100 dark:border-gray-700">
+            <button
+              onClick={closeModal}
+              className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2"
+            >
+              <FaTimes className="text-sm" />
+              إغلاق النافذة
+            </button>
+          </DialogActions>
+        </Dialog>
       </div>
     </div>
   );
 }
 
-function ServicePosts({ serviceId, governorate, search }) {
+function ServicePosts({ serviceId, governorate, search, isAuthenticated }) {
   const categoryName = SERVICE_TO_CATEGORY_NAME[serviceId];
 
   const [items, setItems] = useState([]);
@@ -410,7 +764,7 @@ function ServicePosts({ serviceId, governorate, search }) {
   }, [fetchPage]);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+    <div className=" rounded-lg shadow p-6">
       {!firstLoaded && loading && (
         <div className="py-8 text-center text-gray-600 dark:text-gray-300">جارٍ التحميل...</div>
       )}
@@ -430,7 +784,7 @@ function ServicePosts({ serviceId, governorate, search }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {items.map((post) => (
               <div key={post.id} className="h-full">
-                <PostCard post={post} />
+                <PostCard key={post.id} post={post} isAuthenticated={isAuthenticated} />
               </div>
             ))}
           </div>
@@ -496,7 +850,8 @@ export default function ServicesPage() {
 
   // دالة للتحقق من تسجيل الدخول مع اختبار الجلسة
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [authError, setAuthError] = useState(null);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [authError, setAuthError] = useState('');
   
   // تأثير للتحقق من حالة المصادقة عند التحميل
   useEffect(() => {
@@ -871,7 +1226,7 @@ export default function ServicesPage() {
       }
 
       resetForm();
-      alert("تم إرسال منشورك للمراجعة. بانتظار موافقة الإدارة.");
+      setShowSuccessDialog(true);
     } catch (err) {
       console.error('Submission error:', err);
       if (err.message.includes("جلسة") || err.message.includes("انتهت")) {
@@ -1075,11 +1430,11 @@ export default function ServicesPage() {
   // JSX
   // ------------------------
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col md:flex-row">
+    <div className=" flex flex-col md:flex-row">
       {/* --- Sidebar (Desktop) --- */}
       <aside
         ref={sidebarRef}
-        className="sidebar-container hidden md:block w-64 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 overflow-y-auto h-screen sticky top-0"
+        className="sidebar-container hidden md:block w-64  border-l border-gray-200 dark:border-gray-700 overflow-y-auto h-screen sticky top-0"
       >
         <div className="p-4 space-y-1">
           <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
@@ -1229,6 +1584,7 @@ export default function ServicesPage() {
                   serviceId={s.id}
                   governorate={selectedGov}
                   search={searchQuery}
+                  isAuthenticated={isAuthenticated}
                 />
               </div>
             </section>
@@ -1608,6 +1964,71 @@ export default function ServicesPage() {
             تسجيل الدخول
           </Button>
         </DialogActions>
+      </Dialog>
+
+      {/* Success Dialog */}
+      <Dialog
+        open={showSuccessDialog}
+        onClose={() => setShowSuccessDialog(false)}
+        aria-labelledby="success-dialog-title"
+        dir="rtl"
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          className: 'bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/20 rounded-2xl overflow-hidden border-0 shadow-2xl transform transition-all duration-300 scale-95 hover:scale-100',
+          style: {
+            background: 'linear-gradient(145deg, #fff8e1 0%, #fff3e0 100%)',
+            border: '1px solid rgba(245, 158, 11, 0.1)'
+          }
+        }}
+      >
+        <div className="relative">
+          {/* Animated Background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-yellow-300 opacity-5 -z-10"></div>
+          
+          {/* Header with Icon */}
+          <div className="relative pt-10 pb-6 px-8 text-center">
+            <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 shadow-lg mb-4 transform transition-transform duration-300 hover:rotate-12">
+              <svg className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <div className="absolute inset-0 rounded-full bg-amber-400/20 animate-ping"></div>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">تم بنجاح!</h3>
+            <p className="text-gray-600 dark:text-gray-300 text-sm">تم إرسال طلبك بنجاح</p>
+          </div>
+          
+          {/* Content */}
+          <div className="px-8 pb-8 text-center">
+            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 mb-6 border border-amber-200 dark:border-amber-800/30">
+              <p className="text-sm text-amber-800 dark:text-amber-200">
+                <span className="font-medium">تم استلام طلبك بنجاح!</span> سيتم مراجعته من قبل الإدارة. سيتم إشعارك فور الموافقة عليه.
+              </p>
+            </div>
+            
+            <button
+              onClick={() => setShowSuccessDialog(false)}
+              className="relative inline-flex items-center justify-center px-6 py-3 overflow-hidden font-medium text-white transition duration-300 ease-out bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full shadow-lg group hover:ring-2 hover:ring-offset-2 hover:ring-amber-300 focus:outline-none"
+            >
+              <span className="absolute inset-0 flex items-center justify-center w-full h-full text-white duration-300 -translate-x-full bg-gradient-to-r from-yellow-500 to-amber-600 group-hover:translate-x-0 ease">
+                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </span>
+              <span className="absolute flex items-center justify-center w-full h-full text-white transition-all duration-300 transform group-hover:translate-x-full ease">
+                تم الفهم
+              </span>
+              <span className="relative invisible">تم الفهم</span>
+            </button>
+            
+            
+          </div>
+          
+          {/* Decorative Elements */}
+          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-400 rounded-full opacity-10 -mr-12 -mt-12"></div>
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-yellow-400 rounded-full opacity-10 -ml-16 mb-6"></div>
+          <div className="absolute -top-6 -right-6 w-16 h-16 bg-yellow-200 rounded-full opacity-20 animate-pulse"></div>
+        </div>
       </Dialog>
 
       <style jsx global>{`

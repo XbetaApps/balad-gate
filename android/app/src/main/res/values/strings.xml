@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">SLAMEH</string>
-    <string name="title_activity_main">SLAMEH</string>
-    <string name="package_name">com.slameh.app</string>
-    <string name="custom_url_scheme">com.slameh.app</string>
-</resources>

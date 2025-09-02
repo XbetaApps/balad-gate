@@ -170,4 +170,5 @@ const authOptions = {
   }
 };
 
+export { authOptions };
 export default authOptions;

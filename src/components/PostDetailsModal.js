@@ -1,0 +1,209 @@
+"use client";
+import { useEffect, useState } from 'react';
+import { FaTimes, FaPhone, FaMapMarkerAlt, FaCalendarAlt, FaTag, FaInfoCircle, FaUser, FaComments, FaSpinner } from 'react-icons/fa';
+import { useAuth } from '@/app/auth/AuthProvider';
+
+export default function PostDetailsModal({ isOpen, onClose, post }) {
+  const [isStartingChat, setIsStartingChat] = useState(false);
+  const { isAuthenticated } = useAuth();
+  
+  const startChat = async (e) => {
+    e.stopPropagation();
+    if (!isAuthenticated || !post.user_id || post.is_anonymous) return;
+    
+    setIsStartingChat(true);
+    try {
+      const response = await fetch('/api/conversations/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          participantId: post.user_id,
+          message: `مرحباً، أنا مهتم بمنشورك: ${post.title}`,
+          postId: post.id
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.conversationId) {
+        window.location.href = `/profile?section=chat&conversation=${data.conversationId}`;
+      } else {
+        throw new Error(data.error || 'فشل في بدء المحادثة');
+      }
+    } catch (error) {
+      console.error('Error starting chat:', error);
+      alert(error.message || 'حدث خطأ أثناء محاولة بدء المحادثة');
+    } finally {
+      setIsStartingChat(false);
+    }
+  };
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [isOpen]);
+
+  if (!isOpen || !post) return null;
+
+  // تنسيق التاريخ والوقت
+  const formatDate = (dateString) => {
+    const options = { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    };
+    return new Date(dateString).toLocaleDateString('ar-EG', options);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* الخلفية المعتمة */}
+      <div 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+        onClick={onClose}
+      />
+
+      {/* المحتوى */}
+      <div className="relative bg-white dark:bg-gray-800 rounded-2xl text-right overflow-hidden shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          {/* رأس النافذة */}
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">تفاصيل الإعلان</h3>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+            >
+              <FaTimes className="h-6 w-6" />
+            </button>
+          </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* الصورة */}
+              <div className="rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 h-64 md:h-80">
+                {post.image ? (
+                  <img
+                    src={post.image}
+                    alt={post.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <FaInfoCircle className="text-5xl text-gray-400" />
+                  </div>
+                )}
+              </div>
+
+              {/* التفاصيل */}
+              <div className="space-y-4">
+                {/* العنوان */}
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    {post.title}
+                  </h2>
+                  <div className="flex items-center text-amber-600 dark:text-amber-400 text-sm">
+                    <FaTag className="ml-1" />
+                    <span>{post.category_name}</span>
+                  </div>
+                </div>
+
+
+
+
+
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
+                  <div className="flex items-center justify-between text-gray-600 dark:text-gray-300">
+                    <div className="flex items-center">
+                      <FaUser className="ml-1 text-amber-500" />
+                      <span className="font-medium ml-1">الناشر:</span>
+                      <span className="mr-1">
+                        {post.is_anonymous ? 'مجهول' : (post.author_name || (post.category_name === 'خدمات' ? 'ننشر' : 'مجهول'))}
+                      </span>
+                    </div>
+                    {!post.is_anonymous && isAuthenticated && post.user_id && (
+                      <button
+                        onClick={startChat}
+                        disabled={isStartingChat}
+                        className="flex items-center text-sm bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-1 rounded-full transition-colors"
+                        title="تواصل مع الناشر"
+                      >
+                        {isStartingChat ? (
+                          <FaSpinner className="animate-spin ml-1" />
+                        ) : (
+                          <>
+                            <FaComments className="ml-1" />
+                            <span>تواصل</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {/* السعر */}
+                {post.price && (
+                  <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg">
+                    <div className="text-sm text-gray-600 dark:text-gray-300">السعر</div>
+                    <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                      {parseFloat(post.price).toLocaleString('en-US')} <span className="text-base">₪</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* الموقع */}
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
+                  <div className="flex items-center text-gray-600 dark:text-gray-300">
+                    <FaMapMarkerAlt className="ml-1 text-amber-500" />
+                    <span className="font-medium">الموقع:</span>
+                    <span className="mr-1">{post.governorate}</span>
+                  </div>
+                </div>
+
+
+
+
+                {/* التاريخ والوقت */}
+                <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                  <FaCalendarAlt className="ml-1" />
+                  <span>نشر في: {formatDate(post.created_at)}</span>
+                </div>
+
+                {/* الوصف */}
+                {post.description && (
+                  <div className="mt-4">
+                    <h4 className="font-medium text-gray-700 dark:text-gray-200 mb-2">تفاصيل الإعلان:</h4>
+                    <p className="text-gray-600 dark:text-gray-300 whitespace-pre-line">
+                      {post.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* معلومات الاتصال */}
+                  
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+  );
+}

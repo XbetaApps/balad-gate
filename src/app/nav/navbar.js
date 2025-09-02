@@ -1,21 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useTheme } from "./theme/ThemeProvider";
 import Link from "next/link";
-import { useAuth } from "../auth/AuthProvider";
-import { useSession } from "../../contexts/SessionContext";
 import Image from "next/image";
-import { useRouter, usePathname } from "next/navigation";
-import dynamic from "next/dynamic";
-import { FaStore, FaShoppingBag, FaUser, FaSignInAlt, FaTimes } from "react-icons/fa";
-
-// تحميل SessionVerification (نسخة JS) بلا SSR
-const SessionVerification = dynamic(
-  () => import("../components/session/SessionVerification"),
-  { ssr: false }
-);
-
+import { useRouter, usePathname, useParams, useSearchParams } from "next/navigation";
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
@@ -23,11 +12,14 @@ import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
-import LightModeIcon from "@mui/icons-material/LightMode";
-import DarkModeIcon from "@mui/icons-material/DarkMode";
+import LightModeIcon from '@mui/icons-material/LightMode';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import { keyframes } from '@emotion/react';
 import Container from "@mui/material/Container";
 import Avatar from "@mui/material/Avatar";
 import Tooltip from "@mui/material/Tooltip";
+import Switch from "@mui/material/Switch";
 import SwipeableDrawer from "@mui/material/SwipeableDrawer";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
@@ -38,673 +30,281 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import Slide from "@mui/material/Slide";
 import useScrollTrigger from "@mui/material/useScrollTrigger";
 import CssBaseline from "@mui/material/CssBaseline";
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
-import Button from '@mui/material/Button';
 
 import logo from "./icons/1111.png";
 
-/* إخفاء الـ AppBar عند التمرير */
-function HideOnScroll({ children }) {
-  const trigger = useScrollTrigger();
-  return (
-    <Slide appear={false} direction="down" in={!trigger}>
-      {children}
-    </Slide>
-  );
-}
+/* الوضع الليلي */
+const ThemeSwitch = styled(Switch)(({ theme }) => ({
+  width: 68,
+  height: 38,
+  padding: 8,
+  "& .MuiSwitch-switchBase": {
+    margin: 1,
+    padding: 0,
+    transform: "translateX(7px)",
+    "&.Mui-checked": {
+      transform: "translateX(27px)",
+      "& .MuiSwitch-thumb:before": { content: "'🌙'" },
+      "& + .MuiSwitch-track": { backgroundColor: "#c0c0c0" },
+    },
+  },
+  "& .MuiSwitch-thumb": {
+    backgroundColor: theme.palette.mode === "dark" ? "#002d75" : "#ffd700",
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    "&:before": {
+      content: "'☀️'",
+      position: "absolute",
+      width: "100%",
+      height: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 18,
+    },
+  },
+  "& .MuiSwitch-track": { borderRadius: 20, backgroundColor: "#c0c0c0" },
+}));
 
-/* عناصر الملاحة بالعربية */
+/* تبديل اللغة */
+
+/* Navigation items in Arabic */
 const navItems = {
   home: "الرئيسية",
-  departments: "الأقسام",
   news: "الأخبار",
   weather: "الطقس",
+  car: "حالة الطرق",
   money: "العملات",
   services: "الخدمات",
-  about: "من نحن",
-  car: "احوال الطرق",
-  auth: "تسجيل الدخول"
+  auth: "تسجيل الدخول",
+  contact: "من نحن",
 };
 
 const pageKeys = [
-  { key: "home", href: "/" },
-  { key: "departments", href: "/departments" },
+  { key: "home", href: "/" },  // Root page
   { key: "news", href: "/news" },
   { key: "weather", href: "/weather" },
+  { key: "car", href: "/car" },
   { key: "money", href: "/money" },
   { key: "services", href: "/services" },
-  { key: "about", href: "/about" },
-  { key: "car", href: "/car" },
   { key: "auth", href: "/auth" },
+  { key: "contact", href: "/contact" },
 ];
+
 
 const linkFont = '"Tajawal", "Amiri", serif';
 
 export default function ResponsiveAppBar() {
-  // 1. Hooks (useState, useContext, etc.)
   const { mode, toggleColorMode, darkMode } = useTheme();
   const muiTheme = useMuiTheme();
+  const [mounted, setMounted] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const profileSrc = "/1111.png"; // Using existing image from public directory
+
   const router = useRouter();
   const pathname = usePathname() || "";
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("md"));
-  
-  // 2. State
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authAction, setAuthAction] = useState(null);
-  const { user, loading, logout } = useAuth();
-  const { isVerified: isSessionVerified } = useSession();
-  const [mounted, setMounted] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  
-  // لا حاجة للتحقق من صحة الجلسة هنا، حيث يتم التحقق في SessionVerification
-  
-  // 3. Callbacks
-  const handleLoginSuccess = useCallback(() => {
-    console.log('تم تسجيل الدخول بنجاح، تنفيذ الإجراء');
-    setShowAuthModal(false);
-    if (typeof authAction === 'function') {
-      authAction();
-    } else {
-      console.error('authAction ليس دالة:', authAction);
-    }
-  }, [authAction]);
-  
-  const handleProtectedClick = useCallback((action) => (e) => {
-    e.preventDefault();
-    if (user) {
-      action();
-    } else {
-      setAuthAction(() => action);
-      setShowAuthModal(true);
-    }
-  }, [user]);
-  
-  // 4. Handle profile click
-  const handleProfileClick = useCallback((e) => {
-    e?.preventDefault();
-    e?.stopPropagation();
-    
-    if (loading) {
-      console.log('جاري التحميل...');
-      return;
-    }
-    
-    console.log('النقر على الملف الشخصي - حالة المستخدم:', user ? 'مسجل الدخول' : 'غير مسجل');
-    
-    if (user) {
-      console.log('توجيه إلى صفحة الملف الشخصي');
-      router.push("/profile");
-    } else {
-      console.log('فتح نافذة تسجيل الدخول');
-      setShowLoginPrompt(true);
-    }
-  }, [user, loading, router]);
 
-  // معالجة تأكيد تسجيل الدخول
-  const handleLoginConfirm = useCallback(() => {
-    setShowLoginPrompt(false);
-    // توجيه المستخدم إلى صفحة تسجيل الدخول
-    router.push("/auth");
-  }, [router]);
-
-  // معالجة إلغاء تسجيل الدخول
-  const handleLoginCancel = useCallback(() => {
-    setShowLoginPrompt(false);
-  }, []);
-  
-  // 5. Effects
   useEffect(() => {
     setMounted(true);
+    // Set Arabic as default
     
-    // لا حاجة للاستماع لتغييرات حالة المصادقة هنا، حيث يتم التعامل معها في SessionContext
-    // التحقق الأولي من حالة المصادقة
-    if (user) {
-      console.log('تم تحميل شريط التنقل مع مستخدم مسجل الدخول');
-    } else {
-      console.log('تم تحميل شريط التنقل بدون مستخدم مسجل الدخول');
-    }
-  }, [user]);
-  
-  // 6. Callbacks
-  const handleLogout = useCallback(async () => {
-    try {
-      await logout();
-      // إعادة التوجيه إلى الصفحة الرئيسية
-      router.push("/");
-    } catch (error) {
-      console.error('حدث خطأ أثناء تسجيل الخروج:', error);
-    }
-  }, [logout, router]);
-
-  const handleDrawerToggle = useCallback((open) => () => {
-    setDrawerOpen(open);
   }, []);
 
-  // تنقّل عام للروابط غير المحمية
-  const handleNavClick = useCallback((e, href, requiresAuth = false) => {
+  const handleDarkModeChange = () => {
+    toggleColorMode();
+  };
+
+  // Language is fixed to Arabic
+
+  const handleDrawerToggle = (open) => () => setDrawerOpen(open);
+
+  // Handle navigation link clicks
+  const handleNavClick = (e, href) => {
     e.preventDefault();
     setDrawerOpen(false);
     
-    if (requiresAuth && (!user || !isSessionVerified)) {
-      setShowAuthModal(true);
-      setAuthAction(() => () => router.push(href));
-    } else {
-      router.push(href);
+    // For home, navigate to root
+    if (href === '/') {
+      window.location.href = '/';
+      return;
     }
-  }, [user, isSessionVerified, router]);
-
-  // 7. Constants
-  const profileSrc = "/1111.png";
-  const bgColor = "#000000";
-  const textColor = "#ffd700";
-  const hoverColor = "#f0e68c";
-  
-  if (!mounted) return null;
-
-  // نافذة تأكيد تسجيل الدخول
-  const LoginPromptDialog = (
-    <Dialog
-      open={showLoginPrompt}
-      onClose={handleLoginCancel}
-      aria-labelledby="alert-dialog-title"
-      aria-describedby="alert-dialog-description"
-      dir="rtl"
-      PaperProps={{
-        style: {
-          backgroundColor: darkMode ? '#1e1e1e' : '#ffffff',
-          color: darkMode ? '#ffffff' : '#000000',
-          borderRadius: '12px',
-          padding: '20px',
-          minWidth: '300px',
-          textAlign: 'center'
-        }
-      }}
-    >
-      <DialogTitle id="alert-dialog-title" style={{ color: darkMode ? '#ffd700' : '#1976d2' }}>
-        <FaSignInAlt style={{ marginLeft: '8px', verticalAlign: 'middle' }} />
-        تنبيه
-      </DialogTitle>
-      <DialogContent>
-        <DialogContentText id="alert-dialog-description" style={{ color: darkMode ? '#e0e0e0' : '#333333' }}>
-          يلزم تسجيل الدخول للوصول إلى هذه الميزة. هل ترغب في تسجيل الدخول الآن؟
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions style={{ justifyContent: 'center', padding: '16px', gap: '16px' }}>
-        <Button 
-          onClick={handleLoginCancel}
-          variant="outlined"
-          startIcon={<FaTimes />}
-          style={{
-            color: darkMode ? '#ff6b6b' : '#f44336',
-            borderColor: darkMode ? '#ff6b6b' : '#f44336',
-            minWidth: '120px'
-          }}
-        >
-          إلغاء
-        </Button>
-        <Button 
-          onClick={handleLoginConfirm}
-          variant="contained"
-          startIcon={<FaSignInAlt />}
-          style={{
-            backgroundColor: darkMode ? '#ffd700' : '#1976d2',
-            color: darkMode ? '#000000' : '#ffffff',
-            minWidth: '120px'
-          }}
-          autoFocus
-        >
-          تسجيل الدخول
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-
-
-
-  /* عنصر زر الملف الشخصي المحمي (سطح المكتب) */
-  const ProfileAvatarProtected = (
-    <div style={{ 
-      height: '100%', 
-      display: 'flex', 
-      alignItems: 'center',
-      padding: '0 8px',
-      cursor: 'pointer',
-      ':hover': {
-        color: hoverColor,
-      }
-    }}>
-      <IconButton 
-        onClick={(e) => {
-          console.log('تم النقر على زر الملف الشخصي');
-          e.stopPropagation();
-          
-          if (user) {
-            console.log('توجيه إلى الملف الشخصي');
-            router.push('/profile');
-          } else {
-            console.log('فتح نافذة تسجيل الدخول');
-            setShowAuthModal(true);
-            setAuthAction(() => () => {
-              console.log('بعد تسجيل الدخول، التوجيه إلى الملف الشخصي');
-              router.push('/profile');
-            });
-          }
-        }}
-        sx={{ 
-          color: 'inherit',
-          '&:hover': { 
-            color: hoverColor,
-            transform: 'translateY(-2px)',
-            backgroundColor: 'rgba(255, 255, 255, 0.1)'
-          },
-          transition: 'all 0.2s',
-          p: 1
-        }}
-      >
-        <FaUser size={20} />
-      </IconButton>
-
-      {showAuthModal && (
-        <div 
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.7)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 1000,
-          }}
-          onClick={() => setShowAuthModal(false)}
-        >
-          <div 
-            style={{
-              backgroundColor: 'white',
-              padding: '30px',
-              borderRadius: '10px',
-              maxWidth: '400px',
-              width: '90%',
-              textAlign: 'center',
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            <h3 style={{ color: 'black', marginBottom: '20px' }}>تأكيد الجلسة</h3>
-            <p style={{ marginBottom: '20px' }}>يجب تأكيد هويتك للوصول إلى الملف الشخصي</p>
-            
-            {user ? (
-              <div>
-                <p style={{ color: 'green', marginBottom: '20px' }}>✓ تم التحقق من الجلسة بنجاح</p>
-                <button 
-                  onClick={() => {
-                    console.log('المستخدم مسجل الدخول، توجيه إلى الملف الشخصي');
-                    setShowAuthModal(false);
-                    router.push('/profile');
-                  }}
-                  style={{
-                    padding: '10px 25px',
-                    backgroundColor: '#4CAF50',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '1rem',
-                  }}
-                >
-                  المتابعة إلى الملف الشخصي
-                </button>
-              </div>
-            ) : (
-              <>
-                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '20px' }}>
-                  <div style={{ 
-                    width: '100px', 
-                    height: '100px',
-                    borderRadius: '50%',
-                    backgroundColor: '#f0f0f0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 20px',
-                    fontSize: '40px',
-                    color: '#666'
-                  }}>
-                    🔒
-                  </div>
-                </div>
-                <p style={{ marginBottom: '20px', color: '#666' }}>يجب تسجيل الدخول أولاً للوصول إلى هذه الميزة</p>
-                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                  <button 
-                    onClick={() => {
-                      console.log('توجيه إلى صفحة تسجيل الدخول');
-                      setShowAuthModal(false);
-                      router.push('/auth?redirect=' + encodeURIComponent('/profile'));
-                    }}
-                    style={{
-                      padding: '10px 20px',
-                      backgroundColor: '#4CAF50',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      flex: 1,
-                      maxWidth: '150px'
-                    }}
-                  >
-                    تسجيل الدخول
-                  </button>
-                  <button 
-                    onClick={() => {
-                      console.log('إغلاق نافذة التأكيد');
-                      setShowAuthModal(false);
-                    }}
-                    style={{
-                      padding: '10px 20px',
-                      backgroundColor: '#f44336',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      flex: 1,
-                      maxWidth: '150px'
-                    }}
-                  >
-                    إلغاء
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  // أنماط CSS المخصصة للنافذة المنبثقة
-  const modalStyles = {
-    modalOverlay: {
-      position: 'fixed',
-      top: '64px', // ارتفاع شريط التنقل
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.7)',
-      display: 'flex',
-      justifyContent: 'center',
-      paddingTop: '20px',
-      zIndex: 1000,
-    },
-    modalContent: {
-      backgroundColor: 'white',
-      padding: '25px',
-      borderRadius: '0 0 12px 12px',
-      maxWidth: '420px',
-      width: '100%',
-      textAlign: 'center',
-      transition: 'all 0.3s ease',
-      boxShadow: '0 5px 25px rgba(0, 0, 0, 0.2)',
-      margin: '0 15px',
-      maxHeight: 'calc(100vh - 120px)',
-      overflowY: 'auto'
-    }
+    
+    // For other pages, navigate to the href
+    window.location.href = href;
   };
 
-  // نافذة تأكيد الجلسة (يتم مشاركتها بين سطح المكتب والموبايل)
-  const SessionConfirmationModal = () => {
-    // كشف إذا كان الجهاز جوالاً أم لا
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
-    
-    return (
-    <div 
-      style={modalStyles.modalOverlay}
-      onClick={() => setShowAuthModal(false)}
-    >
-      <div 
-        style={modalStyles.modalContent}
-        onClick={e => e.stopPropagation()}
-      >
-        <h3 style={{ color: 'black', marginBottom: '20px' }}>تأكيد الجلسة</h3>
-        <p style={{ marginBottom: '20px' }}>يجب تأكيد هويتك للوصول إلى الملف الشخصي</p>
-        
-        {user ? (
-          <div>
-            <p style={{ color: 'green', marginBottom: '20px' }}>✓ تم التحقق من الجلسة بنجاح</p>
-            <button 
-              onClick={() => {
-                console.log('المستخدم مسجل الدخول، توجيه إلى الملف الشخصي');
-                setShowAuthModal(false);
-                setDrawerOpen(false);
-                router.push('/profile');
-              }}
-              style={{
-                padding: '10px 25px',
-                backgroundColor: '#4CAF50',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '1rem',
-                width: '100%',
-                maxWidth: '250px',
-              }}
-            >
-              المتابعة إلى الملف الشخصي
-            </button>
-          </div>
-        ) : (
-          <>
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '20px' }}>
-              <div style={{ 
-                width: '80px', 
-                height: '80px',
-                borderRadius: '50%',
-                backgroundColor: '#f0f0f0',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 15px',
-                fontSize: '35px',
-                color: '#666'
-              }}>
-                🔒
-              </div>
-            </div>
-            <p style={{ marginBottom: '20px', color: '#666' }}>يجب تسجيل الدخول أولاً للوصول إلى هذه الميزة</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
-              <button 
-                onClick={() => {
-                  console.log('توجيه إلى صفحة تسجيل الدخول');
-                  setShowAuthModal(false);
-                  setDrawerOpen(false);
-                  router.push('/auth?redirect=' + encodeURIComponent('/profile'));
-                }}
-                style={{
-                  padding: '12px 20px',
-                  backgroundColor: '#4CAF50',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  width: '100%',
-                  maxWidth: '250px',
-                  fontSize: '1rem'
-                }}
-              >
-                تسجيل الدخول
-              </button>
-              <button 
-                onClick={() => {
-                  console.log('إغلاق نافذة التأكيد');
-                  setShowAuthModal(false);
-                }}
-                style={{
-                  padding: '12px 20px',
-                  backgroundColor: '#f44336',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  width: '100%',
-                  maxWidth: '250px',
-                  fontSize: '1rem'
-                }}
-              >
-                إلغاء
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  )};
+  if (!mounted) return null;
 
-  /* عنصر قائمة الملف الشخصي المحمي (داخل Drawer) */
-  const ProfileDrawerItemProtected = (
-    <div>
-      <ListItemButton
-        component="div"
-        onClick={(e) => {
-          e.preventDefault();
-          console.log('تم النقر على الملف الشخصي من القائمة الجانبية');
-          setShowAuthModal(true);
-        }}
-        sx={{
-          width: "100%",
-          py: 2,
-          px: 3,
-          borderRadius: "10px",
-          "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.1)" },
-        }}
-      >
-        <ListItemText
-          primary={navItems.profile}
-          primaryTypographyProps={{
-            fontFamily: linkFont,
-            fontWeight: 600,
-            fontSize: "1.1rem",
-            color: "var(--navbar-text)",
-          }}
-        />
-      </ListItemButton>
-      
-      {showAuthModal && <SessionConfirmationModal />}
-    </div>
-  );
+  // Custom colors for light/dark modes
+  const bgColor = darkMode ? '#000000' : '#FFFFFF';
+  const textColor = darkMode ? '#FFD700' : '#000000';
+  const borderColor = darkMode ? '#FFD700' : '#000000';
+  const hoverColor = darkMode ? '#FFD700' : '#000000';
 
   const drawerList = (
     <Box
       sx={{
-        width: 260,
-        bgcolor: bgColor,
+        width: 300,
         height: "100%",
         display: "flex",
         flexDirection: "column",
+        backgroundColor: darkMode ? '#000000' : '#FFFFFF',
+        color: darkMode ? '#FFFFFF' : '#000000',
+        '& .MuiListItemButton-root': {
+          color: darkMode ? '#FFFFFF' : '#000000',
+          '&:hover': {
+            backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+            color: darkMode ? '#FFD700' : '#000000',
+          },
+        },
+        '& .MuiSvgIcon-root': {
+          color: darkMode ? '#FFFFFF' : '#000000',
+        },
+        '& .MuiListItemText-primary': {
+          color: darkMode ? '#FFFFFF' : '#000000',
+        },
+        '& .MuiListItemText-primary': {
+          color: 'inherit',
+          fontFamily: linkFont,
+          fontSize: '1.1rem',
+          fontWeight: 600,
+        },
       }}
       role="presentation"
     >
-      <Box sx={{ display: "flex", justifyContent: "flex-end", p: 1 }}>
-        <IconButton onClick={() => setDrawerOpen(false)} sx={{ color: textColor }}>
+      <Box sx={{ 
+        display: "flex", 
+        justifyContent: "flex-end", 
+        p: 2,
+        borderBottom: `1px solid ${darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`
+      }}>
+        <IconButton 
+          onClick={() => setDrawerOpen(false)} 
+          sx={{ 
+            color: darkMode ? '#FFFFFF' : '#000000',
+            '&:hover': {
+              backgroundColor: 'transparent',
+              color: darkMode ? '#FFD700' : '#000000',
+              transform: 'scale(1.1)',
+            },
+            transition: 'all 0.2s ease-in-out'
+          }}
+        >
           <CloseIcon />
         </IconButton>
       </Box>
-      <List sx={{ flexGrow: 1 }}>
+      <List sx={{ 
+        flexGrow: 1,
+        py: 2,
+        '& .MuiListItemButton-root': {
+          py: 2,
+          px: 3,
+          margin: '4px 10px',
+          borderRadius: '8px',
+          transition: 'all 0.3s ease',
+          '&:hover': {
+            transform: 'translateX(5px)',
+          },
+          '&.Mui-selected': {
+            backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+            color: darkMode ? '#FFD700' : '#000000',
+            borderRight: `3px solid ${darkMode ? '#FFD700' : '#000000'}`,
+            '&:hover': {
+              backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.08)',
+            },
+          },
+        },
+      }}>
         {pageKeys.map((p) => (
-          <ListItem key={p.href} disablePadding>
-            {p.key === "profile" ? (
-              ProfileDrawerItemProtected
-            ) : (
-              <ListItemButton
-                component={Link}
-                href={p.href}
-                sx={{
-                  justifyContent: "center",
-                  py: 2,
-                  px: 3,
-                  borderRadius: "10px",
-                  "&:hover": { backgroundColor: hoverColor },
-                }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setDrawerOpen(false);
-                  router.push(p.href);
-                }}
-              >
-                <ListItemText
-                  primary={navItems[p.key]}
-                  primaryTypographyProps={{
-                    fontFamily: linkFont,
-                    fontWeight: 700,
-                    fontSize: "1.1rem",
-                    color: textColor,
-                    textAlign: "center",
-                  }}
-                />
-              </ListItemButton>
-            )}
-          </ListItem>
-        ))}
-      </List>
-
-      {/* زر تسجيل خروج (موبايل) */}
-      {user && (
-        <Box sx={{ px: 2, pb: 2, width: "100%" }}>
           <ListItemButton
-            onClick={handleLogout}
+            key={p.href}
+            component={Link}
+            href={p.href}
+            selected={pathname === p.href}
+            onClick={() => setDrawerOpen(false)}
             sx={{
-              justifyContent: "center",
-              borderRadius: "10px",
-              backgroundColor: "#ffebee",
-              color: "#d32f2f",
-              fontWeight: 700,
-              fontSize: "1.1rem",
-              "&:hover": {
-                backgroundColor: "#ffcdd2",
-                color: "#b71c1c",
+              color: darkMode ? '#FFFFFF' : '#000000',
+              '&:hover': {
+                color: darkMode ? '#FFD700' : '#000000',
+                backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+              },
+              '& .MuiListItemText-root': {
+                color: 'inherit',
+              },
+              '& .MuiTypography-root': {
+                color: 'inherit',
               },
             }}
           >
-            تسجيل خروج
+            <ListItemText
+              primary={navItems[p.key]}
+              sx={{
+                textAlign: 'center',
+                '& .MuiTypography-root': {
+                  fontFamily: linkFont,
+                  fontWeight: 600,
+                  fontSize: '1rem',
+                },
+              }}
+            />
           </ListItemButton>
-        </Box>
-      )}
+        ))}
+      </List>
     </Box>
   );
 
   return (
     <>
-      <SessionVerification />
       <CssBaseline />
-      {LoginPromptDialog}
-      <HideOnScroll>
         <AppBar
-          position="fixed"
-          className="custom-navbar !bg-[var(--navbar-bg)] text-[var(--navbar-text)]"
+          className="custom-navbar"
+          position="sticky"
+          elevation={0}
           sx={{
-            width: "93.5%",
-            right: "3.2%",
-            borderRadius: "30px",
-            backdropFilter: "blur(8px)",
-            boxShadow: "0 4px 20px rgba(255, 255, 255, 0.1)",
-            transition: "all 0.3s ease",
+            width: 'calc(100% - 80px)',
+            margin: '0 40px',
+            left: 0,
+            right: 0,
+            borderRadius: "40px",
+            backdropFilter: "blur(10px)",
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+            transition: 'all 0.3s ease',
+            backgroundColor: bgColor,
+            border: `1px solid ${borderColor}`,
+            '& .MuiToolbar-root': {
+              minHeight: '70px',
+            },
+            '& a': {
+              color: textColor,
+              textDecoration: 'none',
+              '&:hover': {
+                color: hoverColor,
+              },
+            },
+            '& .MuiSvgIcon-root': {
+              color: textColor,
+            },
+            '& .MuiButtonBase-root': {
+              color: textColor,
+              '&:hover': {
+                backgroundColor: 'transparent',
+                color: hoverColor,
+              },
+            },
           }}
         >
           <Container maxWidth="xl">
             <Toolbar disableGutters sx={{ width: "100%" }}>
               {/* شعار سطح المكتب */}
-              <Link href="/" passHref style={{ textDecoration: "none" }}>
+              <Link href="/" passHref style={{ textDecoration: 'none' }}>
                 <Box
                   component="div"
                   sx={{
                     mr: 2,
                     display: { xs: "none", md: "flex" },
-                    alignItems: "center",
+                    alignItems: 'center',
                     fontFamily: linkFont,
                     fontWeight: 800,
                     letterSpacing: ".3rem",
@@ -713,31 +313,21 @@ export default function ResponsiveAppBar() {
                   }}
                 >
                   <Avatar sx={{ display: { xs: "none", md: "flex" }, mr: 1 }}>
-                    <Image
-                      src={logo}
-                      alt="logo"
-                      fill
-                      style={{ objectFit: "contain" }}
-                      sizes="40px"
-                    />
+                    <Image src={logo} alt="logo" fill style={{ objectFit: "contain" }} sizes="40px" />
                   </Avatar>
                 </Box>
               </Link>
 
-              {/* زر قائمة الموبايل */}
-              <Box
-                sx={{
-                  flexGrow: 1,
-                  display: { xs: "flex", md: "none" },
-                  justifyContent: "flex-end",
-                }}
-              >
-                <IconButton
-                  size="large"
+              {/* Mobile Menu Button */}
+              <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" }, justifyContent: 'flex-end' }}>
+                <IconButton 
+                  size="large" 
                   onClick={() => setDrawerOpen(true)}
-                  sx={{
+                  sx={{ 
                     color: textColor,
-                    "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.1)" },
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                    }
                   }}
                 >
                   <MenuIcon fontSize="large" />
@@ -755,105 +345,157 @@ export default function ResponsiveAppBar() {
                     flexGrow: 1,
                     fontFamily: linkFont,
                     fontWeight: 800,
+                    letterSpacing: ".3rem",
                     color: "inherit",
-                    textDecoration: "none"
+                    textDecoration: "none",
+                    cursor: "pointer",
                   }}
                 >
-                  <Image
-                    src={logo}
-                    alt="شعار الموقع"
-                    width={40}
-                    height={40}
-                    style={{ objectFit: "contain" }}
-                  />
+                  <Avatar sx={{ display: { xs: "flex", md: "none" }, mr: 1 }}>
+                    <Image src={logo} alt="logo" fill style={{ objectFit: "contain" }} sizes="32px" />
+                  </Avatar>
                 </Typography>
               </Link>
 
-              {/* زر الملف الشخصي للهاتف */}
-              <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', ml: 'auto' }}>
-                <Tooltip title={user ? 'الملف الشخصي' : 'تسجيل الدخول'}>
-                  <IconButton
-                    size="large"
-                    onClick={handleProfileClick}
-                    color="inherit"
-                    sx={{
-                      color: textColor,
-                      "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.1)" },
-                    }}
-                  >
-                    <FaUser />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-
               {/* روابط سطح المكتب */}
               {!isMobile && (
-                <Box
-                  sx={{
-                    flexGrow: 1,
-                    display: "flex",
-                    justifyContent: "space-evenly",
-                    width: "100%",
-                  }}
-                >
+                <Box sx={{ flexGrow: 1, display: "flex", justifyContent: "space-evenly", width: "100%" }}>
                   {pageKeys.map((p) => (
-                      <Tooltip key={p.href} title={navItems[p.key]} arrow placement="bottom">
-                        <Link
-                          href={p.href}
-                          style={{ textDecoration: "none" }}
-                          onClick={(e) => handleNavClick(e, p.href)}
+                    <Tooltip key={p.href} title={navItems[p.key]} arrow placement="bottom">
+                      <Link 
+                        href={p.href} 
+
+                        style={{ textDecoration: "none" }}
+                        onClick={(e) => handleNavClick(e, p.href)}
+                      >
+                        <Typography
+                          sx={{
+                            fontFamily: linkFont,
+                            fontWeight: 600,
+                            fontSize: '1.3rem',
+                            color: textColor,
+                            '&:hover': {
+                              color: hoverColor,
+                              fontSize: '1.35rem',
+                            },
+                            transition: "color 0.2s, transform 0.2s",
+                            cursor: "pointer",
+                            "&:hover": {
+                              color: hoverColor,
+                              transform: "translateY(-3px)",
+                            },
+                          }}
                         >
-                          <Typography
-                            sx={{
-                              fontFamily: linkFont,
-                              fontWeight: 700,
-                              fontSize: "1.1rem",
-                              color: "var(--navbar-text)",
-                              transition: "color 0.2s, transform 0.2s",
-                              cursor: "pointer",
-                              "&:hover": {
-                                color: hoverColor,
-                                transform: "translateY(-3px)",
-                              },
-                            }}
-                          >
-                            {navItems[p.key]}
-                          </Typography>
-                        </Link>
-                      </Tooltip>
+                          {navItems[p.key]}
+                        </Typography>
+                      </Link>
+                    </Tooltip>
                   ))}
                 </Box>
               )}
 
-              {/* تبديل الوضع + الملف */}
-              <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: "center", gap: 2, mx: 2 }}>
-                <button
-                  onClick={toggleColorMode}
-                  className="p-2 rounded-full text-gold-500 dark:text-gold-400 hover:bg-dark-700 dark:hover:bg-dark-600"
-                >
-                  {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
-                </button>
-
-                {/* زر الملف الشخصي (سطح المكتب) */}
-                <Tooltip title={user ? 'الملف الشخصي' : 'تسجيل الدخول'}>
+              {/* Dark mode toggle */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2, mx: 2 }}>
+                <Tooltip title={darkMode ? 'الوضع الفاتح' : 'الوضع المظلم'} arrow>
                   <IconButton 
-                    onClick={handleProfileClick} 
-                    sx={{ 
-                      p: 1,
-                      color: textColor,
-                      "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.1)" },
+                    onClick={handleDarkModeChange} 
+                    sx={{
+                      border: '1px solid',
+                      borderColor: textColor,
+                      borderRadius: '50%',
+                      width: '36px',
+                      height: '36px',
+                      '&:hover': {
+                        backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                        borderColor: hoverColor,
+                        color: hoverColor,
+                      }
                     }}
                   >
-                    <FaUser size={20} />
+                    {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
                   </IconButton>
+                </Tooltip>
+                <Tooltip title="الملف الشخصي" arrow>
+                  <Box 
+                    component={Link}
+                    href="/profile"
+                    sx={{
+                      position: 'relative',
+                      width: '44px',
+                      height: '44px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '50%',
+                      marginRight: '8px',
+                      cursor: 'pointer',
+                      background: darkMode 
+                        ? 'linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(184, 134, 11, 0.3))' 
+                        : 'linear-gradient(135deg, rgba(0, 0, 0, 0.1), rgba(68, 68, 68, 0.1))',
+                      boxShadow: darkMode 
+                        ? '0 4px 15px rgba(0, 0, 0, 0.3)' 
+                        : '0 4px 15px rgba(0, 0, 0, 0.1)',
+                      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                      '&:hover': {
+                        transform: 'translateY(-2px) scale(1.05)',
+                        boxShadow: darkMode 
+                          ? '0 6px 20px rgba(0, 0, 0, 0.4)' 
+                          : '0 6px 20px rgba(0, 0, 0, 0.15)',
+                        '&::before': {
+                          opacity: 1,
+                          transform: 'scale(1.1)'
+                        }
+                      },
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        borderRadius: '50%',
+                        padding: '2px',
+                        background: darkMode 
+                          ? 'linear-gradient(135deg, #D4AF37, #FFD700)' 
+                          : 'linear-gradient(135deg, #333, #000)',
+                        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                        WebkitMaskComposite: 'xor',
+                        maskComposite: 'exclude',
+                        opacity: 0.7,
+                        transition: 'all 0.4s ease',
+                        pointerEvents: 'none'
+                      }
+                    }}
+                  >
+                    <PersonOutlineIcon 
+                      sx={{ 
+                        fontSize: '1.5rem',
+                        color: darkMode ? '#FFD700' : '#000',
+                        transition: 'all 0.3s ease',
+                        position: 'relative',
+                        zIndex: 1
+                      }} 
+                    />
+                    <Box 
+                      sx={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        borderRadius: '50%',
+                        background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.8) 0%, transparent 60%)',
+                        opacity: darkMode ? 0.15 : 0.1,
+                        pointerEvents: 'none'
+                      }}
+                    />
+                  </Box>
                 </Tooltip>
               </Box>
             </Toolbar>
           </Container>
         </AppBar>
-      </HideOnScroll>
 
-      {/* Drawer للموبايل */}
       <SwipeableDrawer
         anchor="right"
         open={drawerOpen}
@@ -861,153 +503,138 @@ export default function ResponsiveAppBar() {
         onOpen={() => setDrawerOpen(true)}
         PaperProps={{
           sx: {
-            width: "100%",
-            maxWidth: "100vw",
+            width: '100%',
+            maxWidth: '100vw',
             backgroundColor: bgColor,
             color: textColor,
-            "& .MuiDrawer-paper": {
-              width: "100%",
-              boxSizing: "border-box",
-              border: "none",
+            '& .MuiDrawer-paper': {
+              width: '100%',
+              boxSizing: 'border-box',
+              border: 'none',
               borderRadius: 0,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "20px",
-            },
-          },
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px',
+            }
+          }
         }}
       >
-        <Box sx={{ width: "100%", maxWidth: "500px", mx: "auto" }}>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "flex-end",
-              width: "100%",
-              mb: 4,
-            }}
-          >
-            <IconButton onClick={() => setDrawerOpen(false)} sx={{ color: textColor, fontSize: "2rem" }}>
+        <Box sx={{ width: '100%', maxWidth: '500px', mx: 'auto' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', width: '100%', mb: 4 }}>
+            <IconButton 
+              onClick={() => setDrawerOpen(false)}
+              sx={{ color: textColor, fontSize: '2rem' }}
+            >
               <CloseIcon fontSize="inherit" />
             </IconButton>
           </Box>
-
-          <List sx={{ width: "100%" }}>
-            {/* زر الملف الشخصي في قائمة البورجر */}
-            <ListItem
-              disablePadding
-              sx={{ mb: 2 }}
-            >
-              <ListItemButton
-                onClick={handleProfileClick}
-                sx={{
-                  width: "100%",
-                  py: 2,
-                  px: 3,
-                  borderRadius: "10px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 2,
-                  "&:hover": {
-                    backgroundColor: "rgba(255, 255, 255, 0.1)",
-                  },
+          <List sx={{ width: '100%' }}>
+            {pageKeys.map((p) => (
+              <ListItem 
+                key={p.href} 
+                disablePadding
+                sx={{ 
+                  mb: 2,
+                  '&:last-child': { mb: 0 }
                 }}
               >
-                <FaUser style={{ fontSize: '1.2rem' }} />
-                <ListItemText
-                  primary={user ? 'الملف الشخصي' : 'تسجيل الدخول'}
-                  primaryTypographyProps={{
-                    fontFamily: linkFont,
-                    fontWeight: 600,
-                    fontSize: "1.1rem",
-                    color: "var(--navbar-text)",
+                <ListItemButton
+                  component={Link}
+                  href={p.href}
+                  onClick={() => setDrawerOpen(false)}
+                  sx={{
+                    width: '100%',
+                    py: 2,
+                    px: 3,
+                    borderRadius: '10px',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    },
+                    '&.Mui-selected': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                    },
                   }}
-                />
-              </ListItemButton>
-            </ListItem>
-            
-            {pageKeys.map((p) => (
-              <ListItem
-                key={p.href}
-                disablePadding
-                sx={{ mb: 2, "&:last-child": { mb: 0 } }}
-              >
-                {p.key === "profile" ? (
-                  ProfileDrawerItemProtected
-                ) : (
-                  <ListItemButton
-                    component={Link}
-                    href={p.href}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setDrawerOpen(false);
-                      router.push(p.href);
-                    }}
-                    sx={{
-                      width: "100%",
-                      py: 2,
-                      px: 3,
-                      borderRadius: "10px",
-                      "&:hover": {
-                        backgroundColor: "rgba(255, 255, 255, 0.1)",
-                      },
-                    }}
-                  >
-                    <ListItemText
-                      primary={navItems[p.key]}
-                      primaryTypographyProps={{
-                        fontFamily: linkFont,
-                        fontWeight: 600,
-                        fontSize: "1.1rem",
-                        color: "var(--navbar-text)",
-                      }}
-                    />
-                  </ListItemButton>
-                )}
+                >
+                  <ListItemText 
+                    primary={navItems[p.key]} 
+                    primaryTypographyProps={{
+                      fontFamily: linkFont,
+                      fontWeight: 600,
+                      fontSize: '1.1rem',
+                      color: 'text.primary',
+                    }} 
+                  />
+                </ListItemButton>
               </ListItem>
             ))}
           </List>
-
-          {/* مبدّل الوضع (موبايل) */}
-          <Box
-            sx={{
-              display: { xs: "flex", md: "none" },
-              justifyContent: "center",
-              mt: 6,
-              gap: 3,
-            }}
-          >
-            <button
-              onClick={toggleColorMode}
-              className="p-2 rounded-full text-gold-500 dark:text-gold-400 hover:bg-dark-700 dark:hover:bg-dark-600"
-            >
-              {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
-            </button>
+          
+          {/* Mobile Theme Toggle */}
+          <Box sx={{ 
+            display: { xs: 'flex', md: 'none' },
+            justifyContent: 'center',
+            mt: 6,
+            gap: 3
+          }}>
+            <Tooltip title={darkMode ? 'الوضع الفاتح' : 'الوضع المظلم'}>
+              <IconButton
+                onClick={handleDarkModeChange}
+                className="theme-toggle"
+                sx={{ 
+                  position: 'relative',
+                  width: 40,
+                  height: 40,
+                  borderRadius: '50%',
+                  backgroundColor: darkMode 
+                    ? 'rgba(255, 255, 255, 0.1)' 
+                    : 'rgba(0, 0, 0, 0.05)',
+                  backdropFilter: 'blur(5px)',
+                  border: `1px solid ${darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+                  boxShadow: darkMode 
+                    ? '0 0 15px rgba(212, 175, 55, 0.3)' 
+                    : '0 2px 10px rgba(0, 0, 0, 0.1)',
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: darkMode 
+                      ? '0 5px 20px rgba(212, 175, 55, 0.4)' 
+                      : '0 5px 15px rgba(0, 0, 0, 0.15)',
+                    backgroundColor: darkMode 
+                      ? 'rgba(255, 255, 255, 0.15)' 
+                      : 'rgba(0, 0, 0, 0.08)',
+                  },
+                  '&:active': {
+                    transform: 'translateY(0) scale(0.95)',
+                  },
+                  '& .theme-icon': {
+                    transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'absolute',
+                    opacity: 0,
+                    transform: 'rotate(0deg) scale(0.8)',
+                  },
+                  '& .sun-icon': {
+                    color: '#FFA500',
+                    opacity: darkMode ? 0 : 1,
+                    transform: darkMode ? 'scale(0.7) rotate(90deg)' : 'scale(1) rotate(0deg)',
+                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                    filter: 'drop-shadow(0 0 4px rgba(255, 165, 0, 0.7))',
+                  },
+                  '& .moon-icon': {
+                    color: '#E0E0FF',
+                    opacity: darkMode ? 1 : 0,
+                    transform: darkMode ? 'scale(1) rotate(0deg)' : 'scale(0.7) rotate(-90deg)',
+                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                    filter: 'drop-shadow(0 0 4px rgba(224, 224, 255, 0.5))',
+                  }
+                }}
+              >
+                <LightModeIcon className="theme-icon sun-icon" />
+                <DarkModeIcon className="theme-icon moon-icon" />
+              </IconButton>
+            </Tooltip>
           </Box>
-
-          {/* تسجيل خروج (موبايل) */}
-          {user && (
-            <ListItemButton
-              onClick={handleLogout}
-              sx={{
-                mt: 2,
-                mb: 2,
-                justifyContent: "center",
-                borderRadius: "10px",
-                backgroundColor: "#ffebee",
-                color: "#d32f2f",
-                fontWeight: 700,
-                fontSize: "1.1rem",
-                "&:hover": {
-                  backgroundColor: "#ffcdd2",
-                  color: "#b71c1c",
-                },
-              }}
-            >
-              تسجيل خروج
-            </ListItemButton>
-          )}
         </Box>
       </SwipeableDrawer>
     </>

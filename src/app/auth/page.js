@@ -129,7 +129,7 @@ export default function AuthPage() {
 
   /* ------------------------------------ JSX ------------------------------------ */
   return (
-    <div className={`flex items-center justify-center min-h-screen px-4 ${isDark ? 'bg-black' : 'bg-gray-100'}`}>
+    <div className={`flex items-center justify-center min-h-screen px-4 ${isDark ? '' : ''}`}>
       <div className="relative w-full max-w-5xl h-[700px] rounded-xl shadow-2xl overflow-hidden bg-white">
         {/* الحاوية الرئيسة للنموذجين */}
         <div className="flex h-full">
@@ -226,18 +226,7 @@ export default function AuthPage() {
                 </button>
 
                 {/* روابط تواصل اجتماعي تجريبية */}
-                <div className="flex justify-center gap-4 mt-4">
-                  <a href="#" className="text-blue-600 text-2xl hover:scale-110 transition">
-                    <FaFacebookF />
-                  </a>
-                  <a href="#" className="text-green-500 text-2xl hover:scale-110 transition">
-                    <FaWhatsapp />
-                  </a>
-                  <a href="#" className="text-blue-800 text-2xl hover:scale-110 transition">
-                    <FaLinkedinIn />
-                  </a>
-                </div>
-
+               
                 {signInError && <div className="text-red-600 font-bold text-center mt-2">{signInError}</div>}
                 {signInSuccess && <div className="text-green-600 font-bold text-center mt-2">{signInSuccess}</div>}
               </form>
@@ -247,9 +236,7 @@ export default function AuthPage() {
 
         {/* الشريط المتحرّك بين النموذجين */}
         <div
-          className={`absolute top-0 h-full w-1/2 ${
-            isDark ? 'bg-black text-white' : 'bg-black text-white'
-          } transition-all duration-700 ease-in-out ${isSignIn ? 'left-0' : 'left-1/2'}`}
+          className={`absolute top-0 h-full w-1/2 bg-gray-900 text-white transition-all duration-700 ease-in-out ${isSignIn ? 'left-0' : 'left-1/2'}`}
         >
           <div className="h-full flex items-center justify-center p-10">
             <div className="text-center max-w-xs">

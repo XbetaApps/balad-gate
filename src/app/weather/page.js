@@ -30,6 +30,7 @@ const GOVERNORATES = [
   { id: 15, name: 'عكا', lat: 32.9333, lon: 35.0833 },
   { id: 16, name: 'حيفا', lat: 32.8192, lon: 34.9999 },
   { id: 17, name: 'يافا', lat: 32.0500, lon: 34.7500 },
+  { id: 18, name: 'تل', lat: 31.7683, lon: 35.2137 },
 ];
 
 // Cache to store weather data temporarily
