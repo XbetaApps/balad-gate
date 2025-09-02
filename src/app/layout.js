@@ -8,6 +8,7 @@ import { AuthProvider } from "./auth/AuthProvider";
 import { Providers } from "./providers";
 import { SessionProvider } from "../contexts/SessionContext";
 import AIChatWidget from "@/components/AI/ai";
+import Footer from "@/components/footer";
 // Load Arabic fonts
 const tajawal = Tajawal({
   weight: ['400', '500', '700'],
@@ -62,6 +63,7 @@ export default function RootLayout({ children }) {
                   </main>
                 </LayoutClient>
                 <AIChatWidget />
+                <Footer />
               </CustomThemeProvider>
             </SessionProvider>
           </AuthProvider>

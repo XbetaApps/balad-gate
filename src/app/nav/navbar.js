@@ -31,7 +31,6 @@ import Slide from "@mui/material/Slide";
 import useScrollTrigger from "@mui/material/useScrollTrigger";
 import CssBaseline from "@mui/material/CssBaseline";
 
-import logo from "./icons/1111.png";
 
 /* الوضع الليلي */
 const ThemeSwitch = styled(Switch)(({ theme }) => ({
@@ -100,7 +99,7 @@ export default function ResponsiveAppBar() {
   const muiTheme = useMuiTheme();
   const [mounted, setMounted] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const profileSrc = "/1111.png"; // Using existing image from public directory
+  const profileSrc = "/logo.png"; // Using existing image from public directory
 
   const router = useRouter();
   const pathname = usePathname() || "";
@@ -312,9 +311,25 @@ export default function ResponsiveAppBar() {
                     cursor: "pointer",
                   }}
                 >
-                  <Avatar sx={{ display: { xs: "none", md: "flex" }, mr: 1 }}>
-                    <Image src={logo} alt="logo" fill style={{ objectFit: "contain" }} sizes="40px" />
-                  </Avatar>
+                  <Box sx={{ 
+                    display: { xs: "none", md: "flex" }, 
+                    width: 60, 
+                    height: 60,
+                    position: 'relative',
+                    '& img': {
+                      objectFit: 'contain',
+                      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+                    }
+                  }}>
+                    <Image 
+                      src="/logo.png" 
+                      alt="logo" 
+                      fill 
+                      sizes="60px" 
+                      style={{ objectFit: 'contain' }} 
+                      priority 
+                    />
+                  </Box>
                 </Box>
               </Link>
 
@@ -352,7 +367,7 @@ export default function ResponsiveAppBar() {
                   }}
                 >
                   <Avatar sx={{ display: { xs: "flex", md: "none" }, mr: 1 }}>
-                    <Image src={logo} alt="logo" fill style={{ objectFit: "contain" }} sizes="32px" />
+                    <Image src="/logo.png" alt="logo" fill style={{ objectFit: "contain" }} sizes="32px" />
                   </Avatar>
                 </Typography>
               </Link>

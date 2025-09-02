@@ -240,7 +240,7 @@ export default function AuthPage() {
         >
           <div className="h-full flex items-center justify-center p-10">
             <div className="text-center max-w-xs">
-              <img src="/1111.png" alt="Logo" className="mx-auto mb-6 w-32 h-32 object-contain" />
+              <img src="/Logo.png" alt="Logo" className="mx-auto mb-6 w-32 h-32 object-contain" />
               <h2 className="text-4xl font-extrabold mb-6">{!isSignIn ? 'Welcome Back!' : 'Hello, Friend!'}</h2>
               <p className="text-lg mb-10 text-gray-200">
                 {!isSignIn
