@@ -413,9 +413,6 @@ export default function CurrencyPage() {
         </div>
         
         {/* Footer */}
-        <div className="text-center text-sm text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-6">
-          <p className="mt-1">  بوابة البلد  </p>
-        </div>
       </div>
     </div>
   );
