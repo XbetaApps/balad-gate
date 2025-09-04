@@ -8,10 +8,11 @@ export const runtime = 'nodejs'; // تأكد أننا لسنا على Edge إذ�
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 
 export async function GET(request) {
-  // 1) جرّب القراءة من الكوكيز (الأفضل أمنياً)
-  const jar = cookies();
-  const cookieToken =
-    jar.get('session')?.value || jar.get('token')?.value || null;
+  // 1) Read from cookies (most secure)
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get('session')?.value;
+  const tokenCookie = cookieStore.get('token')?.value;
+  const cookieToken = sessionCookie || tokenCookie || null;
 
   // 2) أو جرّب من الهيدر Authorization: Bearer <token> (للأنظمة التي تستخدم localStorage)
   const authHeader = request.headers.get('authorization') || '';

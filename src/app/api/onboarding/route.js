@@ -1,62 +1,16 @@
-import { NextResponse } from "next/server";
-import { headers, cookies } from "next/headers";
-import { PrismaClient, Prisma } from "@prisma/client";
+import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+import { verifyToken } from '@/lib/auth';
 
+// Initialize Prisma client
 const prisma = globalThis._prisma || new PrismaClient();
-if (process.env.NODE_ENV !== "production") globalThis._prisma = prisma;
+if (process.env.NODE_ENV !== 'production') globalThis._prisma = prisma;
 
-/* ============== Helpers ============== */
-function base64UrlDecode(str) {
-  try {
-    return Buffer.from(str.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8");
-  } catch {
-    return null;
-  }
-}
-function decodeJwtNoVerify(token) {
-  if (!token || typeof token !== "string") return null;
-  const parts = token.split(".");
-  if (parts.length < 2) return null;
-  const payload = base64UrlDecode(parts[1]);
-  if (!payload) return null;
-  try { return JSON.parse(payload); } catch { return null; }
-}
-function getUserIdFromRequest(req) {
-  const url = new URL(req.url);
-  const hdrs = headers();
-
-  const direct = hdrs.get("x-user-id") || hdrs.get("X-User-Id");
-  if (direct) return direct;
-
-  const auth = hdrs.get("authorization") || hdrs.get("Authorization");
-  if (auth?.startsWith("Bearer ")) {
-    const payload = decodeJwtNoVerify(auth.slice(7).trim());
-    const uid = payload?.userId || payload?.sub || payload?.id;
-    if (uid) return uid;
-  }
-
-  const ck = cookies();
-  const names = [
-    "bg_token",
-    "token",
-    "next-auth.session-token",
-    "__Secure-next-auth.session-token",
-    "session",
-  ];
-  for (const n of names) {
-    const v = ck.get(n)?.value;
-    if (!v) continue;
-    const payload = decodeJwtNoVerify(v);
-    const uid = payload?.userId || payload?.sub || payload?.id;
-    if (uid) return uid;
-  }
-
-  const uidParam = url.searchParams.get("uid"); // للديبج فقط
-  if (uidParam) return uidParam;
-
-  return null;
-}
-
+/**
+ * Converts a value to a Date object or returns null if invalid
+ * @param {any} v - The value to convert
+ * @returns {Date|null} The Date object or null if invalid
+ */
 function toDateOrNull(v) {
   if (!v) return null;
   const d = new Date(v);
@@ -73,11 +27,28 @@ export async function GET(req) {
   try {
     const url = new URL(req.url);
     const action = url.searchParams.get("action");
-    const userId = getUserIdFromRequest(req);
-
-    if (!userId) {
-      return NextResponse.json({ message: "غير مصرح: مفقود X-User-Id" }, { status: 401 });
+    // Get authorization header
+    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
+    
+    if (!authHeader) {
+      return NextResponse.json(
+        { error: 'غير مصرح - يرجى تسجيل الدخول' },
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
     }
+
+    // Verify token
+    let userData;
+    try {
+      userData = await verifyToken(authHeader);
+    } catch (error) {
+      return NextResponse.json(
+        { error: error.message || 'رمز غير صالح أو منتهي الصلاحية' },
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const userId = userData.userId;
 
     if (action === "check") {
       const row = await prisma.user.findUnique({
@@ -153,11 +124,28 @@ export async function POST(req) {
   try {
     const url = new URL(req.url);
     const action = url.searchParams.get("action");
-    const userId = getUserIdFromRequest(req);
-
-    if (!userId) {
-      return NextResponse.json({ message: "غير مصرح: مفقود X-User-Id" }, { status: 401 });
+    // Get authorization header
+    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
+    
+    if (!authHeader) {
+      return NextResponse.json(
+        { error: 'غير مصرح - يرجى تسجيل الدخول' },
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
     }
+
+    // Verify token
+    let userData;
+    try {
+      userData = await verifyToken(authHeader);
+    } catch (error) {
+      return NextResponse.json(
+        { error: error.message || 'رمز غير صالح أو منتهي الصلاحية' },
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const userId = userData.userId;
     if (!action) {
       return NextResponse.json({ message: "حدد action في الاستعلام" }, { status: 400 });
     }

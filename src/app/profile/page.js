@@ -22,12 +22,14 @@ import {
   FaNewspaper,
   FaChartLine,
   FaHeadset,
-  FaList
+  FaList,
+  FaAd
 } from 'react-icons/fa';
 import UsersManagement from './components/UsersManagement';
 import PostsManagement from './components/PostsManagement';
 import AdminDashboard from './components/AdminDashboard';
 import CategoriesManagement from './components/CategoriesManagement';
+import AdsManagement from './components/AdsManagement';
 import NavItem from './components/NavItem';
 import Link from 'next/link';
 import Notifications from './components/Notifications';
@@ -537,6 +539,8 @@ export default function AccountPage() {
         return <AdminSupport />;
       case 'categories':
         return <CategoriesManagement />;
+      case 'ads':
+        return <AdsManagement />;
       case 'myPosts': // 👈 جديد
         return <UserPostsSection />;
       default:
@@ -610,13 +614,15 @@ export default function AccountPage() {
           )}
 
           {userData?.role_id === 4 && (
-            <>
+            <div className="mt-8 pt-6 border-t border-[var(--border)]">
+              <h3 className="text-sm font-medium text-[var(--text-secondary)] mb-4 px-4">لوحة التحكم</h3>
+              <NavItem icon={<FaChartLine />} label="لوحة التحكم" active={currentSection === 'dashboard'} onClick={() => handleSectionClick('dashboard')} />
               <NavItem icon={<FaUsersCog />} label="إدارة المستخدمين" active={currentSection === 'users'} onClick={() => handleSectionClick('users')} />
               <NavItem icon={<FaNewspaper />} label="إدارة المنشورات" active={currentSection === 'posts'} onClick={() => handleSectionClick('posts')} />
               <NavItem icon={<FaList />} label="إدارة الأقسام" active={currentSection === 'categories'} onClick={() => handleSectionClick('categories')} />
-              <NavItem icon={<FaChartLine />} label="لوحة التحكم" active={currentSection === 'dashboard'} onClick={() => handleSectionClick('dashboard')} />
-              <NavItem icon={<FaHeadset />} label="دعم المشرفين" active={currentSection === 'adminSupport'} onClick={() => handleSectionClick('adminSupport')} />
-            </>
+              <NavItem icon={<FaAd />} label="إدارة الإعلانات" active={currentSection === 'ads'} onClick={() => handleSectionClick('ads')} />
+              <NavItem icon={<FaHeadset />} label="دعم العملاء" active={currentSection === 'adminSupport'} onClick={() => handleSectionClick('adminSupport')} />
+            </div>
           )}
 
           <NavItem 
