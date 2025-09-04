@@ -6,8 +6,8 @@
       "use": "@vercel/next"
     }
   ],
-  "buildCommand": "npm run vercel-build",
-  "installCommand": "npm install --legacy-peer-deps",
+  "buildCommand": "pnpm run vercel-build",
+  "installCommand": "pnpm install",
   "outputDirectory": ".next",
   "env": {
     "PRISMA_GENERATE_DATAPROXY": "false",
@@ -17,5 +17,6 @@
     "env": {
       "NODE_ENV": "production"
     }
-  }
+  },
+  "nodeVersion": "20.x"
 }
