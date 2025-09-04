@@ -14,7 +14,7 @@ export default function TestSession() {
         setLoading(true);
 
         // جلب التوكن من localStorage (إن وجد)
-        let token: string | null = null;
+        let token = null;
         try {
           token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
         } catch {
@@ -31,7 +31,7 @@ export default function TestSession() {
         });
 
         // قد يعيد 200 حتى في حال الخطأ المنطقي؛ لذا نفصل بين "ok" الشبكية و"المعنى" في البودي
-        let data: any = null;
+        let data = null;
         try {
           data = await response.json();
         } catch {
@@ -51,7 +51,7 @@ export default function TestSession() {
 
         setSessionData({ ...data, authenticated });
         setError('');
-      } catch (err: any) {
+      } catch (err) {
         console.error('Error fetching session:', err);
         setError(err?.message || 'حدث خطأ في جلب بيانات الجلسة');
         setSessionData(null);
