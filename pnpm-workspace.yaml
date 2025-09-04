@@ -1,3 +1,6 @@
+packages:
+  - '*'  # This will include all packages in the workspace
+
 ignoredBuiltDependencies:
   - '@tailwindcss/oxide'
   - sharp
