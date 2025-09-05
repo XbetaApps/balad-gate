@@ -25,14 +25,11 @@ import {
   FaChevronLeft, FaChevronRight, FaChevronLeft as FaLeft, FaChevronRight as FaRight 
 } from 'react-icons/fa';
 
-
-
-const AdsBanner = dynamic(() => import('@/components/AdsBanner'), {
+// Import AdsDisplay component
+const AdsDisplay = dynamic(() => import('@/components/AdsDisplay'), {
   ssr: false,
-  loading: () => <div className="w-full h-32 bg-gray-200 animate-pulse"></div>
+  loading: () => <div className="h-32 flex items-center justify-center">جاري تحميل الإعلانات...</div>
 });
-
-
 
 // Dynamically import WeatherWidget with no SSR
 const WeatherWidget = dynamic(() => import('@/components/WeatherWidget'), {
@@ -100,370 +97,368 @@ export default function HomePage() {
     );
   };
 
-
-
-
-
-
-  // Fetch featured news from API
-  const fetchFeaturedNews = useCallback(async (force = false) => {
-    try {
-      setLoading(true);
-      // Add timestamp to prevent caching
-      const response = await fetch(`/api/fetch-news?t=${Date.now()}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch news');
-      }
-      const data = await response.json();
-      
-      // Comprehensive list of Palestine-related keywords in Arabic and English
-      const palestineKeywords = [
-        // General Palestine terms
-        'فلسطين', 'فلسطيني', 'فلسطينية', 'فلسطينيين', 'فلسطينيات', 'Palestine', 'Palestinian', 'Palestinians',
-        
-        // Cities and regions
-        'القدس', 'القدس المحتلة', 'القدس الشرقية', 'القدس الغربية', 'القدس العربية', 'Jerusalem', 'Al-Quds', 'East Jerusalem',
-        'غزة', 'قطاع غزة', 'غزة المحاصرة', 'أهل غزة', 'Gaza', 'Gaza Strip',
-        'الضفة', 'الضفة الغربية', 'الضفة المحتلة', 'الضفة الفلسطينية', 'West Bank', 'الضفة',
-        'الخليل', 'Hebron', 'Al-Khalil',
-        'نابلس', 'Nablus',
-        'رام الله', 'Ramallah',
-        'بيت لحم', 'Bethlehem', 'Beit Lahm',
-        'أريحا', 'Jericho', 'Ariha',
-        'جنين', 'Jenin',
-        'طولكرم', 'Tulkarm',
-        'قلقيلية', 'Qalqilya',
-        'سلفيت', 'Salfit',
-        'طوباس', 'Tubas',
-        'طولكرم', 'Tulkarem',
-        'الخليل', 'Hebron',
-        'الخضيرة', 'Al-Khudayriyya',
-        'يافا', 'Yafa', 'Jaffa',
-        'عكا', 'Akka', 'Acre',
-        'الناصرة', 'Nazareth', 'An-Nasira',
-        
-        // Political and military terms
-        'المقاومة الفلسطينية', 'Palestinian resistance',
-        'فتح', 'Fatah',
-        'حماس', 'Hamas',
-        'الجهاد الإسلامي', 'Islamic Jihad',
-        'القسام', 'Al-Qassam',
-        'سرايا القدس', 'Al-Quds Brigades',
-        'الجبهة الشعبية', 'Popular Front',
-        'الجبهة الديمقراطية', 'Democratic Front',
-        
-        // Occupation and settlements
-        'الاحتلال', 'الإحتلال', 'الاحتلال الإسرائيلي', 'Israeli occupation', 'occupation',
-        'الاستيطان', 'المستوطنات', 'المستوطنين', 'Settlements', 'Settlers', 'Settlement',
-        'هدم المنازل', 'House demolitions',
-        'الاعتقالات', 'الأسرى', 'Prisoners', 'Detainees', 'Arrests',
-        'الأسرى الفلسطينيين', 'Palestinian prisoners',
-        'سجون الاحتلال', 'سجن عوفر', 'سجن النقب', 'Ofer prison', 'Negev prison', 'Israeli jails',
-        
-        // Resistance and uprisings
-        'الانتفاضة', 'انتفاضة', 'Intifada', 'Uprising',
-        'هبّة', 'Uprising', 'Protest',
-        'مسيرات العودة', 'Great March of Return',
-        'كسر الحصار', 'Breaking the siege',
-        
-        // Refugees and UNRWA
-        'الأونروا', 'UNRWA',
-        'اللاجئين الفلسطينيين', 'Palestinian refugees',
-        'مخيمات اللجوء', 'Refugee camps',
-        'حق العودة', 'Right of return',
-        
-        // Political issues
-        'القدس عاصمة فلسطين', 'Jerusalem capital of Palestine',
-        'صفقة القرن', 'Deal of the Century',
-        'التطبيع', 'Normalization',
-        'السلام', 'Peace process',
-        'مفاوضات السلام', 'Peace negotiations',
-        'الشرق الأوسط', 'Middle East',
-        'الصراع العربي الإسرائيلي', 'Arab-Israeli conflict',
-        'القضية الفلسطينية', 'Palestinian cause',
-        'الدولة الفلسطينية', 'Palestinian state',
-        'السلطة الفلسطينية', 'Palestinian Authority',
-        'منظمة التحرير', 'PLO',
-        'المجلس الوطني', 'Palestinian National Council',
-        
-        // Religious sites
-        'المسجد الأقصى', 'Al-Aqsa Mosque',
-        'قبة الصخرة', 'Dome of the Rock',
-        'حائط البراق', 'Western Wall', 'Wailing Wall',
-        'الحرم القدسي', 'Al-Haram al-Sharif',
-        'كنيسة القيامة', 'Church of the Holy Sepulchre',
-        'كنيسة المهد', 'Church of the Nativity'
-      ];
-      
-      // Filter for news related to Palestine - more strict filtering
-      const filteredNews = data.items.filter(item => {
-        if (!item.title) return false;
-        
-        const title = item.title.toLowerCase();
-        const content = (item.contentSnippet || '').toLowerCase();
-        
-        // Check if any of the keywords exist in title or content
-        return palestineKeywords.some(keyword => 
-          title.includes(keyword.toLowerCase()) || 
-          content.includes(keyword.toLowerCase())
-        );
-      });
-      
-      // Sort by date, newest first
-      filteredNews.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
-      
-      // Take the first 3 most recent news items
-      const newsItems = filteredNews.slice(0, 3);
-
-      // Format the news items for the slider
-      const formattedNews = newsItems.map((item, index) => {
-        // Clean up the image URL
-        let imageUrl = item.image || '';
-        
-        // If the image URL is from a known domain but starts with //, add https:
-        if (imageUrl.startsWith('//')) {
-          imageUrl = 'https:' + imageUrl;
-        }
-        
-        // If the image URL is from a known domain but uses http, change to https
-        imageUrl = imageUrl.replace('http://', 'https://');
-        
-        // Check if the image URL is from a trusted domain
-        const isTrustedDomain = [
-          'bbc.com',
-          'aljazeera.net',
-          'alquds.co.uk',
-          'alaraby.co.uk',
-          'rt.com',
-          'almasryalyoum.com',
-          'youm7.com',
-          'ytimg.com',
-          'cnn.com',
-          'euronews.com',
-          'reuters.com',
-          'middleeasteye.net',
-          'alarabiya.net',
-          'wafa.ps',
-          'maannews.net',
-          'qudsnet.com',
-          'palinfo.com',
-          'safa.ps',
-          'paltoday.ps',
-          'alwatanvoice.com',
-          'alquds.com',
-          'felesteen.ps',
-          'raya.ps',
-          'amad.ps',
-          'alhadath.ps',
-          'alayyam.ps',
-          'alresalah.ps',
-          'samanews.ps',
-          'shihab.ps',
-          'wattan.tv',
-          'alwatanvoice.com',
-          'alquds.co.uk',
-          'qudsn.co',
-          'qudsnews.net',
-          'qudspress.com',
-          'qudsnet.com',
-          'paldf.net',
-          'palestinetoday.net',
-          'palestinetoday.tv',
-          'paltimes.net',
-          'paltoday.ps',
-          'paltoday.tv',
-          'pnn.ps',
-          'ppl.ps',
-          'samanews.ps',
-          'shihab.ps',
-          'wafa.ps',
-          'wattan.tv'
-        ].some(domain => imageUrl.includes(domain));
-        
-        // If the image URL is not from a trusted domain, use the default image
-        const finalImage = isTrustedDomain ? imageUrl : '/images.png';
-        
-        return {
-          id: `${Date.now()}-${index}`, // Unique ID for each news item
-          title: item.title,
-          excerpt: item.contentSnippet || 'اضغط لقراءة المزيد...',
-          image: finalImage,
-          category: item.source || 'أخبار فلسطين',
-          date: new Date(item.pubDate).toLocaleDateString('ar-EG', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          }),
-          link: item.link,
-          timestamp: Date.now()
-        };
-      });
-
-      // Only update if we have new news or we're forcing an update
-      setFeaturedNews(prevNews => {
-        // If forcing or news is different, update
-        if (force || JSON.stringify(prevNews) !== JSON.stringify(formattedNews)) {
-          return formattedNews;
-        }
-        return prevNews;
-      });
-    } catch (error) {
-      console.error('Error fetching featured news:', error);
-      // Fallback to default news if API fails
-      setFeaturedNews(prevNews => {
-        // Only update if we don't have any news yet
-        if (prevNews.length === 0) {
-          return [
-            {
-              id: 'fallback-1',
-              title: 'تطورات الأوضاع في فلسطين',
-              excerpt: 'تابع آخر المستجدات والتطورات في الأراضي الفلسطينية المحتلة',
-              image: '/images/palestine-news1.jpg',
-              category: 'أخبار فلسطين',
-              date: new Date().toLocaleDateString('ar-EG'),
-              link: '/news/palestine-updates',
-              timestamp: Date.now()
-            },
-            {
-              id: 'fallback-2',
-              title: 'قضية فلسطين في الأمم المتحدة',
-              excerpt: 'جلسات طارئة في الأمم المتحدة لبحث التصعيد في الأراضي الفلسطينية',
-              image: '/images/palestine-news2.jpg',
-              category: 'أخبار فلسطين',
-              date: new Date().toLocaleDateString('ar-EG'),
-              link: '/news/un-palestine',
-              timestamp: Date.now()
-            },
-            {
-              id: 'fallback-3',
-              title: 'القدس عاصمة فلسطين',
-              excerpt: 'تظاهرات تضامنية مع القدس في مختلف العواصم العربية',
-              image: '/images/palestine-news3.jpg',
-              category: 'أخبار فلسطين',
-              date: new Date().toLocaleDateString('ar-EG'),
-              link: '/news/jerusalem-updates',
-              timestamp: Date.now()
-            }
-          ];
-        }
-        return prevNews;
-      });
-    } finally {
-      setLoading(false);
+// Fetch featured news from API
+const fetchFeaturedNews = useCallback(async (force = false) => {
+  try {
+    setLoading(true);
+    // Add timestamp to prevent caching
+    const response = await fetch(`/api/fetch-news?t=${Date.now()}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch news');
     }
-  }, []);
-
-  // Initial fetch and set up auto-refresh
-  useEffect(() => {
-    // Initial fetch
-    fetchFeaturedNews(true); // Force initial fetch
+    const data = await response.json();
     
-    // Set up auto-refresh every minute
-    const intervalId = setInterval(() => {
-      console.log('Auto-refreshing news...');
-      fetchFeaturedNews(true);
-    }, 60000); // 60 seconds
+    // Comprehensive list of Palestine-related keywords in Arabic and English
+    const palestineKeywords = [
+      // General Palestine terms
+      'فلسطين', 'فلسطيني', 'فلسطينية', 'فلسطينيين', 'فلسطينيات', 'Palestine', 'Palestinian', 'Palestinians',
+      
+      // Cities and regions
+      'القدس', 'القدس المحتلة', 'القدس الشرقية', 'القدس الغربية', 'القدس العربية', 'Jerusalem', 'Al-Quds', 'East Jerusalem',
+      'غزة', 'قطاع غزة', 'غزة المحاصرة', 'أهل غزة', 'Gaza', 'Gaza Strip',
+      'الضفة', 'الضفة الغربية', 'الضفة المحتلة', 'الضفة الفلسطينية', 'West Bank', 'الضفة',
+      'الخليل', 'Hebron', 'Al-Khalil',
+      'نابلس', 'Nablus',
+      'رام الله', 'Ramallah',
+      'بيت لحم', 'Bethlehem', 'Beit Lahm',
+      'أريحا', 'Jericho', 'Ariha',
+      'جنين', 'Jenin',
+      'طولكرم', 'Tulkarm',
+      'قلقيلية', 'Qalqilya',
+      'سلفيت', 'Salfit',
+      'طوباس', 'Tubas',
+      'طولكرم', 'Tulkarem',
+      'الخليل', 'Hebron',
+      'الخضيرة', 'Al-Khudayriyya',
+      'يافا', 'Yafa', 'Jaffa',
+      'عكا', 'Akka', 'Acre',
+      'الناصرة', 'Nazareth', 'An-Nasira',
+      
+      // Political and military terms
+      'المقاومة الفلسطينية', 'Palestinian resistance',
+      'فتح', 'Fatah',
+      'حماس', 'Hamas',
+      'الجهاد الإسلامي', 'Islamic Jihad',
+      'القسام', 'Al-Qassam',
+      'سرايا القدس', 'Al-Quds Brigades',
+      'الجبهة الشعبية', 'Popular Front',
+      'الجبهة الديمقراطية', 'Democratic Front',
+      
+      // Occupation and settlements
+      'الاحتلال', 'الإحتلال', 'الاحتلال الإسرائيلي', 'Israeli occupation', 'occupation',
+      'الاستيطان', 'المستوطنات', 'المستوطنين', 'Settlements', 'Settlers', 'Settlement',
+      'هدم المنازل', 'House demolitions',
+      'الاعتقالات', 'الأسرى', 'Prisoners', 'Detainees', 'Arrests',
+      'الأسرى الفلسطينيين', 'Palestinian prisoners',
+      'سجون الاحتلال', 'سجن عوفر', 'سجن النقب', 'Ofer prison', 'Negev prison', 'Israeli jails',
+      
+      // Resistance and uprisings
+      'الانتفاضة', 'انتفاضة', 'Intifada', 'Uprising',
+      'هبّة', 'Uprising', 'Protest',
+      'مسيرات العودة', 'Great March of Return',
+      'كسر الحصار', 'Breaking the siege',
+      
+      // Refugees and UNRWA
+      'الأونروا', 'UNRWA',
+      'اللاجئين الفلسطينيين', 'Palestinian refugees',
+      'مخيمات اللجوء', 'Refugee camps',
+      'حق العودة', 'Right of return',
+      
+      // Political issues
+      'القدس عاصمة فلسطين', 'Jerusalem capital of Palestine',
+      'صفقة القرن', 'Deal of the Century',
+      'التطبيع', 'Normalization',
+      'السلام', 'Peace process',
+      'مفاوضات السلام', 'Peace negotiations',
+      'الشرق الأوسط', 'Middle East',
+      'الصراع العربي الإسرائيلي', 'Arab-Israeli conflict',
+      'القضية الفلسطينية', 'Palestinian cause',
+      'الدولة الفلسطينية', 'Palestinian state',
+      'السلطة الفلسطينية', 'Palestinian Authority',
+      'منظمة التحرير', 'PLO',
+      'المجلس الوطني', 'Palestinian National Council',
+      
+      // Religious sites
+      'المسجد الأقصى', 'Al-Aqsa Mosque',
+      'قبة الصخرة', 'Dome of the Rock',
+      'حائط البراق', 'Western Wall', 'Wailing Wall',
+      'الحرم القدسي', 'Al-Haram al-Sharif',
+      'كنيسة القيامة', 'Church of the Holy Sepulchre',
+      'كنيسة المهد', 'Church of the Nativity'
+    ];
     
-    // Clean up interval on component unmount
-    return () => {
-      console.log('Cleaning up news refresh interval');
-      clearInterval(intervalId);
-    };
-  }, [fetchFeaturedNews]);
-  
-  // Auto-rotate featured news
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % featuredNews.length);
-    }, 8000);
-    return () => clearInterval(interval);
-  }, [featuredNews.length]);
-  
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % featuredNews.length);
-  };
-  
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + featuredNews.length) % featuredNews.length);
-  };
-  
-  // Removed auto-scroll to featured news section
-  
-  const scrollLeft = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -300, behavior: 'smooth' });
-    }
-  };
-  
-  const scrollRight = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
-    }
-  };
-
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 60000);
-    
-    // التحقق من موضع التمرير لإظهار/إخفاء زر الانتقال للأعلى
-    const handleScroll = () => {
-      if (window.scrollY > 300) {
-        setShowScrollButton(true);
-      } else {
-        setShowScrollButton(false);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => {
-      clearInterval(timer);
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
-
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
+    // Filter for news related to Palestine - more strict filtering
+    const filteredNews = data.items.filter(item => {
+      if (!item.title) return false;
+      
+      const title = item.title.toLowerCase();
+      const content = (item.contentSnippet || '').toLowerCase();
+      
+      // Check if any of the keywords exist in title or content
+      return palestineKeywords.some(keyword => 
+        title.includes(keyword.toLowerCase()) || 
+        content.includes(keyword.toLowerCase())
+      );
     });
+    
+    // Sort by date, newest first
+    filteredNews.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+    
+    // Take the first 3 most recent news items
+    const newsItems = filteredNews.slice(0, 3);
+
+    // Format the news items for the slider
+    const formattedNews = newsItems.map((item, index) => {
+      // Clean up the image URL
+      let imageUrl = item.image || '';
+      
+      // If the image URL is from a known domain but starts with //, add https:
+      if (imageUrl.startsWith('//')) {
+        imageUrl = 'https:' + imageUrl;
+      }
+      
+      // If the image URL is from a known domain but uses http, change to https
+      imageUrl = imageUrl.replace('http://', 'https://');
+      
+      // Check if the image URL is from a trusted domain
+      const isTrustedDomain = [
+        'bbc.com',
+        'aljazeera.net',
+        'alquds.co.uk',
+        'alaraby.co.uk',
+        'rt.com',
+        'almasryalyoum.com',
+        'youm7.com',
+        'ytimg.com',
+        'cnn.com',
+        'euronews.com',
+        'reuters.com',
+        'middleeasteye.net',
+        'alarabiya.net',
+        'wafa.ps',
+        'maannews.net',
+        'qudsnet.com',
+        'palinfo.com',
+        'safa.ps',
+        'paltoday.ps',
+        'alwatanvoice.com',
+        'alquds.com',
+        'felesteen.ps',
+        'raya.ps',
+        'amad.ps',
+        'alhadath.ps',
+        'alayyam.ps',
+        'alresalah.ps',
+        'samanews.ps',
+        'shihab.ps',
+        'wattan.tv',
+        'alwatanvoice.com',
+        'alquds.co.uk',
+        'qudsn.co',
+        'qudsnews.net',
+        'qudspress.com',
+        'qudsnet.com',
+        'paldf.net',
+        'palestinetoday.net',
+        'palestinetoday.tv',
+        'paltimes.net',
+        'paltoday.ps',
+        'paltoday.tv',
+        'pnn.ps',
+        'ppl.ps',
+        'samanews.ps',
+        'shihab.ps',
+        'wafa.ps',
+        'wattan.tv'
+      ].some(domain => imageUrl.includes(domain));
+      
+      // If the image URL is not from a trusted domain, use the default image
+      const finalImage = isTrustedDomain ? imageUrl : '/images.png';
+      
+      return {
+        id: `${Date.now()}-${index}`, // Unique ID for each news item
+        title: item.title,
+        excerpt: item.contentSnippet || 'اضغط لقراءة المزيد...',
+        image: finalImage,
+        category: item.source || 'أخبار فلسطين',
+        date: new Date(item.pubDate).toLocaleDateString('ar-EG', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        link: item.link,
+        timestamp: Date.now()
+      };
+    });
+
+    // Only update if we have new news or we're forcing an update
+    setFeaturedNews(prevNews => {
+      // If forcing or news is different, update
+      if (force || JSON.stringify(prevNews) !== JSON.stringify(formattedNews)) {
+        return formattedNews;
+      }
+      return prevNews;
+    });
+  } catch (error) {
+    console.error('Error fetching featured news:', error);
+    // Fallback to default news if API fails
+    setFeaturedNews(prevNews => {
+      // Only update if we don't have any news yet
+      if (prevNews.length === 0) {
+        return [
+          {
+            id: 'fallback-1',
+            title: 'تطورات الأوضاع في فلسطين',
+            excerpt: 'تابع آخر المستجدات والتطورات في الأراضي الفلسطينية المحتلة',
+            image: '/images/palestine-news1.jpg',
+            category: 'أخبار فلسطين',
+            date: new Date().toLocaleDateString('ar-EG'),
+            link: '/news/palestine-updates',
+            timestamp: Date.now()
+          },
+          {
+            id: 'fallback-2',
+            title: 'قضية فلسطين في الأمم المتحدة',
+            excerpt: 'جلسات طارئة في الأمم المتحدة لبحث التصعيد في الأراضي الفلسطينية',
+            image: '/images/palestine-news2.jpg',
+            category: 'أخبار فلسطين',
+            date: new Date().toLocaleDateString('ar-EG'),
+            link: '/news/un-palestine',
+            timestamp: Date.now()
+          },
+          {
+            id: 'fallback-3',
+            title: 'القدس عاصمة فلسطين',
+            excerpt: 'تظاهرات تضامنية مع القدس في مختلف العواصم العربية',
+            image: '/images/palestine-news3.jpg',
+            category: 'أخبار فلسطين',
+            date: new Date().toLocaleDateString('ar-EG'),
+            link: '/news/jerusalem-updates',
+            timestamp: Date.now()
+          }
+        ];
+      }
+      return prevNews;
+    });
+  } finally {
+    setLoading(false);
+  }
+}, []);
+
+// Initial fetch and set up auto-refresh
+useEffect(() => {
+  // Initial fetch
+  fetchFeaturedNews(true); // Force initial fetch
+  
+  // Set up auto-refresh every minute
+  const intervalId = setInterval(() => {
+    console.log('Auto-refreshing news...');
+    fetchFeaturedNews(true);
+  }, 60000); // 60 seconds
+  
+  // Clean up interval on component unmount
+  return () => {
+    console.log('Cleaning up news refresh interval');
+    clearInterval(intervalId);
+  };
+}, [fetchFeaturedNews]);
+  
+// Auto-rotate featured news
+useEffect(() => {
+  const interval = setInterval(() => {
+    setCurrentSlide((prev) => (prev + 1) % featuredNews.length);
+  }, 8000);
+  return () => clearInterval(interval);
+}, [featuredNews.length]);
+  
+const nextSlide = () => {
+  setCurrentSlide((prev) => (prev + 1) % featuredNews.length);
+};
+  
+const prevSlide = () => {
+  setCurrentSlide((prev) => (prev - 1 + featuredNews.length) % featuredNews.length);
+};
+  
+// Removed auto-scroll to featured news section
+  
+const scrollLeft = () => {
+  if (scrollContainerRef.current) {
+    scrollContainerRef.current.scrollBy({ left: -300, behavior: 'smooth' });
+  }
+};
+  
+const scrollRight = () => {
+  if (scrollContainerRef.current) {
+    scrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+  }
+};
+
+useEffect(() => {
+  const timer = setInterval(() => setTime(new Date()), 60000);
+  
+  // التحقق من موضع التمرير لإظهار/إخفاء زر الانتقال للأعلى
+  const handleScroll = () => {
+    if (window.scrollY > 300) {
+      setShowScrollButton(true);
+    } else {
+      setShowScrollButton(false);
+    }
   };
 
-  const allCards = [
-    { title: 'المتاجر', icon: FaStore, path: '/services#commercial-stores' },
-    { title: 'عقارات', icon: FaHome, path: '/services#real-estate&lands-real-estate' },
-    { title: 'أراضي', icon: FaBuilding, path: '/services#real-estate&lands-lands' },
-    { title: 'سيارات', icon: FaCar, path: '/services#vehicles-cars' },
-    { title: 'مطاعم', icon: FaUtensils, path: '/services#commercial-restaurants' },
-    { title: 'فرص عمل', icon: FaBriefcase, path: '/services#other-jobs' },
-    { title: 'دورات دراسية', icon: FaGraduationCap, path: '/services#education-courses' },
-    { title: 'مستشفيات', icon: FaHospital, path: '/services#health-hospitals' },
-    { title: 'عيادات طبية', icon: FaClinicMedical, path: '/services#health-clinics' },
-    { title: 'أماكن ترفيهية', icon: FaTheaterMasks, path: '/services#other-entertainment' },
-    { title: 'فنادق', icon: FaHotel, path: '/services#real-estate&lands-hotels' },
-    { title: 'صيدليات', icon: FaPills, path: '/services#commercial-pharmacies' },
-    { title: 'محطات وقود', icon: FaGasPump, path: '/services#vehicles-gas-stations' },
-    { title: 'مراكز تجارية', icon: FaShoppingBag, path: '/services#commercial-malls' },
-    { title: 'صالات أفراح', icon: FaGlassCheers, path: '/services#real-estate&lands-wedding-halls' },
-    { title: 'خدمات توصيل', icon: FaTruck, path: '/services#vehicles-delivery' },
-    { title: 'مجوهرات وذهب', icon: FaRing, path: '/services#commercial-jewelry' },
-    { title: 'ملابس وأزياء', icon: FaTshirt, path: '/services#commercial-fashion' },
-    { title: 'هدايا وتحف', icon: FaGift, path: '/services#other-gifts' },
-    { title: 'مراكز تجميل', icon: FaCut, path: '/services#health-beauty-centers' },
-    { title: 'صالات رياضية', icon: FaDumbbell, path: '/services#health-gyms' },
-    { title: 'مكتبات وكتب', icon: FaBook, path: '/services#education-libraries' },
-  ];
+  window.addEventListener('scroll', handleScroll);
+  return () => {
+    clearInterval(timer);
+    window.removeEventListener('scroll', handleScroll);
+  };
+}, []);
 
-  return (
-    <div    className="   min-h-[calc(100vh-4rem)] p-4 from-amber-50 to-white dark:from-[#000f1f] dark:gray-900">
+const scrollToTop = () => {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
+};
+
+const allCards = [
+  { title: 'المتاجر', icon: FaStore, path: '/services#commercial-stores' },
+  { title: 'عقارات', icon: FaHome, path: '/services#real-estate&lands-real-estate' },
+  { title: 'أراضي', icon: FaBuilding, path: '/services#real-estate&lands-lands' },
+  { title: 'سيارات', icon: FaCar, path: '/services#vehicles-cars' },
+  { title: 'مطاعم', icon: FaUtensils, path: '/services#commercial-restaurants' },
+  { title: 'فرص عمل', icon: FaBriefcase, path: '/services#other-jobs' },
+  { title: 'دورات دراسية', icon: FaGraduationCap, path: '/services#education-courses' },
+  { title: 'مستشفيات', icon: FaHospital, path: '/services#health-hospitals' },
+  { title: 'عيادات طبية', icon: FaClinicMedical, path: '/services#health-clinics' },
+  { title: 'أماكن ترفيهية', icon: FaTheaterMasks, path: '/services#other-entertainment' },
+  { title: 'فنادق', icon: FaHotel, path: '/services#real-estate&lands-hotels' },
+  { title: 'صيدليات', icon: FaPills, path: '/services#commercial-pharmacies' },
+  { title: 'محطات وقود', icon: FaGasPump, path: '/services#vehicles-gas-stations' },
+  { title: 'مراكز تجارية', icon: FaShoppingBag, path: '/services#commercial-malls' },
+  { title: 'صالات أفراح', icon: FaGlassCheers, path: '/services#real-estate&lands-wedding-halls' },
+  { title: 'خدمات توصيل', icon: FaTruck, path: '/services#vehicles-delivery' },
+  { title: 'مجوهرات وذهب', icon: FaRing, path: '/services#commercial-jewelry' },
+  { title: 'ملابس وأزياء', icon: FaTshirt, path: '/services#commercial-fashion' },
+  { title: 'هدايا وتحف', icon: FaGift, path: '/services#other-gifts' },
+  { title: 'مراكز تجميل', icon: FaCut, path: '/services#health-beauty-centers' },
+  { title: 'صالات رياضية', icon: FaDumbbell, path: '/services#health-gyms' },
+  { title: 'مكتبات وكتب', icon: FaBook, path: '/services#education-libraries' },
+];
+
+return (
+  <div className="">
+
+
+
+   
+    {/* Main Content */}
+    <main className="container mx-auto px-4 py-8">
       <div className="w-full max-w-6xl mx-auto">
         {/* Search and Services Section */}
         <div className="w-full max-w-6xl mx-auto py-8">
           {/* 🔍 Search Bar */}
-         
-
-
-
+          
 
 
                   {/* 🧩 Cards */}
@@ -529,7 +524,9 @@ export default function HomePage() {
 
 
 
-
+ {/* Top Ads */}
+ <AdsDisplay position="top" limit={3} />
+    
 
 
 
@@ -655,7 +652,6 @@ export default function HomePage() {
         </div>
 
 
-        <AdsBanner adId="1" />
 
         {/* 📰 Latest News Section */}
         <div className="px-4">
@@ -679,6 +675,15 @@ export default function HomePage() {
           <CurrencyRates />
         </div>
 
+       
+
+ {/* Middle Ads */}
+ <div className="container mx-auto px-4 my-8">
+      <AdsDisplay position="middle" limit={2} />
+    </div>
+
+
+    
         {/* Dynamic Sections */}
         <div className="w-full">
           {getEnabledSections().map((section) => (
@@ -705,6 +710,14 @@ export default function HomePage() {
       >
         <FaArrowUp className="text-xl" />
       </button>
+    </main>
+    
+   
+    
+    {/* Bottom Ads */}
+    <div className="container mx-auto px-4 my-8">
+      <AdsDisplay position="bottom" limit={1} />
     </div>
+  </div>
   );
 }
