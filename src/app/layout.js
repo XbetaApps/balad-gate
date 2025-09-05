@@ -9,6 +9,13 @@ import { Providers } from "./providers";
 import { SessionProvider } from "../contexts/SessionContext";
 import AIChatWidget from "@/components/AI/ai";
 import Footer from "@/components/footer";
+import dynamic from 'next/dynamic';
+
+// Dynamically import AdsDisplay with no SSR to avoid hydration issues
+const AdsDisplay = dynamic(() => import('@/components/AdsDisplay'), {
+  ssr: false,
+  loading: () => null
+});
 // Load Arabic fonts
 const tajawal = Tajawal({
   weight: ['400', '500', '700'],
@@ -62,6 +69,16 @@ export default function RootLayout({ children }) {
                     {children}
                   </main>
                 </LayoutClient>
+                {/* Left Side Banner Ad */}
+                <div className="hidden lg:block">
+                  <AdsDisplay position="left" limit={1} />
+                </div>
+                
+                {/* Right Side Banner Ad */}
+                <div className="hidden lg:block">
+                  <AdsDisplay position="right" limit={1} />
+                </div>
+                
                 <AIChatWidget />
                 <Footer />
               </CustomThemeProvider>

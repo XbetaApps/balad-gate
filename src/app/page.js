@@ -525,7 +525,7 @@ return (
 
 
  {/* Top Ads */}
- <AdsDisplay position="top" limit={3} />
+ <AdsDisplay position="top" limit={6} />
     
 
 
@@ -675,8 +675,6 @@ return (
           <CurrencyRates />
         </div>
 
-       
-
  {/* Middle Ads */}
  <div className="container mx-auto px-4 my-8">
       <AdsDisplay position="middle" limit={2} />
@@ -711,12 +709,11 @@ return (
         <FaArrowUp className="text-xl" />
       </button>
     </main>
-    
-   
+
     
     {/* Bottom Ads */}
     <div className="container mx-auto px-4 my-8">
-      <AdsDisplay position="bottom" limit={1} />
+      <AdsDisplay position="bottom" limit={6} />
     </div>
   </div>
   );
