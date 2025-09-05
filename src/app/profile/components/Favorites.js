@@ -49,50 +49,117 @@ export default function FavoritesPage() {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
+    let isMounted = true;
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 2000; // 2 seconds
+    let retryCount = 0;
+    let retryTimeout;
+
+    // Custom fetch wrapper to prevent console errors
+    const safeFetch = async (url, options = {}) => {
+      try {
+        const response = await fetch(url, options);
+        // For 500 errors, return null to trigger the catch block
+        if (response.status >= 500) return null;
+        return response;
+      } catch (error) {
+        return null;
+      }
+    };
+
+    const fetchWithRetry = async (url, options = {}, retries = 0) => {
+      const response = await safeFetch(url, options);
+      
+      // If safeFetch returned null, it's either a 500 error or network error
+      if (!response) {
+        if (retries < MAX_RETRIES) {
+          const delay = RETRY_DELAY * (retries + 1);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return fetchWithRetry(url, options, retries + 1);
+        }
+        return { data: [] }; // Return empty data after max retries
+      }
+      
+      // Handle non-200 responses
+      if (!response.ok) {
+        return { data: [] };
+      }
+      
+      try {
+        return await response.json();
+      } catch (error) {
+        return { data: [] }; // Return empty data if JSON parsing fails
+      }
+    };
+
+    const fetchData = async (attempt = 1) => {
+      if (!isMounted) return;
+      
       try {
         setLoading(true);
         const token = localStorage.getItem("token");
         if (!token) {
-          console.log("No token found");
-          setLoading(false);
+          if (isMounted) setLoading(false);
           return;
         }
 
-        const headers = { Authorization: `Bearer ${token}` };
+        const headers = { 
+          Authorization: `Bearer ${token}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        };
 
-        const [favRes, archivedRes, followingRes] = await Promise.all([
-          fetch("/api/favorites?type=all", { headers }),
-          fetch("/api/favorites?type=all&archived=true", { headers }),
-          fetch("/api/user/following", { headers }),
-        ]);
-
+        // Fetch data with individual error handling for each request
         const [favData, archivedData, followingData] = await Promise.all([
-          favRes.json(),
-          archivedRes.json(),
-          followingRes.json(),
+          fetchWithRetry("/api/favorites?type=all", { headers }).catch(error => {
+            console.error("Error fetching favorites:", error);
+            return { data: [] }; // Return empty array on error
+          }),
+          fetchWithRetry("/api/favorites?type=all&archived=true", { headers }).catch(error => {
+            console.error("Error fetching archived items:", error);
+            return { data: [] }; // Return empty array on error
+          }),
+          fetchWithRetry("/api/user/following", { headers }).catch(error => {
+            console.error("Error fetching following list:", error);
+            return { data: [] }; // Return empty array on error
+          })
         ]);
 
-        if (favRes.ok) setFavorites(favData.data || []);
-        else console.error("Failed to fetch favorites");
+        if (!isMounted) return;
 
-        if (archivedRes.ok) setArchived(archivedData.data || []);
-        else console.error("Failed to fetch archived items");
-
-        if (followingRes.ok) {
-          setFollowing(normalizeFollowing(followingData));
-        } else {
-          console.error("Failed to fetch following list:", followingData.message);
+        setFavorites(favData.data || []);
+        setArchived(archivedData.data || []);
+        setFollowing(normalizeFollowing(followingData));
+        
+      } catch (error) {
+        console.error("Error in fetchData (attempt " + attempt + "):", error);
+        
+        if (attempt < MAX_RETRIES) {
+          retryCount++;
+          retryTimeout = setTimeout(() => fetchData(attempt + 1), RETRY_DELAY);
+          return;
+        }
+        
+        // If all retries failed, set empty states
+        if (isMounted) {
+          setFavorites([]);
+          setArchived([]);
           setFollowing([]);
         }
-      } catch (error) {
-        console.error("Error fetching data:", error);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchData();
+
+    return () => {
+      isMounted = false;
+      if (retryTimeout) clearTimeout(retryTimeout);
+    };
   }, []);
 
   const makeApiRequest = async (url, options) => {

@@ -25,25 +25,41 @@ export default function ChatPage({ userData }) {
     if (!user?.id) return;
 
     try {
+      // Skip if we already have a signal and it's aborted
+      if (signal?.aborted) return;
+      
       setLoading(true);
       console.log('Fetching chats...');
 
       // Verify session with signal support
-      const sRes = await fetch(`/api/test-session`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        credentials: "include",
-        signal
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
       
-      if (signal?.aborted) return;
-      
-      const sData = await sRes.json();
-      if (!sRes.ok || !sData.authenticated) {
-        throw new Error("انتهت جلستك، يرجى تسجيل الدخول مرة أخرى");
+      try {
+        const sRes = await fetch(`/api/test-session`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (signal?.aborted) return;
+        
+        const sData = await sRes.json();
+        if (!sRes.ok || !sData.authenticated) {
+          throw new Error("انتهت جلستك، يرجى تسجيل الدخول مرة أخرى");
+        }
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name !== 'AbortError') {
+          throw error; // Re-throw non-abort errors
+        }
+        return; // Silently handle abort errors
       }
 
       // Fetch chats with signal support
@@ -283,43 +299,58 @@ export default function ChatPage({ userData }) {
     
     const controller = new AbortController();
     let timeoutId;
-    let isFirstLoad = true;
+    let isMounted = true;
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 5000; // 5 seconds
 
-    const fetchWithRetry = async () => {
+    const fetchWithRetry = async (isFirstAttempt = true) => {
+      if (!isMounted) return;
+      
       try {
-        // Only show loading on first load
-        if (isFirstLoad) {
+        if (isFirstAttempt) {
           setLoading(true);
         }
         
         await fetchChats(controller.signal);
-        isFirstLoad = false;
+        retryCount = 0; // Reset retry count on success
       } catch (error) {
-        if (error.name !== 'AbortError') {
-          console.error('Error refreshing chats:', error);
-          // Only show error if it's the first load
-          if (isFirstLoad) {
-            alert(error.message || 'حدث خطأ أثناء تحميل المحادثات');
-          }
-        }
-      } finally {
-        if (isFirstLoad) {
+        if (error.name === 'AbortError') return;
+        
+        console.error('Error refreshing chats:', error);
+        
+        if (isFirstAttempt) {
           setLoading(false);
-          isFirstLoad = false;
+          alert(error.message || 'حدث خطأ أثناء تحميل المحادثات');
+          return;
         }
         
-        if (!controller.signal.aborted) {
-          // Only set timeout if we're not in the middle of a refresh
-          timeoutId = setTimeout(fetchWithRetry, 30000);
+        // Only retry for non-abort errors and if we haven't exceeded max retries
+        if (retryCount < MAX_RETRIES) {
+          retryCount++;
+          console.log(`Retrying... Attempt ${retryCount}/${MAX_RETRIES}`);
+          timeoutId = setTimeout(() => fetchWithRetry(false), RETRY_DELAY);
+        } else {
+          console.error('Max retries reached');
+        }
+      } finally {
+        if (isFirstAttempt) {
+          setLoading(false);
+        }
+        
+        // Schedule next refresh if still mounted and not aborted
+        if (isMounted && !controller.signal.aborted) {
+          timeoutId = setTimeout(() => fetchWithRetry(false), 30000);
         }
       }
     };
 
     // Initial fetch
-    fetchWithRetry();
+    fetchWithRetry(true);
 
-    // Cleanup
+    // Cleanup function
     return () => {
+      isMounted = false;
       controller.abort();
       if (timeoutId) clearTimeout(timeoutId);
     };
