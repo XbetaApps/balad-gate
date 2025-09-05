@@ -9,8 +9,10 @@ export function AuthProvider({ children }) {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  // لمنع سباقات طلبات checkAuth المتعددة
+  // Refs to track auth state and prevent unnecessary re-renders
   const checkingRef = useRef(null);
+  const initialCheckDone = useRef(false);
+  const authCheckTimeout = useRef(null);
 
   const readToken = () => {
     try { return localStorage.getItem('token'); } catch { return null; }
@@ -22,10 +24,27 @@ export function AuthProvider({ children }) {
     } catch {}
   };
 
-  const checkAuth = useCallback(async () => {
-    if (checkingRef.current) return checkingRef.current;
+  const checkAuth = useCallback(async (force = false) => {
+    // If already checking, return the current promise
+    if (checkingRef.current) {
+      console.log('Auth check already in progress');
+      return checkingRef.current;
+    }
+    
+    // If we have a user and not forcing a refresh, return current user
+    if (user && !force) {
+      console.log('Using cached user data');
+      return user;
+    }
+    
+    // Clear any pending timeouts
+    if (authCheckTimeout.current) {
+      clearTimeout(authCheckTimeout.current);
+      authCheckTimeout.current = null;
+    }
     
     const run = (async () => {
+      console.log('Starting auth check...');
       setLoading(true);
       checkingRef.current = true;
       let currentUser = null;
@@ -59,9 +78,13 @@ export function AuthProvider({ children }) {
               currentUser.onboarding_done = false;
               // تحديث حالة المستخدم في الخادم
               try {
-                await fetch('/api/onboarding', {
+                const token = readToken();
+                await fetch('/api/onboarding?action=update-status', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                  },
                   body: JSON.stringify({ skip: true })
                 });
               } catch (error) {
@@ -110,9 +133,60 @@ export function AuthProvider({ children }) {
     return run;
   }, []);
 
-  useEffect(() => {
-    checkAuth();
+  // Use a ref to store the last auth check time
+  const lastAuthCheck = useRef(0);
+  const AUTH_CHECK_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
+  useEffect(() => {
+    let isMounted = true;
+    let intervalId;
+    
+    const shouldCheckAuth = () => {
+      // If we've never checked or it's been more than the interval since last check
+      return !lastAuthCheck.current || 
+             Date.now() - lastAuthCheck.current > AUTH_CHECK_INTERVAL;
+    };
+
+    const initializeAuth = async () => {
+      try {
+        // Only check if we need to
+        if (shouldCheckAuth()) {
+          await checkAuth();
+          lastAuthCheck.current = Date.now();
+        }
+        
+        if (isMounted) {
+          // Set up polling to check auth status
+          intervalId = setInterval(async () => {
+            if (shouldCheckAuth()) {
+              await checkAuth(true); // Force refresh
+              lastAuthCheck.current = Date.now();
+            }
+          }, 30000); // Check every 30 seconds, but only refresh if needed
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      }
+    };
+
+    // Only run the initial check once
+    if (!initialCheckDone.current) {
+      initialCheckDone.current = true;
+      initializeAuth();
+    }
+    
+    // Clean up on unmount
+    return () => {
+      isMounted = false;
+      if (intervalId) clearInterval(intervalId);
+      if (authCheckTimeout.current) {
+        clearTimeout(authCheckTimeout.current);
+        authCheckTimeout.current = null;
+      }
+    };
+  }, [checkAuth]);
+
+  useEffect(() => {
     const handleStorageChange = (e) => {
       if (e.key === 'token') checkAuth();
     };

@@ -1,43 +1,68 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export default function TestSession() {
   const [sessionData, setSessionData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const didFetch = useRef(false); // لمنع التكرار في Strict Mode أثناء التطوير
 
   useEffect(() => {
     const fetchSession = async () => {
       try {
         setLoading(true);
-        // جلب التوكن من localStorage
-        const token = localStorage.getItem('token');
-        
+
+        // جلب التوكن من localStorage (إن وجد)
+        let token = null;
+        try {
+          token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        } catch {
+          token = null;
+        }
+
         const response = await fetch('/api/test-session', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            ...(token && { 'Authorization': `Bearer ${token}` })
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          cache: 'no-store'
+          cache: 'no-store',
         });
 
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.error || 'فشل في جلب بيانات الجلسة');
+        // قد يعيد 200 حتى في حال الخطأ المنطقي؛ لذا نفصل بين "ok" الشبكية و"المعنى" في البودي
+        let data = null;
+        try {
+          data = await response.json();
+        } catch {
+          data = null;
         }
 
-        setSessionData(data);
+        if (!response.ok) {
+          const msg = (data && (data.error || data.message)) || 'فشل في جلب بيانات الجلسة';
+          throw new Error(msg);
+        }
+
+        // جعل الشكل متسقًا: إن لم توجد authenticated، احسبها من hasSession/hasToken
+        const authenticated =
+          (data && typeof data.authenticated === 'boolean'
+            ? data.authenticated
+            : Boolean(data?.hasSession || data?.hasToken)) || false;
+
+        setSessionData({ ...data, authenticated });
         setError('');
       } catch (err) {
         console.error('Error fetching session:', err);
-        setError(err.message || 'حدث خطأ في جلب بيانات الجلسة');
+        setError(err?.message || 'حدث خطأ في جلب بيانات الجلسة');
+        setSessionData(null);
       } finally {
         setLoading(false);
       }
     };
+
+    // منع التكرار في وضع التطوير (Strict Mode)
+    if (didFetch.current) return;
+    didFetch.current = true;
 
     fetchSession();
   }, []);
@@ -56,7 +81,7 @@ export default function TestSession() {
   return (
     <div className="container mx-auto p-4 max-w-4xl">
       <h1 className="text-2xl font-bold mb-6">اختبار جلسة المستخدم</h1>
-      
+
       {error ? (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6">
           <strong>خطأ:</strong> {error}
@@ -64,24 +89,30 @@ export default function TestSession() {
       ) : (
         <div className="bg-white shadow-md rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-4">حالة المصادقة:</h2>
-          <div className={`p-3 rounded-md mb-6 ${
-            sessionData?.authenticated 
-              ? 'bg-green-100 border border-green-400 text-green-700' 
-              : 'bg-yellow-100 border border-yellow-400 text-yellow-700'
-          }`}>
+          <div
+            className={`p-3 rounded-md mb-6 ${
+              sessionData?.authenticated
+                ? 'bg-green-100 border border-green-400 text-green-700'
+                : 'bg-yellow-100 border border-yellow-400 text-yellow-700'
+            }`}
+          >
             {sessionData?.authenticated ? '✅ تم تسجيل الدخول بنجاح' : '❌ غير مسجل الدخول'}
           </div>
-          
+
           <h2 className="text-xl font-semibold mb-4">بيانات الجلسة:</h2>
           <pre className="bg-gray-100 p-4 rounded-md overflow-auto text-sm">
             {JSON.stringify(sessionData, null, 2)}
           </pre>
-          
+
           <div className="mt-6 p-4 bg-blue-50 rounded-md">
             <h3 className="font-semibold mb-2">كيفية الاستخدام:</h3>
             <ul className="list-disc list-inside space-y-1 text-sm">
-              <li>هذه الصفحة تقوم بجلب بيانات الجلسة من <code>/api/test-session</code></li>
-              <li>يتم إرسال التوكن تلقائياً من <code>localStorage</code> إذا كان موجوداً</li>
+              <li>
+                هذه الصفحة تقوم بجلب بيانات الجلسة من <code>/api/test-session</code>
+              </li>
+              <li>
+                يتم إرسال التوكن تلقائياً من <code>localStorage</code> إذا كان موجوداً
+              </li>
               <li>يمكنك فتح وحدة تحكم المتصفح (F12) لمشاهدة الطلبات والاستجابات</li>
             </ul>
           </div>

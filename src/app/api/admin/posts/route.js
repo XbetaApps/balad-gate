@@ -26,7 +26,7 @@ function getPool() {
 async function checkAdminAccess(req) {
   try {
     // 1) التوكن من Cookie أو Authorization
-    const cookieStore = nextCookies();
+    const cookieStore = await nextCookies();
     const cookieToken = cookieStore.get('token')?.value || null;
     const authHeader = req.headers.get('authorization') || '';
     const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;

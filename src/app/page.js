@@ -25,6 +25,15 @@ import {
   FaChevronLeft, FaChevronRight, FaChevronLeft as FaLeft, FaChevronRight as FaRight 
 } from 'react-icons/fa';
 
+
+
+const AdsBanner = dynamic(() => import('@/components/AdsBanner'), {
+  ssr: false,
+  loading: () => <div className="w-full h-32 bg-gray-200 animate-pulse"></div>
+});
+
+
+
 // Dynamically import WeatherWidget with no SSR
 const WeatherWidget = dynamic(() => import('@/components/WeatherWidget'), {
   ssr: false,
@@ -644,11 +653,17 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-      
+
+
+        <AdsBanner adId="1" />
+
         {/* 📰 Latest News Section */}
         <div className="px-4">
           <LatestNews />
         </div>
+
+
+
 
         {/* Weather Section */}
         <section id="weather-section" className="py-12 px-4">

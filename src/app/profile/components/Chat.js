@@ -3,10 +3,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { FaPaperPlane, FaUser, FaStore, FaSearch, FaTimes, FaComments } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../auth/AuthProvider";
+import { useRouter, useSearchParams } from 'next/navigation';
 import "../profile-styles.css";
 
-export default function ChatPage() {
+export default function ChatPage({ userData }) {
   const { user } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -14,16 +17,18 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const messagesEndRef = useRef(null);
+  const initialLoad = useRef(true);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
 
-  const fetchChats = useCallback(async () => {
+  const fetchChats = useCallback(async (signal) => {
     if (!user?.id) return;
 
     try {
       setLoading(true);
+      console.log('Fetching chats...');
 
-      // تحقق الجلسة
+      // Verify session with signal support
       const sRes = await fetch(`/api/test-session`, {
         method: "GET",
         headers: {
@@ -31,11 +36,17 @@ export default function ChatPage() {
           Authorization: `Bearer ${token}`,
         },
         credentials: "include",
+        signal
       });
+      
+      if (signal?.aborted) return;
+      
       const sData = await sRes.json();
-      if (!sRes.ok || !sData.authenticated) throw new Error("انتهت جلستك، يرجى تسجيل الدخول مرة أخرى");
+      if (!sRes.ok || !sData.authenticated) {
+        throw new Error("انتهت جلستك، يرجى تسجيل الدخول مرة أخرى");
+      }
 
-      // جلب المحادثات
+      // Fetch chats with signal support
       const res = await fetch(`/api/chats`, {
         method: "GET",
         headers: {
@@ -43,39 +54,64 @@ export default function ChatPage() {
           Authorization: `Bearer ${token}`,
         },
         credentials: "include",
+        signal
       });
+      
+      if (signal?.aborted) return;
+      
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.error || "فشل تحميل المحادثات");
       }
+      
       const data = await res.json();
+      console.log('Fetched chats:', data);
 
-      const formatted = data.map((c) => ({
-        id: c.id,
-        participantName: c.participant_name || "مستخدم مجهول",
-        participantAvatar: c.participant_avatar || null,
-        lastMessage: c.last_message || "لا توجد رسائل",
-        lastMessageAt: c.last_message_at || new Date().toISOString(),
-        unreadCount: parseInt(c.unread_count) || 0,
-        participantType: c.participant_type || "user",
-        isStore: c.participant_type === "store",
+      // Format the data
+      const formatted = data.map((chat) => ({
+        id: chat.id,
+        name: chat.participant_name || "محادثة جديدة",
+        participantName: chat.participant_name || "مستخدم",
+        participantAvatar: chat.avatar || null,
+        lastMessage: chat.last_message_content || "لا توجد رسائل",
+        lastMessageAt: chat.updated_at || new Date().toISOString(),
+        unreadCount: chat.unread_count || 0,
+        participantId: chat.participant_id,
+        participantType: chat.participant_type,
+        updatedAt: chat.updated_at,
         isOnline: false,
+        lastSeen: chat.last_seen || new Date().toISOString(),
       }));
 
-      setChats(formatted);
+      // Only update state if component is still mounted and not aborted
+      if (!signal?.aborted) {
+        setChats(prevChats => {
+          const prev = JSON.stringify(prevChats);
+          const next = JSON.stringify(formatted);
+          if (prev !== next) {
+            console.log('Updating chats state');
+            return formatted;
+          }
+          console.log('Chats unchanged, skipping state update');
+          return prevChats;
+        });
+      }
     } catch (e) {
       console.error("Error fetching chats:", e);
       if (chats.length === 0) alert(e.message || "حدث خطأ أثناء تحميل المحادثات");
     } finally {
       setLoading(false);
     }
-  }, [user?.id, token, chats.length]);
+  }, [user?.id, token]); // Removed chats.length from dependencies
 
   const fetchMessages = useCallback(async () => {
-    if (!selectedChat?.id) return;
+    if (!selectedChat?.id) {
+      console.log('No selected chat ID, skipping message fetch');
+      return;
+    }
 
     try {
-      // تحقق الجلسة
+      // Verify session
       const sRes = await fetch(`/api/test-session`, {
         method: "GET",
         headers: {
@@ -85,11 +121,13 @@ export default function ChatPage() {
         credentials: "include",
       });
       const sData = await sRes.json();
-      if (!sRes.ok || !sData.authenticated) throw new Error("انتهت جلستك، يرجى تسجيل الدخول مرة أخرى");
+      if (!sRes.ok || !sData.authenticated) {
+        throw new Error("انتهت جلستك، يرجى تسجيل الدخول مرة أخرى");
+      }
 
       setLoading(true);
 
-      // رسائل المحادثة
+      // Fetch messages
       const res = await fetch(`/api/conversations/${selectedChat.id}`, {
         method: "GET",
         headers: {
@@ -98,10 +136,12 @@ export default function ChatPage() {
         },
         credentials: "include",
       });
+      
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.error || "فشل تحميل الرسائل");
       }
+      
       const data = await res.json();
 
       setMessages((prev) => {
@@ -128,7 +168,7 @@ export default function ChatPage() {
         }));
       });
 
-      // تحديث قائمة المحادثات (عداد غير المقروء/آخر رسالة)
+      // Update chats list
       fetchChats();
     } catch (e) {
       console.error("Error fetching messages:", e);
@@ -138,12 +178,151 @@ export default function ChatPage() {
     }
   }, [selectedChat?.id, token, messages.length, fetchChats]);
 
+  // Handle initial load and URL parameter
   useEffect(() => {
-    if (user?.id) {
-      fetchChats();
-      const i = setInterval(fetchChats, 30000);
-      return () => clearInterval(i);
-    }
+    let isMounted = true;
+    const controller = new AbortController();
+
+    const handleInitialLoad = async () => {
+      try {
+        await fetchChats(controller.signal);
+        if (!isMounted || controller.signal.aborted) return;
+        
+        const conversationId = searchParams.get('conversation');
+        if (conversationId && initialLoad.current) {
+          console.log('Looking for conversation:', conversationId);
+          
+          // Check if we already have this chat in our list
+          const existingChat = chats.find(c => c.id.toString() === conversationId);
+          
+          if (existingChat) {
+            console.log('Found existing chat in list:', existingChat);
+            setSelectedChat(existingChat);
+          } else {
+            console.log('Conversation not in list, fetching details...');
+            try {
+              const res = await fetch(`/api/conversations/${conversationId}`, {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                credentials: 'include',
+                signal: controller.signal
+              });
+              
+              if (controller.signal.aborted) return;
+              
+              if (res.ok) {
+                const chatData = await res.json();
+                console.log('Fetched conversation data:', chatData);
+                
+                if (chatData && isMounted) {
+                  const participant = chatData.participants?.find(p => p.id !== user?.id);
+                  const newChat = {
+                    id: conversationId,
+                    name: participant?.name || 'محادثة جديدة',
+                    lastMessage: chatData.lastMessage?.content || 'بدء المحادثة',
+                    unreadCount: 0,
+                    participantId: participant?.id,
+                    participantType: participant?.type || 'user',
+                    updatedAt: chatData.lastMessage?.created_at || new Date().toISOString(),
+                    avatar: participant?.avatar || null,
+                    isOnline: false,
+                    lastSeen: new Date().toISOString()
+                  };
+                  
+                  console.log('Created new chat object:', newChat);
+                  
+                  // Update the selected chat
+                  setSelectedChat(newChat);
+                  
+                  // Add to chats list if not present
+                  setChats(prev => {
+                    const exists = prev.some(c => c.id === newChat.id);
+                    return exists ? prev : [...prev, newChat];
+                  });
+                }
+              } else {
+                console.error('Failed to fetch conversation:', await res.text());
+              }
+            } catch (error) {
+              if (error.name !== 'AbortError') {
+                console.error('Error fetching conversation:', error);
+              }
+            }
+          }
+          
+          // Clean up URL
+          if (isMounted) {
+            const url = new URL(window.location.href);
+            if (url.searchParams.get('conversation') === conversationId) {
+              url.searchParams.delete('conversation');
+              window.history.replaceState({}, '', url.toString());
+            }
+            initialLoad.current = false;
+          }
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Error in initial load:', error);
+        }
+      }
+    };
+    
+    handleInitialLoad();
+    
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [fetchChats, searchParams, token, user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    
+    const controller = new AbortController();
+    let timeoutId;
+    let isFirstLoad = true;
+
+    const fetchWithRetry = async () => {
+      try {
+        // Only show loading on first load
+        if (isFirstLoad) {
+          setLoading(true);
+        }
+        
+        await fetchChats(controller.signal);
+        isFirstLoad = false;
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Error refreshing chats:', error);
+          // Only show error if it's the first load
+          if (isFirstLoad) {
+            alert(error.message || 'حدث خطأ أثناء تحميل المحادثات');
+          }
+        }
+      } finally {
+        if (isFirstLoad) {
+          setLoading(false);
+          isFirstLoad = false;
+        }
+        
+        if (!controller.signal.aborted) {
+          // Only set timeout if we're not in the middle of a refresh
+          timeoutId = setTimeout(fetchWithRetry, 30000);
+        }
+      }
+    };
+
+    // Initial fetch
+    fetchWithRetry();
+
+    // Cleanup
+    return () => {
+      controller.abort();
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [user?.id, fetchChats]);
 
   useEffect(() => {
@@ -228,9 +407,10 @@ export default function ChatPage() {
     }
   };
 
-  const filteredChats = chats.filter((chat) =>
-    chat.participantName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredChats = chats.filter((chat) => {
+    const name = chat.name || chat.participantName || '';
+    return name.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   if (loading && !selectedChat) {
     return (

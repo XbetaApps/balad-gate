@@ -233,12 +233,50 @@ const QUICK_ADD = [
    إضافة عرض المنشورات فقط
    (لا تغييرات على التصميم)
 ========================= */
-function PostCard({ post }) {
+function PostCard({ post, isAuthenticated }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isStartingChat, setIsStartingChat] = useState(false);
+  const router = useRouter();
   
   const openModal = (e) => {
     e.preventDefault();
     setIsModalOpen(true);
+  };
+  
+  const startChat = async (e) => {
+    e.stopPropagation();
+    if (!isAuthenticated || !post.user_id) return;
+    
+    setIsStartingChat(true);
+    try {
+      // Create or get conversation with the post author
+      const response = await fetch('/api/conversations/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          participantId: post.user_id,
+          message: `مرحباً، أنا مهتم بمنشورك: ${post.title}`,
+          postId: post.id
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.conversationId) {
+        // Redirect to the chat section with the conversation ID
+        // Use window.location to force a full page reload to ensure chat state is properly initialized
+        window.location.href = `/profile?section=chat&conversation=${data.conversationId}`;
+      } else {
+        throw new Error(data.error || 'فشل في بدء المحادثة');
+      }
+    } catch (error) {
+      console.error('Error starting chat:', error);
+      alert(error.message || 'حدث خطأ أثناء محاولة بدء المحادثة');
+    } finally {
+      setIsStartingChat(false);
+    }
   };
   
   const closeModal = () => {
@@ -362,6 +400,9 @@ function PostCard({ post }) {
   const publisherName = post.is_anonymous 
     ? "مجهول" 
     : post.user_name || (post.user_id ? `مستخدم ${post.user_id.substring(0, 4)}` : "مستخدم");
+    
+  // Check if we should show contact button (not anonymous and user is logged in)
+  const showContactButton = !post.is_anonymous && isAuthenticated;
 
   return (
     <div className="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 dark:border-gray-700 flex flex-col h-full transform hover:-translate-y-1">
@@ -396,11 +437,36 @@ function PostCard({ post }) {
         
         {/* Basic Info - Always Visible */}
         <div className="space-y-2 mb-3">
-          <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-            <FaUser className="text-blue-500 flex-shrink-0" />
-            <span className="truncate">
-              {publisherName}
-            </span>
+          <div className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <FaUser className="text-blue-500 flex-shrink-0" />
+              <span className="truncate">
+                {publisherName}
+              </span>
+            </div>
+            {showContactButton && (
+              <button 
+                onClick={startChat}
+                disabled={isStartingChat}
+                className="text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-md flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="تواصل مع الناشر"
+              >
+                {isStartingChat ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-1 h-3 w-3 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    جاري التحميل...
+                  </>
+                ) : (
+                  <>
+                    <FaEnvelope className="text-xs" />
+                    <span>تواصل</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
             <FaMapMarkedAlt className="text-amber-500 flex-shrink-0" />
@@ -495,9 +561,34 @@ function PostCard({ post }) {
                         <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                           <FaUser className="text-blue-500" />
                         </div>
-                        <div>
+                        <div className="flex-1">
                           <p className="text-gray-500 dark:text-gray-400 text-xs">الناشر</p>
-                          <p className="font-medium text-gray-900 dark:text-white">{publisherName}</p>
+                          <div className="flex items-center justify-between">
+                            <p className="font-medium text-gray-900 dark:text-white">{publisherName}</p>
+                            {showContactButton && (
+                              <button 
+                                onClick={startChat}
+                                disabled={isStartingChat}
+                                className="text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-md flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="تواصل مع الناشر"
+                              >
+                                {isStartingChat ? (
+                                  <>
+                                    <svg className="animate-spin -ml-1 mr-1 h-3 w-3 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    جاري التحميل...
+                                  </>
+                                ) : (
+                                  <>
+                                    <FaEnvelope className="text-xs" />
+                                    <span>تواصل</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
@@ -615,7 +706,7 @@ function PostCard({ post }) {
   );
 }
 
-function ServicePosts({ serviceId, governorate, search }) {
+function ServicePosts({ serviceId, governorate, search, isAuthenticated }) {
   const categoryName = SERVICE_TO_CATEGORY_NAME[serviceId];
 
   const [items, setItems] = useState([]);
@@ -693,7 +784,7 @@ function ServicePosts({ serviceId, governorate, search }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {items.map((post) => (
               <div key={post.id} className="h-full">
-                <PostCard post={post} />
+                <PostCard key={post.id} post={post} isAuthenticated={isAuthenticated} />
               </div>
             ))}
           </div>
@@ -1493,6 +1584,7 @@ export default function ServicesPage() {
                   serviceId={s.id}
                   governorate={selectedGov}
                   search={searchQuery}
+                  isAuthenticated={isAuthenticated}
                 />
               </div>
             </section>
