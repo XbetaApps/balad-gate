@@ -106,7 +106,7 @@ export default function CategoriesManagement() {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/categories');
+      const response = await fetch('/api/admin/categories');
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -131,7 +131,7 @@ export default function CategoriesManagement() {
   // Load parent categories (top-level categories only)
   const loadParentCategories = async () => {
     try {
-      const response = await fetch('/api/categories?parentId=null');
+      const response = await fetch('/api/admin/categories?parentId=null');
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));

@@ -49,10 +49,17 @@ function Chip({ label, onDelete }) {
 }
 
 /* ===== Component ===== */
-export default function OnboardingModal({ onDone }) {
+export default function OnboardingModal({ onDone, open: isOpen, onClose }) {
   const { user: authUser, getToken, checkAuth } = useAuth();
-  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  // Sync internal state with props
+  useEffect(() => {
+    if (isOpen !== undefined) {
+      setInternalOpen(isOpen);
+    }
+  }, [isOpen]);
 
   const [user, setUser] = useState(null);
   const [phone, setPhone] = useState("");
@@ -78,7 +85,7 @@ export default function OnboardingModal({ onDone }) {
       
       if (!authUser?.id) {
         console.log('OnboardingModal - No authenticated user');
-        setOpen(false);
+        setInternalOpen(false);
         setLoading(false);
         return;
       }
@@ -88,28 +95,26 @@ export default function OnboardingModal({ onDone }) {
       
       try {
         const token = await getToken();
-        if (!token) {
-          console.log('No token available, cannot fetch onboarding data');
-          setOpen(false);
-          setLoading(false);
-          return;
-        }
-        
+
         console.log('Fetching onboarding data...', { 
           userId: authUser.id,
           hasToken: !!token
         });
         
+        const headers = {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-User-Id': authUser.id
+        };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        
         const res = await fetch("/api/onboarding", {
           method: "GET",
           credentials: 'include',
           signal: abortController.signal,
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            'X-User-Id': authUser.id
-          },
+          headers,
           cache: 'no-store',
         });
 
@@ -129,7 +134,7 @@ export default function OnboardingModal({ onDone }) {
           
           console.log('Failed to refresh session after', MAX_RETRIES, 'attempts');
           if (isMounted) {
-            setOpen(false);
+            setInternalOpen(false);
             setLoading(false);
           }
           return;
@@ -144,7 +149,7 @@ export default function OnboardingModal({ onDone }) {
           });
           
           if (isMounted) {
-            setOpen(false);
+            setInternalOpen(false);
             setLoading(false);
           }
           return;
@@ -174,7 +179,7 @@ export default function OnboardingModal({ onDone }) {
         setPhone(data?.user?.phone || "");
         setFollowedTags(Array.isArray(data?.followedTags) ? data.followedTags : []);
         setSuggestedTags(Array.isArray(data?.suggestedTags) ? data.suggestedTags : []);
-        setOpen(shouldOpen);
+        setInternalOpen(shouldOpen);
         
         if (isOnboardingDone) {
           console.log('Onboarding already completed, closing modal');
@@ -184,11 +189,11 @@ export default function OnboardingModal({ onDone }) {
       } catch (error) {
         if (error.name === 'AbortError') {
           console.log('Request was aborted');
-          return;
+        } else {
+          console.error('Error in onboarding load:', error);
         }
-        console.error('Error in onboarding load:', error);
         if (isMounted) {
-          setOpen(false);
+          setInternalOpen(false);
           setLoading(false);
         }
       } finally {
@@ -201,7 +206,7 @@ export default function OnboardingModal({ onDone }) {
       load();
     } else {
       setLoading(false);
-      setOpen(false);
+      onClose && onClose();
     }
     
     return () => {
@@ -209,6 +214,30 @@ export default function OnboardingModal({ onDone }) {
       abortController.abort();
     };
   }, [authUser?.id, checkAuth, getToken]);
+
+  // Handle initial load and auth state changes
+  useEffect(() => {
+    if (!authUser) {
+      setLoading(false);
+      onClose && onClose();
+      return;
+    }
+    
+    // If user has completed onboarding, close the modal
+    if (authUser.onboarding_done) {
+      console.log('User has already completed onboarding');
+      setLoading(false);
+      onDone && onDone({ skipped: false, alreadyCompleted: true });
+      onClose && onClose();
+      return;
+    }
+    
+    // Only run the effect when the modal is actually open
+    if (internalOpen) {
+      console.log('Initializing onboarding modal for user:', authUser.id);
+      setLoading(false);
+    }
+  }, [authUser, internalOpen, onDone, onClose]);
 
   // search tags
   useEffect(() => {
@@ -264,72 +293,49 @@ export default function OnboardingModal({ onDone }) {
     setFollowedTags((prev) => prev.filter((t) => t.id !== id));
   };
 
-  const handleSkip = async () => {
+  const handleSkip = () => {
+    // Close modal without touching database
+    setInternalOpen(false);
+    onDone && onDone({ skipped: true });
+    onClose && onClose();
+  };
+
+  // Close modal temporarily without persisting anything
+  // Permanently mark onboarding as done and never show again
+  const handleNeverShow = async () => {
     try {
-      console.log('Skipping onboarding...');
-      
-      // Get the authentication token
       const token = await getToken();
       if (!token) {
-        console.error('No authentication token available');
-        throw new Error('يجب تسجيل الدخول أولاً');
+        throw new Error('No authentication token available');
       }
-      
-      const res = await fetch("/api/onboarding?action=update-status", {
-        method: "POST",
-        credentials: 'include',
+      const res = await fetch('/api/onboarding?action=update-status', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache',
-          'X-Requested-With': 'XMLHttpRequest'
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           skip: true,
-          onboarding_done: true,  // تأكيد تعيين القيمة إلى true
-          onboarding_done_at: new Date().toISOString(),  // إضافة الوقت الحالي
-          _t: Date.now()
-        }),
+          onboarding_done: true,
+          onboarding_done_at: new Date().toISOString()
+        })
       });
-
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        console.error('Failed to skip onboarding:', {
-          status: res.status,
-          statusText: res.statusText,
-          error: errorData
-        });
-        
-        // If unauthorized, try refreshing the token
-        if (res.status === 401) {
-          console.log('Token expired, attempting to refresh...');
-          const refreshSuccess = await checkAuth(true);
-          if (refreshSuccess) {
-            console.log('Token refreshed, retrying skip...');
-            return handleSkip(); // Retry the skip operation
-          }
-        }
-        
-        throw new Error(errorData.message || 'فشل في تخطي الإعداد');
+        console.error('Failed to update onboarding status:', res.status, res.statusText);
       }
-
-      const result = await res.json();
-      console.log('Onboarding skipped successfully:', result);
-      
-      setOpen(false);
+    } catch (err) {
+      console.error('handleNeverShow error:', err);
+    } finally {
+      setInternalOpen(false);
       onDone && onDone({ skipped: true });
-      window.dispatchEvent(new CustomEvent("onboarding:done", { 
-        detail: { 
-          skipped: true,
-          user: result.user 
-        } 
-      }));
-    } catch (error) {
-      console.error('Error skipping onboarding:', error);
-      alert(error.message || "تعذر تنفيذ العملية الآن. حاول مجددًا.");
+      onClose && onClose();
     }
+  };
+
+  const handleLater = () => {
+    setInternalOpen(false);
+    onDone && onDone({ skipped: false, later: true });
+    onClose && onClose();
   };
 
   const handleSave = async () => {
@@ -378,8 +384,9 @@ export default function OnboardingModal({ onDone }) {
       const result = await res.json();
       console.log('Onboarding saved successfully:', result);
       
-      setOpen(false);
+      setInternalOpen(false);
       onDone && onDone({ skipped: false, saved: true });
+      onClose && onClose();
       window.dispatchEvent(new CustomEvent("onboarding:done", { 
         detail: { 
           skipped: false,
@@ -392,20 +399,17 @@ export default function OnboardingModal({ onDone }) {
     }
   };
 
-  // Don't render anything until we're completely sure we need to show the modal
-  if (loading || !open || user?.onboarding_done === true) {
-    console.log('Skipping OnboardingModal render:', { 
-      loading, 
-      open, 
-      hasUser: !!user,
-      onboardingDone: user?.onboarding_done
-    });
+  if (loading) {
+    return null; // Or a loading spinner
+  }
+  
+  if (!internalOpen) {
     return null;
   }
   
   console.log('Rendering OnboardingModal with:', { 
     loading, 
-    open, 
+    open: internalOpen, 
     hasUser: !!user,
     onboardingDone: user?.onboarding_done
   });
@@ -546,10 +550,10 @@ export default function OnboardingModal({ onDone }) {
           </button>
           <div className="order-1 sm:order-2 flex items-center gap-2">
             <button
-              onClick={handleSkip}
+              onClick={handleNeverShow}
               className="inline-flex items-center justify-center rounded-lg border border-transparent bg-gray-200 dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600"
             >
-              لاحقًا
+              لا تظهره أبداً
             </button>
             <button
               onClick={handleSave}

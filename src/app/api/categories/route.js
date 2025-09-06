@@ -79,11 +79,7 @@ export async function GET(request) {
     // Ensure we return an array even if empty
     const categories = Array.isArray(result.rows) ? result.rows : [];
     
-    return NextResponse.json(categories, {
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-      },
-    });
+    return NextResponse.json(categories);
   } catch (error) {
     console.error('Error in GET /api/categories:', error);
     return NextResponse.json(
