@@ -5,10 +5,10 @@ import Link from 'next/link';
 import Script from 'next/script';
 import dynamic from 'next/dynamic';
 import { useTheme } from './nav/theme/ThemeProvider';
-import { getEnabledSections } from '@/config/sections';
+// Sections are now loaded dynamically from API
 import { FaArrowUp } from 'react-icons/fa';
 
-// تحميل المكونات الديناميكية
+// Import DynamicSection component
 const DynamicSection = dynamic(
   () => import('@/components/DynamicSection'),
   { ssr: false }
@@ -29,6 +29,12 @@ import {
 const AdsDisplay = dynamic(() => import('@/components/AdsDisplay'), {
   ssr: false,
   loading: () => <div className="h-32 flex items-center justify-center">جاري تحميل الإعلانات...</div>
+});
+
+// Import DynamicCategories component
+const DynamicCategories = dynamic(() => import('@/components/DynamicCategories'), {
+  ssr: false,
+  loading: () => <div className="h-32 flex items-center justify-center">جاري تحميل الأقسام...</div>
 });
 
 // Dynamically import WeatherWidget with no SSR
@@ -54,7 +60,6 @@ export default function HomePage() {
   const [mounted, setMounted] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showScrollButton, setShowScrollButton] = useState(false);
-  const scrollContainerRef = useRef(null);
   const featuredNewsRef = useRef(null);
   const scrollToTopRef = useRef(null);
   
@@ -383,17 +388,7 @@ const prevSlide = () => {
   
 // Removed auto-scroll to featured news section
   
-const scrollLeft = () => {
-  if (scrollContainerRef.current) {
-    scrollContainerRef.current.scrollBy({ left: -300, behavior: 'smooth' });
-  }
-};
-  
-const scrollRight = () => {
-  if (scrollContainerRef.current) {
-    scrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
-  }
-};
+// Scroll functions are now handled by DynamicCategories component
 
 useEffect(() => {
   const timer = setInterval(() => setTime(new Date()), 60000);
@@ -421,30 +416,7 @@ const scrollToTop = () => {
   });
 };
 
-const allCards = [
-  { title: 'المتاجر', icon: FaStore, path: '/services#commercial-stores' },
-  { title: 'عقارات', icon: FaHome, path: '/services#real-estate&lands-real-estate' },
-  { title: 'أراضي', icon: FaBuilding, path: '/services#real-estate&lands-lands' },
-  { title: 'سيارات', icon: FaCar, path: '/services#vehicles-cars' },
-  { title: 'مطاعم', icon: FaUtensils, path: '/services#commercial-restaurants' },
-  { title: 'فرص عمل', icon: FaBriefcase, path: '/services#other-jobs' },
-  { title: 'دورات دراسية', icon: FaGraduationCap, path: '/services#education-courses' },
-  { title: 'مستشفيات', icon: FaHospital, path: '/services#health-hospitals' },
-  { title: 'عيادات طبية', icon: FaClinicMedical, path: '/services#health-clinics' },
-  { title: 'أماكن ترفيهية', icon: FaTheaterMasks, path: '/services#other-entertainment' },
-  { title: 'فنادق', icon: FaHotel, path: '/services#real-estate&lands-hotels' },
-  { title: 'صيدليات', icon: FaPills, path: '/services#commercial-pharmacies' },
-  { title: 'محطات وقود', icon: FaGasPump, path: '/services#vehicles-gas-stations' },
-  { title: 'مراكز تجارية', icon: FaShoppingBag, path: '/services#commercial-malls' },
-  { title: 'صالات أفراح', icon: FaGlassCheers, path: '/services#real-estate&lands-wedding-halls' },
-  { title: 'خدمات توصيل', icon: FaTruck, path: '/services#vehicles-delivery' },
-  { title: 'مجوهرات وذهب', icon: FaRing, path: '/services#commercial-jewelry' },
-  { title: 'ملابس وأزياء', icon: FaTshirt, path: '/services#commercial-fashion' },
-  { title: 'هدايا وتحف', icon: FaGift, path: '/services#other-gifts' },
-  { title: 'مراكز تجميل', icon: FaCut, path: '/services#health-beauty-centers' },
-  { title: 'صالات رياضية', icon: FaDumbbell, path: '/services#health-gyms' },
-  { title: 'مكتبات وكتب', icon: FaBook, path: '/services#education-libraries' },
-];
+// Categories are now loaded dynamically from API
 
 return (
   <div className="">
@@ -455,72 +427,8 @@ return (
     {/* Main Content */}
     <main className="container mx-auto px-4 py-8">
       <div className="w-full max-w-6xl mx-auto">
-        {/* Search and Services Section */}
-        <div className="w-full max-w-6xl mx-auto py-8">
-          {/* 🔍 Search Bar */}
-          
-
-
-                  {/* 🧩 Cards */}
-                    <div className="relative">
-                      
-                     <button 
-              onClick={scrollLeft}
-              className={`absolute left-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full ${
-                darkMode ? 'bg-gray-800 text-amber-400 hover:bg-gray-700' : 'bg-white text-amber-600 hover:bg-gray-100'
-              } shadow-lg transition-all`}
-              aria-label="Scroll left"
-            >
-              <FaChevronRight className="text-xl" />
-            </button>
-            
-            <div 
-              ref={scrollContainerRef}
-              className="flex overflow-x-auto scrollbar-hide space-x-4 px-8 py-4"
-              style={{ scrollbarWidth: 55,msOverflowStyle: 'none' }}
-            >
-              {allCards.map((card, index) => {
-                const IconComponent = card.icon;
-                return (
-                  <Link
-                    href={card.path || '#'}
-                    key={index}
-                    className="group flex-shrink-0 w-24 flex flex-col items-center"
-                  >
-                    <div className={`
-                      w-16 h-16 rounded-xl flex items-center justify-center
-                      transition-all duration-300 mb-2
-                      ${darkMode 
-                        ? 'bg-gray-800 text-amber-400 group-hover:bg-amber-500/10' 
-                        : 'bg-amber-50 text-amber-600 group-hover:bg-amber-100'}
-                    `}>
-                      <IconComponent className="text-2xl transition-transform group-hover:scale-110" />
-                    </div>
-                    <span className={`
-                      text-xs font-medium text-center font-sans whitespace-nowrap
-                      transition-colors duration-300
-                      ${darkMode 
-                        ? 'text-gray-200 group-hover:text-amber-300' 
-                        : 'text-gray-700 group-hover:text-amber-600'}
-                    `}>
-                      {card.title}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-            
-            <button 
-              onClick={scrollRight}
-              className={`absolute right-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full ${
-                darkMode ? 'bg-gray-800 text-amber-400 hover:bg-gray-700' : 'bg-white text-amber-600 hover:bg-gray-100'
-              } shadow-lg transition-all`}
-              aria-label="Scroll right"
-            >
-              <FaChevronLeft className="text-xl" />
-            </button>
-          </div>
-        </div>
+        {/* Dynamic Categories Section */}
+        <DynamicCategories darkMode={darkMode} />
 
 
 
@@ -681,16 +589,11 @@ return (
     </div>
 
 
-    
+            
         {/* Dynamic Sections */}
-        <div className="w-full">
-          {getEnabledSections().map((section) => (
-            <DynamicSection 
-              key={section.id}
-              section={section}
-            />
-          ))}
-        </div>
+        <DynamicSection />
+        
+        
       </div>
       
       {/* زر الانتقال للأعلى */}

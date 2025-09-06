@@ -11,32 +11,54 @@ import dynamic from 'next/dynamic';
 
 const PostDetailsModal = dynamic(() => import('./PostDetailsModal'), { ssr: false });
 
-// احتفظنا بالخريطة كاحتياطي، لكن العرض سيعتمد على section.icon و section.title
-const categoryIcons = {
-  'commercial-stores': { name: 'متاجر', icon: 'FaStore' },
-  'pharmacies': { name: 'صيدليات', icon: 'FaPills' },
-  'jewelry': { name: 'مجوهرات وذهب', icon: 'FaRing' },
-  'malls': { name: 'مراكز تجارية', icon: 'FaShoppingBag' },
-  'restaurants': { name: 'مطاعم', icon: 'FaUtensils' },
-  'hotels': { name: 'فنادق', icon: 'FaHotel' },
-  'cars': { name: 'سيارات', icon: 'FaCar' },
-  'real-estate': { name: 'عقارات', icon: 'FaHome' },
-  'lands': { name: 'أراضي', icon: 'FaMapMarkedAlt' },
-  'jobs': { name: 'فرص عمل', icon: 'FaBriefcase' },
-  'clothing': { name: 'ملابس وأزياء', icon: 'FaTshirt' },
-  'education': { name: 'دورات دراسية', icon: 'FaGraduationCap' },
-  'hospitals': { name: 'مستشفيات', icon: 'FaHospital' },
-  'clinics': { name: 'عيادات طبية', icon: 'FaClinicMedical' },
-  'entertainment': { name: 'أماكن ترفيهية', icon: 'FaTheaterMasks' },
-  'wedding-halls': { name: 'صالات أفراح', icon: 'FaGlassCheers' },
-  'transport': { name: 'خدمات توصيل', icon: 'FaTruck' },
-  'fuel': { name: 'محطات وقود', icon: 'FaGasPump' },
-  'sports': { name: 'صالات رياضية', icon: 'FaDumbbell' },
-  'books': { name: 'مكتبات وكتب', icon: 'FaBook' },
-  'gifts': { name: 'هدايا وتحف', icon: 'FaGift' },
-  'beauty': { name: 'مراكز تجميل', icon: 'FaCut' },
-  'health': { name: 'صحة', icon: 'FaClinicMedical' }
+// Default icon mapping for categories
+const defaultIcons = {
+  // الأقسام الرئيسية
+  'صحة ولياقة': 'FaClinicMedical',
+  'خدمات أخرى': 'FaBriefcase',
+  'خدمات تجارية': 'FaStore',
+  'تعليم وتطوير': 'FaGraduationCap',
+  'مركبات ومواصلات': 'FaCar',
+  'عقارات وأراضي': 'FaHome',
+  
+  // الأقسام الفرعية
+  'متاجر': 'FaStore',
+  'صيدليات': 'FaPills',
+  'مجوهرات': 'FaRing',
+  'مجوهرات وذهب': 'FaRing',
+  'مراكز تجارية': 'FaShoppingBag',
+  'مطاعم': 'FaUtensils',
+  'فنادق': 'FaHotel',
+  'سيارات': 'FaCar',
+  'عقارات': 'FaHome',
+  'أراضي': 'FaMapMarkedAlt',
+  'فرص عمل': 'FaBriefcase',
+  'وظائف': 'FaBriefcase',
+  'ملابس وأزياء': 'FaTshirt',
+  'أزياء': 'FaTshirt',
+  'دورات دراسية': 'FaGraduationCap',
+  'دورات': 'FaGraduationCap',
+  'مستشفيات': 'FaHospital',
+  'عيادات طبية': 'FaClinicMedical',
+  'عيادات': 'FaClinicMedical',
+  'أماكن ترفيهية': 'FaTheaterMasks',
+  'ترفيه': 'FaTheaterMasks',
+  'صالات أفراح': 'FaGlassCheers',
+  'خدمات توصيل': 'FaTruck',
+  'توصيل': 'FaTruck',
+  'محطات وقود': 'FaGasPump',
+  'صالات رياضية': 'FaDumbbell',
+  'نوادي رياضية': 'FaDumbbell',
+  'مكتبات وكتب': 'FaBook',
+  'مكتبات': 'FaBook',
+  'هدايا وتحف': 'FaGift',
+  'هدايا': 'FaGift',
+  'مراكز تجميل': 'FaCut',
+  'صحة': 'FaClinicMedical'
 };
+
+// This will be populated from the API
+let categoryIcons = {};
 
 const getIconComponent = (iconName) => {
   const iconMap = {
@@ -48,8 +70,99 @@ const getIconComponent = (iconName) => {
   return iconMap[iconName] || FaStore;
 };
 
-const DynamicSection = ({ section }) => {
+const DynamicSection = () => {
   const { theme } = useTheme();
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch categories from API on component mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('Fetching categories from API...');
+        const response = await fetch('/api/categories');
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Failed to fetch categories:', response.status, errorText);
+          throw new Error(`Failed to fetch categories: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log('Received categories from API:', data);
+        
+        // Transform categories to include icon and posts data
+        const formattedCategories = data.map(category => {
+          const icon = defaultIcons[category.name] || 'FaStore';
+          
+          return {
+            id: category.id,
+            name: category.name,
+            icon: icon,
+            parent_id: category.parent_id,
+            serial_id: category.serial_id,
+            is_active: category.is_active,
+            apiEndpoint: `/api/posts?categoryName=${encodeURIComponent(category.name)}`,
+            viewAllLink: `/services?category=${encodeURIComponent(category.name)}`
+          };
+        });
+        
+        // Sort by serial_id, then by name
+        formattedCategories.sort((a, b) => {
+          if (a.serial_id !== b.serial_id) {
+            return (a.serial_id || 0) - (b.serial_id || 0);
+          }
+          return a.name.localeCompare(b.name, 'ar');
+        });
+        
+        setCategories(formattedCategories);
+        console.log('Formatted categories:', formattedCategories);
+        
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setError(error.message);
+        setCategories([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="py-10 flex flex-col items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500 mb-2"></div>
+        <p className="text-gray-500">جاري تحميل الأقسام...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-6 text-center">
+        <p className="text-red-500 mb-2">حدث خطأ: {error}</p>
+        <button onClick={() => window.location.reload()} className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors">
+          إعادة المحاولة
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full">
+      {categories.map((category) => (
+        <CategorySection key={category.id} category={category} />
+      ))}
+    </div>
+  );
+};
+
+// مكون لعرض قسم واحد مع إعلاناته
+const CategorySection = ({ category }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -61,42 +174,16 @@ const DynamicSection = ({ section }) => {
   const startX = useRef(0);
   const scrollLeft = useRef(0);
 
-  // جلب البيانات (من apiEndpoint إن وجد)
+  // جلب البيانات للقسم
   const fetchItems = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log('جاري جلب البيانات للقسم:', section.title);
-      console.log('API Endpoint:', section.apiEndpoint || 'غير محدد');
+      console.log('جاري جلب البيانات للقسم:', category.name);
+      console.log('API Endpoint:', category.apiEndpoint);
 
-      // إذا كان هناك apiEndpoint مخصص، استخدمه مباشرة
-      if (section.apiEndpoint) {
-        console.log('جاري جلب البيانات من API المخصص');
-        const response = await fetch(section.apiEndpoint);
-        console.log('حالة الاستجابة:', response.status, response.statusText);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('خطأ في الاستجابة:', errorText);
-          throw new Error('فشل في تحميل البيانات: ' + response.status);
-        }
-        
-        const data = await response.json();
-        console.log('تم استلام البيانات:', data);
-        
-        const itemsData = Array.isArray(data?.items) ? data.items : [];
-        console.log('عدد العناصر المستلمة:', itemsData.length);
-        
-        setItems(itemsData);
-        return;
-      }
-
-      // إذا لم يكن هناك apiEndpoint، استخدم عنوان URL الافتراضي مع اسم القسم
-      const url = `/api/posts?categoryName=${encodeURIComponent(section.title || '')}`;
-      console.log('جاري جلب البيانات من URL:', url);
-      
-      const response = await fetch(url);
+      const response = await fetch(category.apiEndpoint);
       console.log('حالة الاستجابة:', response.status, response.statusText);
       
       if (!response.ok) {
@@ -118,7 +205,7 @@ const DynamicSection = ({ section }) => {
     } finally {
       setLoading(false);
     }
-  }, [section.id, section.title]);
+  }, [category.apiEndpoint]);
 
   useEffect(() => {
     fetchItems();
@@ -176,17 +263,23 @@ const DynamicSection = ({ section }) => {
     containerRef.current.scrollLeft += e.deltaY + e.deltaX;
   };
 
-  if (loading) return <div className="py-10 flex justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500"></div></div>;
+  const Icon = getIconComponent(category.icon);
+
+  if (loading) return (
+    <div className="py-10 flex flex-col items-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500 mb-2"></div>
+      <p className="text-gray-500">جاري تحميل {category.name}...</p>
+    </div>
+  );
+
   if (error) return (
     <div className="py-6 text-center">
-      <p className="text-red-500 mb-2">حدث خطأ: {error}</p>
+      <p className="text-red-500 mb-2">حدث خطأ في {category.name}: {error}</p>
       <button onClick={fetchItems} className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors">
         إعادة المحاولة
       </button>
     </div>
   );
-
-  const Icon = getIconComponent(section.icon || categoryIcons[section.id]?.icon);
 
   return (
     <div className="relative py-10 border-b border-gray-200 last:border-0 overflow-hidden group">
@@ -198,7 +291,7 @@ const DynamicSection = ({ section }) => {
               <Icon className="text-2xl text-amber-600" />
             </div>
             <h2 className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-amber-400 bg-clip-text text-transparent">
-              {section.title}
+              {category.name}
             </h2>
           </div>
           <div className="w-32 h-1 bg-gradient-to-r from-amber-500 to-amber-300 mt-4 rounded-full"></div>
@@ -237,12 +330,12 @@ const DynamicSection = ({ section }) => {
                 {item.image ? <img src={item.image} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" /> : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-50 to-amber-100 dark:from-gray-700 dark:to-gray-800">
                     <span className="text-4xl text-amber-400">
-                      {React.createElement(getIconComponent(section.icon || categoryIcons[section.id]?.icon))}
+                      <Icon />
                     </span>
                   </div>
                 )}
                 <div className="absolute bottom-3 left-3 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                  {section.title || categoryIcons[section.id]?.name}
+                  {category.name}
                 </div>
               </div>
               <div className="p-5 flex flex-col flex-grow">
