@@ -70,22 +70,33 @@ const publicPaths = [
 
 // Check if the current path is public
 function isPublicPath(path) {
+  // Normalize path
+  const normalizedPath = path.endsWith('/') && path !== '/' ? path.slice(0, -1) : path;
+  
   // Check exact matches
-  if (publicPaths.includes(path)) return true;
+  if (publicPaths.includes(normalizedPath)) return true;
   
   // Check path prefixes
   const isPublic = publicPaths.some(publicPath => {
     // Handle wildcard paths (e.g., '/*.png')
     if (publicPath.startsWith('/*.')) {
       const ext = publicPath.substring(1);
-      return path.endsWith(ext);
+      return normalizedPath.endsWith(ext);
+    }
+    
+    // Handle root path
+    if (publicPath === '/') {
+      return normalizedPath === '' || normalizedPath === '/';
     }
     
     // Handle directory paths
-    return path === publicPath || 
-           path.startsWith(`${publicPath}/`) ||
-           path.startsWith('/_next') ||
-           path.startsWith('/api/auth');
+    return normalizedPath === publicPath || 
+           normalizedPath.startsWith(`${publicPath}/`) ||
+           normalizedPath.startsWith('/_next') ||
+           normalizedPath.startsWith('/api/auth') ||
+           normalizedPath.startsWith('/_next/static') ||
+           normalizedPath.startsWith('/_next/image') ||
+           normalizedPath.startsWith('/api');
   });
   
   return isPublic;
@@ -269,6 +280,7 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
+     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
@@ -277,6 +289,6 @@ export const config = {
      * - robots.txt
      * - image/video/asset files
      */
-    '/((?!_next/static|_next/image|favicon.ico|public/|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|txt|xml|mp4|webm|woff|woff2|ttf|eot)$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|public|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|txt|xml|mp4|webm|woff|woff2|ttf|eot)$).*)',
   ],
 };
