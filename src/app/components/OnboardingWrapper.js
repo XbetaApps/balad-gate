@@ -21,8 +21,13 @@ export default function OnboardingWrapper() {
       onboardingDone: user?.onboarding_done
     });
     
-    // If user is logged in and onboarding is not completed
-    if (user && user.onboarding_done !== true) {
+    // Helper to read JWT from localStorage
+    const readToken = () => {
+      try { return localStorage.getItem('token'); } catch { return null; }
+    };
+
+    // Show modal only if user needs onboarding AND JWT token exists (API requires it)
+    if (user && user.onboarding_done !== true && readToken()) {
       console.log('OnboardingWrapper - Showing modal for user:', { 
         userId: user.id,
         onboarding_done: user.onboarding_done 

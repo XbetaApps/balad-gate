@@ -60,6 +60,11 @@ export async function GET(request) {
       queryParams.push(parentId);
     }
     
+    // Always fetch only active categories
+    conditions.push('is_active = true');
+    // Exclude children whose parent is inactive
+    conditions.push('(parent_id IS NULL OR parent_id IN (SELECT id FROM categories WHERE is_active = true))');
+
     if (conditions.length > 0) {
       query += ' WHERE ' + conditions.join(' AND ');
     }
