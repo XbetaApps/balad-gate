@@ -169,6 +169,7 @@ const CategorySection = ({ category }) => {
   const [selectedPost, setSelectedPost] = useState(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
+  const [hasData, setHasData] = useState(false);
   const containerRef = useRef(null);
   const isDragging = useRef(false);
   const startX = useRef(0);
@@ -198,10 +199,12 @@ const CategorySection = ({ category }) => {
       const itemsData = Array.isArray(data?.items) ? data.items : [];
       console.log('عدد العناصر المستلمة:', itemsData.length);
       setItems(itemsData);
+      setHasData(itemsData.length > 0);
     } catch (err) {
       console.error('Error fetching items:', err);
       setError(err.message || 'حدث خطأ أثناء تحميل البيانات');
       setItems([]);
+      setHasData(false);
     } finally {
       setLoading(false);
     }
@@ -264,6 +267,11 @@ const CategorySection = ({ category }) => {
   };
 
   const Icon = getIconComponent(category.icon);
+
+  // إخفاء القسم إذا لم يكن يحتوي على بيانات
+  if (!loading && !error && !hasData) {
+    return null;
+  }
 
   if (loading) return (
     <div className="py-10 flex flex-col items-center">
