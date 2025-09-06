@@ -5,6 +5,9 @@ import { useTheme } from "./theme/ThemeProvider";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname, useParams, useSearchParams } from "next/navigation";
+import { useAuth } from '../auth/AuthProvider';
+import Snackbar from '@mui/material/Snackbar';
+import MuiAlert from '@mui/material/Alert';
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
@@ -22,6 +25,12 @@ import Tooltip from "@mui/material/Tooltip";
 import Switch from "@mui/material/Switch";
 import SwipeableDrawer from "@mui/material/SwipeableDrawer";
 import List from "@mui/material/List";
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import Button from '@mui/material/Button';
 import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
@@ -31,6 +40,7 @@ import Slide from "@mui/material/Slide";
 import useScrollTrigger from "@mui/material/useScrollTrigger";
 import CssBaseline from "@mui/material/CssBaseline";
 
+import logo from "./icons/1111.png";
 
 /* الوضع الليلي */
 const ThemeSwitch = styled(Switch)(({ theme }) => ({
@@ -91,7 +101,7 @@ const pageKeys = [
   { key: "contact", href: "/contact" },
 ];
 
-
+// Font for links
 const linkFont = '"Tajawal", "Amiri", serif';
 
 export default function ResponsiveAppBar() {
@@ -99,7 +109,53 @@ export default function ResponsiveAppBar() {
   const muiTheme = useMuiTheme();
   const [mounted, setMounted] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const profileSrc = "/logo.png"; // Using existing image from public directory
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+  const profileSrc = "/1111.png";
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const { isAuthenticated, checkAuth } = useAuth();
+  
+  const handleSnackbarClose = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setSnackbarOpen(false);
+  };
+
+  const handleProfileClick = async (e) => {
+    if (!isAuthenticated) {
+      e.preventDefault();
+      try {
+        // Check session first
+        const sessionRes = await fetch('/api/test-session', {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+        
+        const sessionData = await sessionRes.json();
+        
+        if (sessionData?.authenticated) {
+          // If session is valid but state wasn't updated, refresh auth
+          await checkAuth(true);
+          router.push('/profile');
+        } else {
+          // If no valid session, show login dialog
+          setLoginDialogOpen(true);
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+        setLoginDialogOpen(true);
+      }
+    }
+  };
+
+  const handleLogin = () => {
+    setLoginDialogOpen(false);
+    router.push('/auth');
+  };
 
   const router = useRouter();
   const pathname = usePathname() || "";
@@ -311,25 +367,9 @@ export default function ResponsiveAppBar() {
                     cursor: "pointer",
                   }}
                 >
-                  <Box sx={{ 
-                    display: { xs: "none", md: "flex" }, 
-                    width: 60, 
-                    height: 60,
-                    position: 'relative',
-                    '& img': {
-                      objectFit: 'contain',
-                      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
-                    }
-                  }}>
-                    <Image 
-                      src="/logo.png" 
-                      alt="logo" 
-                      fill 
-                      sizes="60px" 
-                      style={{ objectFit: 'contain' }} 
-                      priority 
-                    />
-                  </Box>
+                  <Avatar sx={{ display: { xs: "none", md: "flex" }, mr: 1 }}>
+                    <Image src={logo} alt="logo" fill style={{ objectFit: "contain" }} sizes="40px" />
+                  </Avatar>
                 </Box>
               </Link>
 
@@ -367,7 +407,7 @@ export default function ResponsiveAppBar() {
                   }}
                 >
                   <Avatar sx={{ display: { xs: "flex", md: "none" }, mr: 1 }}>
-                    <Image src="/logo.png" alt="logo" fill style={{ objectFit: "contain" }} sizes="32px" />
+                    <Image src={logo} alt="logo" fill style={{ objectFit: "contain" }} sizes="32px" />
                   </Avatar>
                 </Typography>
               </Link>
@@ -430,10 +470,11 @@ export default function ResponsiveAppBar() {
                     {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
                   </IconButton>
                 </Tooltip>
-                <Tooltip title="الملف الشخصي" arrow>
+                <Tooltip title={isAuthenticated ? "الملف الشخصي" : "تسجيل الدخول"} arrow>
                   <Box 
-                    component={Link}
-                    href="/profile"
+                    component={isAuthenticated ? Link : 'div'}
+                    href={isAuthenticated ? "/profile" : "#"}
+                    onClick={handleProfileClick}
                     sx={{
                       position: 'relative',
                       width: '44px',
@@ -509,6 +550,49 @@ export default function ResponsiveAppBar() {
               </Box>
             </Toolbar>
           </Container>
+
+          {/* Login Dialog */}
+          <Dialog
+            open={loginDialogOpen}
+            onClose={() => setLoginDialogOpen(false)}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+            dir="rtl"
+          >
+            <DialogTitle id="alert-dialog-title">
+              تنبيه
+            </DialogTitle>
+            <DialogContent>
+              <DialogContentText id="alert-dialog-description">
+                يرجى تسجيل الدخول للوصول إلى الملف الشخصي
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setLoginDialogOpen(false)} color="primary">
+                إلغاء
+              </Button>
+              <Button onClick={handleLogin} color="primary" autoFocus>
+                تسجيل الدخول
+              </Button>
+            </DialogActions>
+          </Dialog>
+          
+          {/* Snackbar for notifications */}
+          <Snackbar 
+            open={snackbarOpen} 
+            autoHideDuration={6000} 
+            onClose={handleSnackbarClose}
+            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          >
+            <MuiAlert 
+              onClose={handleSnackbarClose} 
+              severity="info"
+              variant="filled"
+              sx={{ width: '100%' }}
+            >
+              يجب تسجيل الدخول للوصول إلى الملف الشخصي
+            </MuiAlert>
+          </Snackbar>
         </AppBar>
 
       <SwipeableDrawer
