@@ -22,7 +22,7 @@ export default function Page() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 mb-10 border border-gray-100 dark:border-gray-700">
             <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-8">
             <p className="tوext-lg mb-6 text-black ">
-  بوابة البلد هي منصة محلية شاملة تهدف إلى تسهيل حياتك اليومية من خلال واجهة بسيطة ومتكاملة.  
+  Slameh  هي منصة محلية شاملة تهدف إلى تسهيل حياتك اليومية من خلال واجهة بسيطة ومتكاملة.  
   نوفر لك كل ما تحتاجه في مكان واحد — من آخر الأخبار المحلية والعالمية، وحالة الطقس والطرق، إلى المتاجر والخدمات والعقارات والمطاعم والمراكز الصحية وغير ذلك الكثير.  
   والأفضل من ذلك، أننا نوفر لك نظام <span className="font-semibold text-amber-600 ">مساعد ذكي يعمل بالذكاء الاصطناعي</span> (AI Chat)  
   يساعدك في الوصول إلى المعلومات التي تحتاجها بسهولة، ويجيب على استفساراتك فورًا، ويوجهك للخدمة أو القسم المناسب.  

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import OnboardingModal from './OnboardingModal';
 import { useAuth } from '../auth/AuthProvider';
 
@@ -8,9 +8,11 @@ export default function OnboardingWrapper() {
   const { user, loading: authLoading } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const overlayRef = useRef(null);
 
+  // Only run this effect when auth state changes
   useEffect(() => {
-    // إذا كان التحميل لا يزال جارياً، لا تفعل شيئاً
+    // Don't do anything until auth is loaded
     if (authLoading) return;
     
     console.log('OnboardingWrapper - Auth state:', { 
@@ -19,34 +21,33 @@ export default function OnboardingWrapper() {
       onboardingDone: user?.onboarding_done
     });
     
-    // إذا كان المستخدم مسجل الدخول
-    if (user) {
-      // إذا كانت حالة الإعداد غير معرفة أو false، اعرض النافذة
-      const shouldShow = user.onboarding_done === false || user.onboarding_done === undefined;
-      console.log('OnboardingWrapper - Should show modal:', shouldShow);
-      
-      setShowModal(shouldShow);
+    // If user is logged in and onboarding is not completed
+    if (user && user.onboarding_done !== true) {
+      console.log('OnboardingWrapper - Showing modal for user:', { 
+        userId: user.id,
+        onboarding_done: user.onboarding_done 
+      });
+      setShowModal(true);
     } else {
-      // إذا لم يكن المستخدم مسجل الدخول، أخفي النافذة
+      console.log('OnboardingWrapper - Not showing modal', { 
+        hasUser: !!user,
+        onboardingDone: user?.onboarding_done 
+      });
       setShowModal(false);
     }
     
     setInitialized(true);
   }, [user, authLoading]);
   
-  // لا تعرض شيئًا حتى يكتمل التحميل الأولي
-  if (authLoading || !initialized) {
-    console.log('OnboardingWrapper - Waiting for auth to initialize...');
+  // Don't render anything until we've checked the auth state
+  if (authLoading || !initialized || !showModal) {
     return null;
   }
 
-  const handleOnboardingComplete = ({ skipped }) => {
+  const handleOnboardingComplete = ({ skipped, alreadyCompleted }) => {
+    console.log('Onboarding completed', { skipped, alreadyCompleted });
     setShowModal(false);
-    // يمكنك إضافة أي إجراء إضافي هنا بعد اكتمال الإعداد
-    console.log('Onboarding completed', { skipped });
   };
-
-  if (!showModal) return null;
   
   console.log('OnboardingWrapper - Render:', { 
     showModal, 
@@ -57,11 +58,17 @@ export default function OnboardingWrapper() {
   });
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div 
+      ref={overlayRef}
+      className="fixed inset-0 z-50 overflow-y-auto"
+      style={{
+        animation: 'fadeIn 0.2s ease-in-out',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backdropFilter: 'blur(4px)'
+      }}
+    >
+      <style jsx global>{"\n        @keyframes fadeIn {\n          from { opacity: 0; }\n          to { opacity: 1; }\n        }\n      "}</style>
       <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-          <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-        </div>
         <OnboardingModal onDone={handleOnboardingComplete} />
       </div>
     </div>

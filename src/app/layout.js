@@ -32,7 +32,7 @@ const amiri = Amiri({
 });
 
 export const metadata = {
-  title: "Balad Gate",
+  title: "Slameh",
   description: "بوابتك لخدمات ومعلومات المدينة",
 };
 export const viewport = {

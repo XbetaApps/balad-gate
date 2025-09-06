@@ -1,7 +1,44 @@
-import { useEffect } from 'react';
-import { FaTimes, FaPhone, FaMapMarkerAlt, FaCalendarAlt, FaTag, FaInfoCircle ,FaUser} from 'react-icons/fa';
+"use client";
+import { useEffect, useState } from 'react';
+import { FaTimes, FaPhone, FaMapMarkerAlt, FaCalendarAlt, FaTag, FaInfoCircle, FaUser, FaComments, FaSpinner } from 'react-icons/fa';
+import { useAuth } from '@/app/auth/AuthProvider';
 
 export default function PostDetailsModal({ isOpen, onClose, post }) {
+  const [isStartingChat, setIsStartingChat] = useState(false);
+  const { isAuthenticated } = useAuth();
+  
+  const startChat = async (e) => {
+    e.stopPropagation();
+    if (!isAuthenticated || !post.user_id || post.is_anonymous) return;
+    
+    setIsStartingChat(true);
+    try {
+      const response = await fetch('/api/conversations/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          participantId: post.user_id,
+          message: `مرحباً، أنا مهتم بمنشورك: ${post.title}`,
+          postId: post.id
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.conversationId) {
+        window.location.href = `/profile?section=chat&conversation=${data.conversationId}`;
+      } else {
+        throw new Error(data.error || 'فشل في بدء المحادثة');
+      }
+    } catch (error) {
+      console.error('Error starting chat:', error);
+      alert(error.message || 'حدث خطأ أثناء محاولة بدء المحادثة');
+    } finally {
+      setIsStartingChat(false);
+    }
+  };
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -83,12 +120,31 @@ export default function PostDetailsModal({ isOpen, onClose, post }) {
 
 
                 <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
-                  <div className="flex items-center text-gray-600 dark:text-gray-300">
-                    <FaUser className="ml-1 text-amber-500" />
-                    <span className="font-medium ml-1">الناشر:</span>
-                    <span className="mr-1">
-                      {post.is_anonymous ? 'مجهول' : (post.author_name || (post.category_name === 'خدمات' ? 'ننشر' : 'مجهول'))}
-                    </span>
+                  <div className="flex items-center justify-between text-gray-600 dark:text-gray-300">
+                    <div className="flex items-center">
+                      <FaUser className="ml-1 text-amber-500" />
+                      <span className="font-medium ml-1">الناشر:</span>
+                      <span className="mr-1">
+                        {post.is_anonymous ? 'مجهول' : (post.author_name || (post.category_name === 'خدمات' ? 'ننشر' : 'مجهول'))}
+                      </span>
+                    </div>
+                    {!post.is_anonymous && isAuthenticated && post.user_id && (
+                      <button
+                        onClick={startChat}
+                        disabled={isStartingChat}
+                        className="flex items-center text-sm bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-1 rounded-full transition-colors"
+                        title="تواصل مع الناشر"
+                      >
+                        {isStartingChat ? (
+                          <FaSpinner className="animate-spin ml-1" />
+                        ) : (
+                          <>
+                            <FaComments className="ml-1" />
+                            <span>تواصل</span>
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
 

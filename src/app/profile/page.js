@@ -233,32 +233,117 @@ export default function AccountPage() {
 
   const handleVerifySession = () => setShowVerificationModal(false);
 
-  // جلب بيانات المستخدم
+  // جلب بيانات المستخدم مع إعادة المحاولة
   useEffect(() => {
-    const fetchUserData = async () => {
+    let isMounted = true;
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 2000; // 2 seconds
+    let retryTimeout;
+
+    const fetchUserData = async (attempt = 1) => {
+      if (!isMounted) return;
+      
       try {
         setIsLoading(true);
         const token = localStorage.getItem('token');
+        
         if (!token) {
           setIsAuthenticated(false);
           setIsLoading(false);
           return;
         }
+
         setIsAuthenticated(true);
-        const response = await fetch('/api/user/profile', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!response.ok) throw new Error('فشل في جلب بيانات المستخدم');
-        const data = await response.json();
-        setUserData(data);
-      } catch (err) {
-        console.error('Error fetching user data:', err);
-        setError('حدث خطأ أثناء جلب بيانات المستخدم');
+
+        // Add a small delay before making the request
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+        try {
+          const response = await fetch('/api/user/profile', {
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            },
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          
+          const userData = await response.json();
+          
+          if (!isMounted) return;
+          
+          setUserData(prev => ({
+            ...prev,
+            ...userData,
+            name: userData.name || prev.name,
+            email: userData.email || prev.email,
+            phone: userData.phone || prev.phone,
+            city: userData.city || prev.city,
+            role_id: userData.role_id || prev.role_id,
+            serial_id: userData.serial_id || prev.serial_id
+          }));
+          
+          // Check if user has posts
+          if (userData.posts_count > 0) {
+            setHasUserPosts(true);
+          }
+          
+          setError('');
+          retryCount = 0; // Reset retry count on success
+        } catch (error) {
+          clearTimeout(timeoutId);
+          throw error;
+        }
+      } catch (error) {
+        if (!isMounted) return;
+        
+        console.error('Error fetching user data (attempt ' + attempt + '):', error);
+        
+        if (attempt < MAX_RETRIES) {
+          // Don't show error message for first attempt
+          if (attempt > 1) {
+            setError('جاري إعادة المحاولة... (' + attempt + '/' + MAX_RETRIES + ')' || 'حدث خطأ في جلب البيانات');
+          }
+          
+          // Wait before retrying
+          await new Promise(resolve => {
+            retryTimeout = setTimeout(resolve, RETRY_DELAY);
+          });
+          
+          if (isMounted) {
+            fetchUserData(attempt + 1);
+          }
+        } else {
+          // All retries failed
+          setError('فشل في جلب البيانات بعد عدة محاولات. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
+          console.error('Max retries reached:', error);
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
-    if (user) fetchUserData();
+
+    if (user) {
+      fetchUserData(1);
+    } else {
+      setIsLoading(false);
+    }
+
+    return () => {
+      isMounted = false;
+      if (retryTimeout) clearTimeout(retryTimeout);
+    };
   }, [user, router]);
 
   // 👇 جديد: تحقق سريع إن كان لدى المستخدم منشورات لعرض تبويب “منشوراتي”
