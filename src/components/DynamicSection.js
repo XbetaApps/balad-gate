@@ -93,8 +93,8 @@ const DynamicSection = () => {
         const data = await response.json();
         console.log('Received categories from API:', data);
         
-        // Log categories with their serial_id for debugging
-        console.log('Categories with serial_id:', data.map(c => ({ name: c.name, serial_id: c.serial_id })));
+        // Log categories with their order for debugging
+        console.log('Categories with order:', data.map(c => ({ name: c.name, order: c.sort_order })));
         
         // Transform categories to include icon and posts data
         let formattedCategories = data.map(category => {
@@ -105,18 +105,18 @@ const DynamicSection = () => {
             name: category.name,
             icon: icon,
             parent_id: category.parent_id,
-            serial_id: category.serial_id,
+            sort_order: category.sort_order,
             is_active: category.is_active,
             apiEndpoint: `/api/posts?categoryName=${encodeURIComponent(category.name)}`,
             viewAllLink: `/services?category=${encodeURIComponent(category.name)}`
           };
         });
         
-        // Sort by serial_id, then by name in Arabic
+        // Sort by sort_order, then by name in Arabic
         formattedCategories.sort((a, b) => {
-          if (a.serial_id !== b.serial_id) {
-            const result = (a.serial_id || 0) - (b.serial_id || 0);
-            console.log(`Comparing ${a.name} (${a.serial_id}) with ${b.name} (${b.serial_id}): by serial_id = ${result}`);
+          if (a.sort_order !== b.sort_order) {
+            const result = (a.sort_order || 0) - (b.sort_order || 0);
+            console.log(`Comparing ${a.name} (sort_order: ${a.sort_order}) with ${b.name} (sort_order: ${b.sort_order}): by sort_order = ${result}`);
             return result;
           }
           const alphaResult = a.name.localeCompare(b.name, 'ar');
@@ -127,7 +127,7 @@ const DynamicSection = () => {
         setCategories(formattedCategories);
         console.log('Sorted categories:', formattedCategories.map(c => ({
           name: c.name, 
-          serial_id: c.serial_id,
+          order: c.order,
           parent_id: c.parent_id
         })));
         

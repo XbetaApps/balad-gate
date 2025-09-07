@@ -24,13 +24,21 @@ export function useCategories() {
       }
       
       const data = await response.json();
-      const categoriesList = Array.isArray(data) ? data : [];
+      let categoriesList = Array.isArray(data) ? data : [];
+      
+      // Sort categories by sort_order
+      categoriesList = categoriesList.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
       
       setCategories(categoriesList);
       
-      // فصل الأقسام الرئيسية والفرعية
-      const parents = categoriesList.filter(cat => !cat.parent_id);
-      const children = categoriesList.filter(cat => cat.parent_id);
+      // Separate parent and child categories
+      const parents = categoriesList
+        .filter(cat => !cat.parent_id)
+        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+        
+      const children = categoriesList
+        .filter(cat => cat.parent_id)
+        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
       
       setParentCategories(parents);
       
@@ -75,7 +83,9 @@ export function useCategories() {
       }
       
       const data = await response.json();
-      const parents = Array.isArray(data) ? data : [];
+      const parents = Array.isArray(data) 
+        ? data.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)) 
+        : [];
       setParentCategories(parents);
       return parents;
     } catch (err) {

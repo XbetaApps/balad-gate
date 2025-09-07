@@ -87,15 +87,15 @@ const DynamicCategories = ({ darkMode }) => {
             icon: IconComponent,
             path: `/services?category=${encodeURIComponent(category.name)}`,
             parent_id: category.parent_id,
-            serial_id: category.serial_id,
+            sort_order: category.sort_order,
             is_active: category.is_active
           };
         });
         
-        // Sort by serial_id, then by name
+        // Sort by sort_order, then by name
         formattedCategories.sort((a, b) => {
-          if (a.serial_id !== b.serial_id) {
-            return (a.serial_id || 0) - (b.serial_id || 0);
+          if (a.sort_order !== b.sort_order) {
+            return (a.sort_order || 0) - (b.sort_order || 0);
           }
           return a.name.localeCompare(b.name, 'ar');
         });
