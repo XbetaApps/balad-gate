@@ -22,7 +22,7 @@ export async function GET(request) {
     const parentId = searchParams.get('parentId');
 
     const pool = getPool();
-    let query = 'SELECT id, name, parent_id, serial_id, is_active FROM categories';
+    let query = 'SELECT id, name, parent_id, sort_order, is_active FROM categories';
     const queryParams = [];
     const conditions = [];
 
@@ -37,7 +37,7 @@ export async function GET(request) {
       query += ' WHERE ' + conditions.join(' AND ');
     }
 
-    query += ' ORDER BY COALESCE(serial_id, 0), name';
+    query += ' ORDER BY COALESCE(sort_order, 0), name';
 
     const result = await pool.query(query, queryParams);
     const rows = Array.isArray(result.rows) ? result.rows : [];
