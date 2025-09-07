@@ -19,7 +19,7 @@ const defaultIcons = {
   'خدمات تجارية': 'FaStore',
   'تعليم وتطوير': 'FaGraduationCap',
   'مركبات ومواصلات': 'FaCar',
-  'عقارات وأراضي': 'FaHome',
+  'عقارات وأراضي': 'FaHome', 
   
   // الأقسام الفرعية
   'متاجر': 'FaStore',
@@ -93,8 +93,11 @@ const DynamicSection = () => {
         const data = await response.json();
         console.log('Received categories from API:', data);
         
+        // Log categories with their serial_id for debugging
+        console.log('Categories with serial_id:', data.map(c => ({ name: c.name, serial_id: c.serial_id })));
+        
         // Transform categories to include icon and posts data
-        const formattedCategories = data.map(category => {
+        let formattedCategories = data.map(category => {
           const icon = defaultIcons[category.name] || 'FaStore';
           
           return {
@@ -109,16 +112,24 @@ const DynamicSection = () => {
           };
         });
         
-        // Sort by serial_id, then by name
+        // Sort by serial_id, then by name in Arabic
         formattedCategories.sort((a, b) => {
           if (a.serial_id !== b.serial_id) {
-            return (a.serial_id || 0) - (b.serial_id || 0);
+            const result = (a.serial_id || 0) - (b.serial_id || 0);
+            console.log(`Comparing ${a.name} (${a.serial_id}) with ${b.name} (${b.serial_id}): by serial_id = ${result}`);
+            return result;
           }
-          return a.name.localeCompare(b.name, 'ar');
+          const alphaResult = a.name.localeCompare(b.name, 'ar');
+          console.log(`Comparing ${a.name} with ${b.name}: by name = ${alphaResult}`);
+          return alphaResult;
         });
         
         setCategories(formattedCategories);
-        console.log('Formatted categories:', formattedCategories);
+        console.log('Sorted categories:', formattedCategories.map(c => ({
+          name: c.name, 
+          serial_id: c.serial_id,
+          parent_id: c.parent_id
+        })));
         
       } catch (error) {
         console.error('Error fetching categories:', error);

@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useTheme } from "./theme/ThemeProvider";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter, usePathname, useParams, useSearchParams } from "next/navigation";
 import { useAuth } from '../auth/AuthProvider';
 import Snackbar from '@mui/material/Snackbar';
@@ -40,7 +39,8 @@ import Slide from "@mui/material/Slide";
 import useScrollTrigger from "@mui/material/useScrollTrigger";
 import CssBaseline from "@mui/material/CssBaseline";
 
-import logo from "./icons/1111.png";
+import Image from "next/image";
+const logo = "/Logo.png";  // This is the correct path to the logo in the public folder
 
 /* الوضع الليلي */
 const ThemeSwitch = styled(Switch)(({ theme }) => ({
@@ -110,7 +110,7 @@ export default function ResponsiveAppBar() {
   const [mounted, setMounted] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
-  const profileSrc = "/1111.png";
+  const profileSrc = "/logo.png";
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const { isAuthenticated, checkAuth } = useAuth();
   
@@ -367,9 +367,16 @@ export default function ResponsiveAppBar() {
                     cursor: "pointer",
                   }}
                 >
-                  <Avatar sx={{ display: { xs: "none", md: "flex" }, mr: 1 }}>
-                    <Image src={logo} alt="logo" fill style={{ objectFit: "contain" }} sizes="40px" />
-                  </Avatar>
+                  <Box sx={{ display: { xs: "none", md: "flex" }, mr: 1, position: 'relative', width: 80, height: 80 }}>
+                    <Image 
+                      src={logo} 
+                      alt="logo" 
+                      fill 
+                      style={{ objectFit: 'contain' }} 
+                      sizes="100px"
+                      priority
+                    />
+                  </Box>
                 </Box>
               </Link>
 
@@ -406,9 +413,16 @@ export default function ResponsiveAppBar() {
                     cursor: "pointer",
                   }}
                 >
-                  <Avatar sx={{ display: { xs: "flex", md: "none" }, mr: 1 }}>
-                    <Image src={logo} alt="logo" fill style={{ objectFit: "contain" }} sizes="32px" />
-                  </Avatar>
+                  <Box sx={{ display: { xs: "flex", md: "none" }, mr: 1, position: 'relative', width: 64, height: 64 }}>
+                    <Image 
+                      src={logo} 
+                      alt="logo" 
+                      fill 
+                      style={{ objectFit: 'contain' }}
+                      sizes="64px"
+                      priority
+                    />
+                  </Box>
                 </Typography>
               </Link>
 
