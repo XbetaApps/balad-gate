@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/auth/AuthProvider";
+import { useCategories } from "@/hooks/useCategories";
 import {
   Dialog,
   DialogTitle,
@@ -79,150 +80,99 @@ const PALESTINIAN_GOVS = [
 ];
 
 // ------------------------
-// بيانات الخدمات والفئات
+// إعدادات الأيقونات والألوان للخدمات
 // ------------------------
-const SERVICE_CATEGORIES = [
-  {
-    id: "commercial",
-    title: "خدمات تجارية",
-    icon: <FaStore className="text-xl" />,
-    services: [
-      { id: "stores", title: "متاجر", icon: <FaStore className="text-2xl" />, color: "bg-blue-500" },
-      { id: "malls", title: "مراكز تجارية", icon: <FaShoppingBag className="text-2xl" />, color: "bg-purple-600" },
-      { id: "restaurants", title: "مطاعم", icon: <FaUtensils className="text-2xl" />, color: "bg-purple-500" },
-      { id: "pharmacies", title: "صيدليات", icon: <FaPills className="text-2xl" />, color: "bg-red-600" },
-      { id: "jewelry", title: "مجوهرات", icon: <FaRing className="text-2xl" />, color: "bg-yellow-500" },
-      { id: "fashion", title: "أزياء", icon: <FaTshirt className="text-2xl" />, color: "bg-indigo-600" },
-    ],
-  },
-  {
-    id: "real-estate&lands",
-    title: "عقارات وأراضي",
-    icon: <FaHome className="text-xl" />,
-    services: [
-      { id: "real-estate", title: "عقارات", icon: <FaHome className="text-2xl" />, color: "bg-green-500" },
-      { id: "lands", title: "أراضي", icon: <FaMapMarkedAlt className="text-2xl" />, color: "bg-amber-500" },
-      { id: "hotels", title: "فنادق", icon: <FaHotel className="text-2xl" />, color: "bg-amber-600" },
-      { id: "wedding-halls", title: "صالات أفراح", icon: <FaGlassCheers className="text-2xl" />, color: "bg-pink-600" },
-    ],
-  },
-  {
-    id: "vehicles",
-    title: "مركبات ومواصلات",
-    icon: <FaCar className="text-xl" />,
-    services: [
-      { id: "cars", title: "سيارات", icon: <FaCar className="text-2xl" />, color: "bg-red-500" },
-      { id: "gas-stations", title: "محطات وقود", icon: <FaGasPump className="text-2xl" />, color: "bg-blue-600" },
-      { id: "delivery", title: "توصيل", icon: <FaTruck className="text-2xl" />, color: "bg-green-600" },
-    ],
-  },
-  {
-    id: "health",
-    title: "صحة ولياقة",
-    icon: <FaClinicMedical className="text-xl" />,
-    services: [
-      { id: "hospitals", title: "مستشفيات", icon: <FaHospital className="text-2xl" />, color: "bg-rose-500" },
-      { id: "clinics", title: "عيادات", icon: <FaClinicMedical className="text-2xl" />, color: "bg-emerald-500" },
-      { id: "gyms", title: "نوادي رياضية", icon: <FaDumbbell className="text-2xl" />, color: "bg-red-700" },
-      { id: "beauty-centers", title: "مراكز تجميل", icon: <FaCut className="text-2xl" />, color: "bg-pink-400" },
-    ],
-  },
-  {
-    id: "education",
-    title: "تعليم وتطوير",
-    icon: <FaGraduationCap className="text-xl" />,
-    services: [
-      { id: "courses", title: "دورات", icon: <FaGraduationCap className="text-2xl" />, color: "bg-pink-500" },
-      { id: "libraries", title: "مكتبات", icon: <FaBook className="text-2xl" />, color: "bg-amber-700" },
-    ],
-  },
-  {
-    id: "other",
-    title: "خدمات أخرى",
-    icon: <FaBoxes className="text-xl" />,
-    services: [
-      { id: "jobs", title: "وظائف", icon: <FaBriefcase className="text-2xl" />, color: "bg-indigo-500" },
-      { id: "entertainment", title: "ترفيه", icon: <FaTheaterMasks className="text-2xl" />, color: "bg-cyan-500" },
-      { id: "gifts", title: "هدايا", icon: <FaGift className="text-2xl" />, color: "bg-rose-400" },
-    ],
-  },
-];
+const SERVICE_ICONS = {
+  // خدمات تجارية
+  "متاجر": FaStore,
+  "مراكز تجارية": FaShoppingBag,
+  "مطاعم": FaUtensils,
+  "صيدليات": FaPills,
+  "مجوهرات": FaRing,
+  "أزياء": FaTshirt,
+  
+  // عقارات وأراضي
+  "عقارات": FaHome,
+  "أراضي": FaMapMarkedAlt,
+  "فنادق": FaHotel,
+  "صالات أفراح": FaGlassCheers,
+  
+  // مركبات ومواصلات
+  "سيارات": FaCar,
+  "محطات وقود": FaGasPump,
+  "توصيل": FaTruck,
+  
+  // صحة ولياقة
+  "مستشفيات": FaHospital,
+  "عيادات": FaClinicMedical,
+  "نوادي رياضية": FaDumbbell,
+  "مراكز تجميل": FaCut,
+  
+  // تعليم وتطوير
+  "دورات": FaGraduationCap,
+  "مكتبات": FaBook,
+  
+  // خدمات أخرى
+  "وظائف": FaBriefcase,
+  "ترفيه": FaTheaterMasks,
+  "هدايا": FaGift,
+};
 
-// تجميع جميع الخدمات في مصفوفة مسطحة
-const ALL_SERVICES = SERVICE_CATEGORIES.flatMap((cat) =>
-  cat.services.map((s) => ({
-    ...s,
-    id: s.id,
-    originalId: s.id,
-    categoryId: cat.id,
-    categoryTitle: cat.title,
-  }))
-);
+const SERVICE_COLORS = {
+  // خدمات تجارية
+  "متاجر": "bg-blue-500",
+  "مراكز تجارية": "bg-purple-600",
+  "مطاعم": "bg-purple-500",
+  "صيدليات": "bg-red-600",
+  "مجوهرات": "bg-yellow-500",
+  "أزياء": "bg-indigo-600",
+  
+  // عقارات وأراضي
+  "عقارات": "bg-green-500",
+  "أراضي": "bg-amber-500",
+  "فنادق": "bg-amber-600",
+  "صالات أفراح": "bg-pink-600",
+  
+  // مركبات ومواصلات
+  "سيارات": "bg-red-500",
+  "محطات وقود": "bg-blue-600",
+  "توصيل": "bg-green-600",
+  
+  // صحة ولياقة
+  "مستشفيات": "bg-rose-500",
+  "عيادات": "bg-emerald-500",
+  "نوادي رياضية": "bg-red-700",
+  "مراكز تجميل": "bg-pink-400",
+  
+  // تعليم وتطوير
+  "دورات": "bg-pink-500",
+  "مكتبات": "bg-amber-700",
+  
+  // خدمات أخرى
+  "وظائف": "bg-indigo-500",
+  "ترفيه": "bg-cyan-500",
+  "هدايا": "bg-rose-400",
+};
 
-// خريطة الخدمة → اسم التصنيف الفرعي (كما حفظناه بجدول categories)
-const SERVICE_TO_CATEGORY_NAME = {
-  stores: "متاجر",
-  malls: "مراكز تجارية",
-  restaurants: "مطاعم",
-  pharmacies: "صيدليات",
-  jewelry: "مجوهرات",
-  fashion: "أزياء",
-
-  "real-estate": "عقارات",
-  lands: "أراضي",
-  hotels: "فنادق",
-  "wedding-halls": "صالات أفراح",
-
-  cars: "سيارات",
-  "gas-stations": "محطات وقود",
-  delivery: "توصيل",
-
-  hospitals: "مستشفيات",
-  clinics: "عيادات",
-  gyms: "نوادي رياضية",
-  "beauty-centers": "مراكز تجميل",
-
-  courses: "دورات",
-  libraries: "مكتبات",
-
-  jobs: "وظائف",
-  entertainment: "ترفيه",
-  gifts: "هدايا",
+// أيقونات الأقسام الرئيسية
+const CATEGORY_ICONS = {
+  "خدمات تجارية": FaStore,
+  "عقارات وأراضي": FaHome,
+  "مركبات ومواصلات": FaCar,
+  "صحة ولياقة": FaClinicMedical,
+  "تعليم وتطوير": FaGraduationCap,
+  "خدمات أخرى": FaBoxes,
 };
 
 // ------------------------
 // أدوات مساعدة
 // ------------------------
-const getAddBtnText = (serviceId) => {
-  const translations = {
-    stores: "إضافة متجر",
-    "real-estate": "إضافة عقار",
-    lands: "إضافة أرض",
-    cars: "إضافة سيارة",
-    restaurants: "إضافة مطعم",
-    jobs: "إضافة وظيفة",
-    courses: "إضافة دورة",
-    hospitals: "إضافة مستشفى",
-    clinics: "إضافة عيادة",
-    entertainment: "إضافة مكان ترفيهي",
-    hotels: "إضافة فندق",
-    pharmacies: "إضافة صيدلية",
-    "gas-stations": "إضافة محطة وقود",
-    malls: "إضافة مركز تجاري",
-    "wedding-halls": "إضافة صالة أفراح",
-    delivery: "إضافة خدمة توصيل",
-    jewelry: "إضافة معرض مجوهرات",
-    fashion: "إضافة متجر أزياء",
-    gifts: "إضافة متجر هدايا",
-    "beauty-centers": "إضافة مركز تجميل",
-    gyms: "إضافة نادٍ رياضي",
-    libraries: "إضافة مكتبة",
-  };
-  return translations[serviceId] || "إضافة";
+const getAddBtnText = (categoryName) => {
+  return `إضافة ${categoryName}`;
 };
 
-// Quick-Add services (تظهر في FAB)
-const QUICK_ADD = [
+// Quick-Add services (تظهر في FAB) - سيتم تحديثها ديناميكياً
+const DEFAULT_QUICK_ADD = [
   { id: "stores", title: "متجر", icon: <FaStore /> },
   { id: "real-estate", title: "عقار", icon: <FaHome /> },
   { id: "cars", title: "سيارة", icon: <FaCar /> },
@@ -294,107 +244,23 @@ function PostCard({ post, isAuthenticated }) {
       })
     : "-";
 
-  // Get service icon based on category with more specific icons
-  const getServiceIcon = (category, iconClass = '') => {
-    if (!category) return <FaStore className={iconClass} />;
+  // Get service icon based on category name
+  const getServiceIcon = (categoryName, iconClass = '') => {
+    if (!categoryName) return <FaStore className={iconClass} />;
     
-    // Try to find the service in our categories
-    const allServices = SERVICE_CATEGORIES.flatMap(cat => cat.services);
-    const service = allServices.find(s => s.id === category);
-    
-    // If we found a matching service with an icon, use it
-    if (service?.icon) {
-      const IconComponent = service.icon.type || FaStore;
-      return <IconComponent className={iconClass} />;
-    }
-    
-    // Fallback to specific icons based on category name
-    const categoryLower = String(category).toLowerCase();
-    
-    // Exact mapping of service names to icons
-    const serviceIcons = {
-      // Commercial Services
-      'متاجر': FaStore,
-      'stores': FaStore,
-      'مراكز تجارية': FaShoppingBag,
-      'malls': FaShoppingBag,
-      'مطاعم': FaUtensils,
-      'restaurants': FaUtensils,
-      'صيدليات': FaPills,
-      'pharmacies': FaPills,
-      'مجوهرات': FaRing,
-      'jewelry': FaRing,
-      'أزياء': FaTshirt,
-      'fashion': FaTshirt,
-      
-      // Real Estate & Lands
-      'عقارات': FaHome,
-      'real-estate': FaHome,
-      'أراضي': FaMapMarkedAlt,
-      'lands': FaMapMarkedAlt,
-      'فنادق': FaHotel,
-      'hotels': FaHotel,
-      'صالات أفراح': FaGlassCheers,
-      'wedding-halls': FaGlassCheers,
-      
-      // Vehicles & Transportation
-      'سيارات': FaCar,
-      'cars': FaCar,
-      'محطات وقود': FaGasPump,
-      'gas-stations': FaGasPump,
-      'توصيل': FaTruck,
-      'delivery': FaTruck,
-      
-      // Health & Fitness
-      'مستشفيات': FaHospital,
-      'hospitals': FaHospital,
-      'عيادات': FaClinicMedical,
-      'clinics': FaClinicMedical,
-      'نوادي رياضية': FaDumbbell,
-      'gyms': FaDumbbell,
-      'مراكز تجميل': FaCut,
-      'beauty-centers': FaCut,
-      
-      // Education & Development
-      'دورات': FaGraduationCap,
-      'courses': FaGraduationCap,
-      'مكتبات': FaBook,
-      'libraries': FaBook,
-      
-      // Other Services
-      'وظائف': FaBriefcase,
-      'jobs': FaBriefcase,
-      'ترفيه': FaTheaterMasks,
-      'entertainment': FaTheaterMasks,
-      'هدايا': FaGift,
-      'gifts': FaGift
-    };
-    
-    // Try to find exact match first, then fallback to pattern matching
-    const iconMap = Object.entries(serviceIcons).map(([key, component]) => ({
-      pattern: `^${key}$`,
-      component
-    }));
-    
-    // Find the first matching icon
-    const matchedIcon = iconMap.find(({ pattern }) => 
-      new RegExp(pattern, 'i').test(categoryLower)
-    );
-    
-    const IconComponent = matchedIcon ? matchedIcon.component : FaStore;
+    const IconComponent = SERVICE_ICONS[categoryName] || FaStore;
     return <IconComponent className={iconClass} />;
   };
 
   // Get service name for display
-  const getServiceName = (category) => {
-    const service = SERVICE_CATEGORIES.flatMap(cat => cat.services).find(s => s.id === category);
-    return service?.name || category;
+  const getServiceName = (categoryName) => {
+    return categoryName || 'خدمة';
   };
 
   // Get category color if available
-  const category = SERVICE_CATEGORIES.flatMap(cat => 
-    cat.services.find(s => s.id === post.category_name)
-  ).find(Boolean);
+  const getCategoryColor = (categoryName) => {
+    return SERVICE_COLORS[categoryName] || 'bg-blue-500';
+  };
 
   // Determine publisher name based on anonymous status
   const publisherName = post.is_anonymous 
@@ -413,7 +279,7 @@ function PostCard({ post, isAuthenticated }) {
         </div>
         
         {/* Category Badge */}
-        <div className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-medium text-white ${category?.color || 'bg-blue-500'} shadow-md flex items-center gap-2`}>
+        <div className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-medium text-white ${getCategoryColor(post.category_name)} shadow-md flex items-center gap-2`}>
           {getServiceIcon(post.category_name, 'text-sm')}
           <span className="text-xs">{getServiceName(post.category_name) || 'تصنيف'}</span>
         </div>
@@ -424,7 +290,7 @@ function PostCard({ post, isAuthenticated }) {
             ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
             : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
         }`}>
-          {post.is_visible ? 'ظاهر' : 'مخفي'}
+          {post.is_visible ? '' : ''}
         </div>
       </div>
 
@@ -706,9 +572,7 @@ function PostCard({ post, isAuthenticated }) {
   );
 }
 
-function ServicePosts({ serviceId, governorate, search, isAuthenticated }) {
-  const categoryName = SERVICE_TO_CATEGORY_NAME[serviceId];
-
+function ServicePosts({ categoryName, governorate, search, isAuthenticated }) {
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -837,10 +701,68 @@ export default function ServicesPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user, loading: authLoading, refreshUser } = useAuth();
+  const { categories, parentCategories, loading: categoriesLoading, error: categoriesError } = useCategories();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
 
   const isAuthenticated = !!user;
+
+  // تحويل الأقسام من API إلى تنسيق العرض
+  const serviceCategories = useMemo(() => {
+    if (!parentCategories.length) return [];
+    
+    return parentCategories.map(parent => {
+      const subCategories = categories.filter(cat => cat.parent_id === parent.id);
+      
+      return {
+        id: parent.id,
+        title: parent.name,
+        icon: React.createElement(CATEGORY_ICONS[parent.name] || FaBoxes, { className: "text-xl" }),
+        services: subCategories.map(sub => ({
+          id: sub.id,
+          title: sub.name,
+          icon: React.createElement(SERVICE_ICONS[sub.name] || FaStore, { className: "text-2xl" }),
+          color: SERVICE_COLORS[sub.name] || "bg-blue-500"
+        }))
+      };
+    });
+  }, [parentCategories, categories]);
+
+  // تجميع جميع الخدمات في مصفوفة مسطحة
+  const allServices = useMemo(() => {
+    return serviceCategories.flatMap((cat) =>
+      cat.services.map((s) => ({
+        ...s,
+        id: s.id,
+        originalId: s.id,
+        categoryId: cat.id,
+        categoryTitle: cat.title,
+      }))
+    );
+  }, [serviceCategories]);
+
+  // Quick-Add services ديناميكي
+  const quickAddServices = useMemo(() => {
+    if (allServices.length === 0) return DEFAULT_QUICK_ADD;
+    
+    // أخذ أول 4 خدمات من الأقسام المختلفة
+    const selectedServices = [];
+    const usedCategories = new Set();
+    
+    for (const service of allServices) {
+      if (selectedServices.length >= 4) break;
+      if (!usedCategories.has(service.categoryId)) {
+        selectedServices.push({
+          id: service.id,
+          title: service.title,
+          icon: service.icon
+        });
+        usedCategories.add(service.categoryId);
+      }
+    }
+    
+    return selectedServices.length > 0 ? selectedServices : DEFAULT_QUICK_ADD;
+  }, [allServices]);
 
   // returnUrl الصحيح
   const returnUrl = useMemo(() => {
@@ -1008,13 +930,13 @@ export default function ServicesPage() {
   // ------------------------
   const filteredCategories = useMemo(() => {
     const lower = searchQuery.toLowerCase();
-    return SERVICE_CATEGORIES.map((cat) => {
+    return serviceCategories.map((cat) => {
       const services = cat.services.filter((s) =>
         s.title.toLowerCase().includes(lower)
       );
       return { ...cat, services };
     }).filter((cat) => cat.services.length > 0);
-  }, [searchQuery]);
+  }, [searchQuery, serviceCategories]);
 
   // ------------------------
   // دوال مساعدة
@@ -1148,7 +1070,9 @@ export default function ServicesPage() {
       return;
     }
 
-    const categoryName = SERVICE_TO_CATEGORY_NAME[currentService];
+    // البحث عن اسم القسم من البيانات المحملة
+    const service = allServices.find(s => s.id === currentService);
+    const categoryName = service?.title;
     if (!categoryName) {
       console.error('Could not determine category for service:', currentService);
       alert("تعذر تحديد التصنيف لهذه الخدمة.");
@@ -1410,7 +1334,7 @@ export default function ServicesPage() {
         setActiveSubTab(sectionId);
       }
     } else {
-      const category = SERVICE_CATEGORIES.find((cat) => cat.id === sectionId);
+      const category = serviceCategories.find((cat) => cat.id === sectionId);
       if (category) {
         setExpandedCategory(expandedCategory === sectionId ? null : sectionId);
         setShowSubNav(true);
@@ -1429,6 +1353,37 @@ export default function ServicesPage() {
 
   // JSX
   // ------------------------
+  // عرض حالة التحميل للأقسام
+  if (categoriesLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300 text-lg">جاري تحميل الأقسام...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // عرض حالة الخطأ للأقسام
+  if (categoriesError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">خطأ في تحميل الأقسام</h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">{categoriesError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
+          >
+            إعادة المحاولة
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className=" flex flex-col md:flex-row">
       {/* --- Sidebar (Desktop) --- */}
@@ -1553,7 +1508,7 @@ export default function ServicesPage() {
         ))}
 
         {/* أقسام الخدمات الفردية */}
-        {ALL_SERVICES.map((s) => {
+        {allServices.map((s) => {
           const uniqueId = `${s.categoryId}-${s.id}`;
           return (
             <section
@@ -1575,13 +1530,13 @@ export default function ServicesPage() {
                     className="ml-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
                   >
                     <FaPlus className="ml-1" />
-                    {getAddBtnText(s.id)}
+                    {getAddBtnText(s.title)}
                   </button>
                 </header>
 
                 {/* == عرض المنشورات (بدون تغيير التصميم) == */}
                 <ServicePosts
-                  serviceId={s.id}
+                  categoryName={s.title}
                   governorate={selectedGov}
                   search={searchQuery}
                   isAuthenticated={isAuthenticated}
@@ -1619,7 +1574,7 @@ export default function ServicesPage() {
       {showFabMenu && (
         <div className="fixed bottom-40 left-6 bg-white dark:bg-gray-800 p-3 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-30">
           <div className="grid grid-cols-2 gap-2">
-            {QUICK_ADD.map((q) => (
+            {quickAddServices.map((q) => (
               <button
                 key={q.id}
                 onClick={() => handleQuickAdd(q.id)}
@@ -1669,7 +1624,7 @@ export default function ServicesPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md mx-4 relative">
             <header className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                إضافة {ALL_SERVICES.find((s) => s.id === currentService)?.title}
+                إضافة {allServices.find((s) => s.id === currentService)?.title}
               </h3>
               <button
                 onClick={resetForm}
@@ -1846,7 +1801,7 @@ export default function ServicesPage() {
                 WebkitOverflowScrolling: "touch",
               }}
             >
-              {SERVICE_CATEGORIES.find((cat) => cat.id === expandedCategory)?.services.map(
+              {serviceCategories.find((cat) => cat.id === expandedCategory)?.services.map(
                 (service) => {
                   const serviceId = `${expandedCategory}-${service.id}`;
                   return (
@@ -1906,7 +1861,7 @@ export default function ServicesPage() {
             </div>
 
             {/* Category Tabs */}
-            {SERVICE_CATEGORIES.map((cat) => (
+            {serviceCategories.map((cat) => (
               <div key={cat.id} className="flex-shrink-0">
                 <button
                   data-tab={cat.id}

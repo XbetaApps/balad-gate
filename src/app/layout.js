@@ -8,7 +8,11 @@ import { AuthProvider } from "./auth/AuthProvider";
 import { Providers } from "./providers";
 import { SessionProvider } from "../contexts/SessionContext";
 import AIChatWidget from "@/components/AI/ai";
-import Footer from "@/components/Footer";
+import Footer from "@/components/footer";
+import dynamic from 'next/dynamic';
+
+// Import the client-side version of AdsDisplayWrapper
+import AdsDisplayWrapper from '@/components/AdsDisplayWrapper';
 // Load Arabic fonts
 const tajawal = Tajawal({
   weight: ['400', '500', '700'],
@@ -25,7 +29,7 @@ const amiri = Amiri({
 });
 
 export const metadata = {
-  title: "Balad Gate",
+  title: "Slameh",
   description: "بوابتك لخدمات ومعلومات المدينة",
 };
 export const viewport = {
@@ -62,6 +66,16 @@ export default function RootLayout({ children }) {
                     {children}
                   </main>
                 </LayoutClient>
+                {/* Left Side Banner Ad */}
+                <div className="hidden lg:block">
+                  <AdsDisplayWrapper position="left" limit={1} />
+                </div>
+                
+                {/* Right Side Banner Ad */}
+                <div className="hidden lg:block">
+                  <AdsDisplayWrapper position="right" limit={1} />
+                </div>
+                
                 <AIChatWidget />
                 <Footer />
               </CustomThemeProvider>

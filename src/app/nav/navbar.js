@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useTheme } from "./theme/ThemeProvider";
 import Link from "next/link";
-import Image from "next/image";
-import { useRouter, usePathname, useParams, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuth } from '../auth/AuthProvider';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
@@ -40,7 +39,8 @@ import Slide from "@mui/material/Slide";
 import useScrollTrigger from "@mui/material/useScrollTrigger";
 import CssBaseline from "@mui/material/CssBaseline";
 
-import logo from "./icons/1111.png";
+import Image from "next/image";
+const logo = "/Logo.png";  // This is the correct path to the logo in the public folder
 
 /* الوضع الليلي */
 const ThemeSwitch = styled(Switch)(({ theme }) => ({
@@ -91,14 +91,14 @@ const navItems = {
 };
 
 const pageKeys = [
-  { key: "home", href: "/" },  // Root page
-  { key: "news", href: "/news" },
-  { key: "weather", href: "/weather" },
-  { key: "car", href: "/car" },
-  { key: "money", href: "/money" },
-  { key: "services", href: "/services" },
-  { key: "auth", href: "/auth" },
-  { key: "contact", href: "/contact" },
+  { key: "home", href: "/", title: "الرئيسية" },
+  { key: "news", href: "/news", title: "الأخبار" },
+  { key: "weather", href: "/weather", title: "الطقس" },
+  { key: "car", href: "/car", title: "حالة الطرق" },
+  { key: "money", href: "/money", title: "العملات" },
+  { key: "services", href: "/services", title: "الخدمات" },
+  { key: "auth", href: "/auth", title: "تسجيل الدخول" },
+  { key: "contact", href: "/contact", title: "من نحن" },
 ];
 
 // Font for links
@@ -109,8 +109,10 @@ export default function ResponsiveAppBar() {
   const muiTheme = useMuiTheme();
   const [mounted, setMounted] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
-  const profileSrc = "/1111.png";
+  const pathname = usePathname();
+  const profileSrc = "/logo.png";
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const { isAuthenticated, checkAuth } = useAuth();
   
@@ -154,11 +156,9 @@ export default function ResponsiveAppBar() {
 
   const handleLogin = () => {
     setLoginDialogOpen(false);
-    router.push('/auth');
+    window.location.href = '/auth';
   };
 
-  const router = useRouter();
-  const pathname = usePathname() || "";
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("md"));
 
   useEffect(() => {
@@ -173,7 +173,12 @@ export default function ResponsiveAppBar() {
 
   // Language is fixed to Arabic
 
-  const handleDrawerToggle = (open) => () => setDrawerOpen(open);
+  const handleDrawerToggle = (open) => (event) => {
+    if (event && event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
+      return;
+    }
+    setDrawerOpen(open);
+  };
 
   // Handle navigation link clicks
   const handleNavClick = (e, href) => {
@@ -367,22 +372,35 @@ export default function ResponsiveAppBar() {
                     cursor: "pointer",
                   }}
                 >
-                  <Avatar sx={{ display: { xs: "none", md: "flex" }, mr: 1 }}>
-                    <Image src={logo} alt="logo" fill style={{ objectFit: "contain" }} sizes="40px" />
-                  </Avatar>
+                  <Box sx={{ display: { xs: "none", md: "flex" }, mr: 1, position: 'relative', width: 80, height: 80 }}>
+                    <Image 
+                      src={logo} 
+                      alt="logo" 
+                      fill 
+                      style={{ objectFit: 'contain' }} 
+                      sizes="100px"
+                      priority
+                    />
+                  </Box>
                 </Box>
               </Link>
 
               {/* Mobile Menu Button */}
-              <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" }, justifyContent: 'flex-end' }}>
+              <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' }, justifyContent: 'flex-end' }}>
                 <IconButton 
                   size="large" 
                   onClick={() => setDrawerOpen(true)}
+                  aria-label="فتح القائمة"
                   sx={{ 
                     color: textColor,
+                    padding: '10px',
+                    borderRadius: '12px',
+                    backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
                     '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)'
-                    }
+                      backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+                      transform: 'scale(1.05)',
+                    },
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   }}
                 >
                   <MenuIcon fontSize="large" />
@@ -406,9 +424,16 @@ export default function ResponsiveAppBar() {
                     cursor: "pointer",
                   }}
                 >
-                  <Avatar sx={{ display: { xs: "flex", md: "none" }, mr: 1 }}>
-                    <Image src={logo} alt="logo" fill style={{ objectFit: "contain" }} sizes="32px" />
-                  </Avatar>
+                  <Box sx={{ display: { xs: "flex", md: "none" }, mr: 1, position: 'relative', width: 64, height: 64 }}>
+                    <Image 
+                      src={logo} 
+                      alt="logo" 
+                      fill 
+                      style={{ objectFit: 'contain' }}
+                      sizes="64px"
+                      priority
+                    />
+                  </Box>
                 </Typography>
               </Link>
 
@@ -600,74 +625,108 @@ export default function ResponsiveAppBar() {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         onOpen={() => setDrawerOpen(true)}
-        PaperProps={{
-          sx: {
-            width: '100%',
-            maxWidth: '100vw',
-            backgroundColor: bgColor,
-            color: textColor,
-            '& .MuiDrawer-paper': {
-              width: '100%',
-              boxSizing: 'border-box',
-              border: 'none',
-              borderRadius: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '20px',
-            }
-          }
+        sx={{
+          display: { xs: 'block', md: 'none' }, // Only show on mobile
+          '& .MuiDrawer-paper': {
+            width: 280,
+            boxSizing: 'border-box',
+            backgroundColor: darkMode ? '#121212' : '#ffffff',
+            color: darkMode ? '#ffffff' : '#000000',
+            borderLeft: `1px solid ${darkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'}`,
+            '&:focus-visible': {
+              outline: 'none',
+            },
+            overflowY: 'auto',
+          },
+          '& .MuiBackdrop-root': {
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          },
         }}
       >
-        <Box sx={{ width: '100%', maxWidth: '500px', mx: 'auto' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', width: '100%', mb: 4 }}>
+        <Box sx={{ width: '100%' }}>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            p: 2,
+            borderBottom: `1px solid ${darkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'}`
+          }}>
+            <Typography variant="h6" sx={{ 
+              fontFamily: linkFont, 
+              fontWeight: 700,
+              color: darkMode ? '#FFD700' : '#000000',
+              fontSize: '1.25rem',
+              '&:hover': {
+                color: darkMode ? '#FFD700' : '#000000',
+                opacity: 0.9
+              }
+            }}>
+              القائمة
+            </Typography>
             <IconButton 
               onClick={() => setDrawerOpen(false)}
-              sx={{ color: textColor, fontSize: '2rem' }}
+              size="small"
+              sx={{ 
+                color: darkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)',
+                '&:hover': {
+                  backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                },
+              }}
             >
-              <CloseIcon fontSize="inherit" />
+              <CloseIcon />
             </IconButton>
           </Box>
           <List sx={{ width: '100%' }}>
-            {pageKeys.map((p) => (
-              <ListItem 
-                key={p.href} 
-                disablePadding
-                sx={{ 
-                  mb: 2,
-                  '&:last-child': { mb: 0 }
-                }}
-              >
-                <ListItemButton
-                  component={Link}
-                  href={p.href}
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{
-                    width: '100%',
-                    py: 2,
-                    px: 3,
-                    borderRadius: '10px',
-                    '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    },
-                    '&.Mui-selected': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                    },
+            {pageKeys.map((p) => {
+              const isActive = pathname === p.href;
+              return (
+                <ListItem 
+                  key={p.href} 
+                  disablePadding
+                  sx={{ 
+                    mb: 2,
+                    '&:last-child': { mb: 0 }
                   }}
                 >
-                  <ListItemText 
-                    primary={navItems[p.key]} 
-                    primaryTypographyProps={{
-                      fontFamily: linkFont,
-                      fontWeight: 600,
-                      fontSize: '1.1rem',
-                      color: 'text.primary',
-                    }} 
-                  />
-                </ListItemButton>
-              </ListItem>
-            ))}
+                  <ListItemButton
+                    component={Link}
+                    href={p.href}
+                    selected={isActive}
+                    onClick={() => setDrawerOpen(false)}
+                    sx={{
+                      width: '100%',
+                      py: 2,
+                      px: 3,
+                      borderRadius: '10px',
+                      '&:hover': {
+                        backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                      },
+                      '&.Mui-selected': {
+                        backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.08)',
+                      },
+                    }}
+                  >
+                    <ListItemText 
+                      primary={p.title}
+                      sx={{
+                        '& .MuiTypography-root': {
+                          fontFamily: linkFont,
+                          fontWeight: isActive ? 700 : 400,
+                          fontSize: '1rem',
+                          color: isActive 
+                            ? (darkMode ? '#FFD700' : '#000000')
+                            : (darkMode ? '#FFFFFF' : '#000000'),
+                          '&:hover': {
+                            color: darkMode ? '#FFD700' : '#000000',
+                            opacity: 0.9
+                          },
+                        }
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              );
+            })}
           </List>
           
           {/* Mobile Theme Toggle */}

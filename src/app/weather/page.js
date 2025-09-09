@@ -553,7 +553,7 @@ export default function WeatherPage() {
         
         <div className={`mt-12 text-center text-sm ${mode === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
           <p></p>
-          <p className="mt-2"> {new Date().getFullYear()} - بوابة البلاد</p>
+          <p className="mt-2"> {new Date().getFullYear()} - Slameh</p>
         </div>
       </div>
     </div>

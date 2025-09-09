@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from 'next/navigation';
+import { Github } from "lucide-react";
 
 export default function Page() {
   const router = useRouter();
@@ -21,49 +22,64 @@ export default function Page() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 mb-10 border border-gray-100 dark:border-gray-700">
             <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-8">
             <p className="tوext-lg mb-6 text-black ">
-  بوابة البلد هي منصة محلية شاملة تهدف إلى تسهيل حياتك اليومية من خلال واجهة بسيطة ومتكاملة.  
+  Slameh  هي منصة محلية شاملة تهدف إلى تسهيل حياتك اليومية من خلال واجهة بسيطة ومتكاملة.  
   نوفر لك كل ما تحتاجه في مكان واحد — من آخر الأخبار المحلية والعالمية، وحالة الطقس والطرق، إلى المتاجر والخدمات والعقارات والمطاعم والمراكز الصحية وغير ذلك الكثير.  
   والأفضل من ذلك، أننا نوفر لك نظام <span className="font-semibold text-amber-600 ">مساعد ذكي يعمل بالذكاء الاصطناعي</span> (AI Chat)  
   يساعدك في الوصول إلى المعلومات التي تحتاجها بسهولة، ويجيب على استفساراتك فورًا، ويوجهك للخدمة أو القسم المناسب.  
   مهمتنا أن نكون دليلك الذكي في مدينتك، ونوفر لك كل شيء بخطوة واحدة فقط.
 </p>            </p>
             
-            <div className="grid md:grid-cols-2 gap-6 mb-10">
-              <div className="bg-amber-50 dark:bg-amber-900/20 p-5 rounded-lg border border-amber-100 dark:border-amber-900/30">
-                <h3 className="text-xl font-semibold text-gray-800 dark:text-amber-100 mb-3">رؤيتنا</h3>
-                <p className="text-gray-600 dark:text-gray-300">
-                أن نكون المنصة المحلية الأولى والأكثر ثقة التي تجمع كل ما يحتاجه سكان وزوار مدينتنا في مكان واحد، لنلهم أسلوب حياة أكثر سهولة وذكاء.                </p>
-              </div>
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-lg border border-blue-100 dark:border-blue-900/30">
-                <h3 className="text-xl font-semibold text-gray-800 dark:text-blue-100 mb-3">رسالتنا</h3>
-                <p className="text-gray-600 dark:text-gray-300">
-                تقديم تجربة رقمية متكاملة تضع المعلومات والخدمات في متناول يدك، من خلال واجهة بسيطة، محتوى موثوق، ومساعد ذكي بالذكاء الاصطناعي، لنجعل حياتك اليومية أكثر راحة، وقراراتك أكثر دقة، وخطواتك أقرب إلى ما تبحث عنه.                </p>
-              </div>
-            </div>
+<div className="grid md:grid-cols-2 gap-6 mb-10">
+  <div className="bg-amber-50 dark:bg-amber-900/20 p-5 rounded-lg border border-amber-100 dark:border-amber-900/30">
+    <h3 className="text-xl font-semibold text-gray-800 dark:text-amber-100 mb-3">عميد سلامة</h3>
+    <p className="text-gray-600 dark:text-gray-300">
+       عميد علي سلامة، مطوّر ويب من فلسطين وطالب في السنة الخامسة بتخصص هندسة الحاسوب في جامعة النجاح الوطنية. 
+      أعمل حاليًا على مشروع تخرجي الذي يتمحور حول تصميم وبناء منصة رقمية سهلة الاستخدام تخدم المجتمع وتلبي احتياجاته اليومية. 
+      شغفي يكمن في ابتكار حلول تقنية عملية تُبسط حياة الناس وتُسهم في تطوير أسلوب حياتهم نحو الأفضل.
+    </p>
+  </div>
+  <div className="bg-amber-50 dark:bg-amber-900/20 p-5 rounded-lg border border-amber-100 dark:border-amber-900/30">
+    <h3 className="text-xl font-semibold text-gray-800 dark:text-amber-100 mb-3">غيث سلامة </h3>
+    <p className="text-gray-600 dark:text-gray-300">
+      شريكي في المشروع غيث سلامي، يعمل معي على تطوير وتنفيذ الأفكار، 
+      ونسعى معًا لتقديم منصة محلية متكاملة تجمع بين التقنية الحديثة وسهولة الاستخدام، 
+      لنلبي احتياجات سكان وزوار مدينتنا بطريقة أكثر ذكاءً وفاعلية.
+    </p>
+  </div>
+</div>
+
+
             
-            <div className="bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 text-white p-6 rounded-xl mb-10">
-              <h2 className="text-2xl font-bold mb-4">لماذا تختار منصتنا؟</h2>
-              <ul className="space-y-3">
-                <li className="flex items-start">
-                  <svg className="w-5 h-5 mt-1 ml-2 text-amber-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>واجهة سهلة الاستخدام تعمل بكفاءة على جميع الأجهزة</span>
-                </li>
-                <li className="flex items-start">
-                  <svg className="w-5 h-5 mt-1 ml-2 text-amber-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>دعم فني متواصل على مدار الساعة</span>
-                </li>
-                <li className="flex items-start">
-                  <svg className="w-5 h-5 mt-1 ml-2 text-amber-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>حماية وأمان عاليين لبياناتك</span>
-                </li>
-              </ul>
-            </div>
+<div className="bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 text-white p-6 rounded-2xl shadow-lg mb-10">
+      <h2 className="text-2xl font-bold mb-4 text-center"> عن الموقع</h2>
+      <p className="text-white leading-relaxed text-center mb-6">
+        تم إنشاء هذا الموقع وبرمجته بشكل كامل من قبل الطالب{" "}
+        <span className="font-semibold">عميد سلامة</span> و{" "}
+        <span className="font-semibold">غيث سلامة</span>. <br />
+        نفتخر بتقديم منصة محلية متكاملة تجمع بين الإبداع والابتكار لخدمة مجتمعنا.
+      </p>
+      <div className="flex justify-center space-x-6">
+        <a
+          href="https://github.com/Ameed-salameh"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition"
+        >
+          <Github className="w-5 h-5" />
+          <span>GitHub عميد</span>
+        </a>
+        <a
+          href="https://github.com/XbetaApps"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition"
+        >
+          <Github className="w-5 h-5" />
+          <span>GitHub غيث</span>
+        </a>
+      </div>
+    </div>
+
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 border border-gray-100 dark:border-gray-700">
@@ -128,12 +144,7 @@ export default function Page() {
                     <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" />
                   </svg>
                 </a>
-                <a href="#" className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                  <span className="sr-only">تويتر</span>
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
-                  </svg>
-                </a>
+                
                 <a href="#" className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
                   <span className="sr-only">إنستغرام</span>
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">

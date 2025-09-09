@@ -35,8 +35,17 @@ async function checkUser(req) {
     if (headerAuth.startsWith('Bearer ')) {
       token = headerAuth.slice(7).trim();
     } else {
-      const store = await cookies(); // مهم: await
-      token = store.get('token')?.value || null;
+      const cookieStore = await cookies();
+      // Try multiple possible cookie names
+      token = cookieStore.get('token')?.value || 
+              cookieStore.get('sb-access-token')?.value ||
+              cookieStore.get('sb:token')?.value ||
+              cookieStore.get('sb-rtk')?.value ||
+              cookieStore.get('sb:auth-token')?.value ||
+              cookieStore.get('auth-token')?.value ||
+              cookieStore.get('jwt-token')?.value ||
+              cookieStore.get('next-auth.session-token')?.value ||
+              cookieStore.get('session-token')?.value;
     }
 
     if (!token) return { ok: false, error: 'يرجى تسجيل الدخول' };
@@ -75,18 +84,38 @@ export async function PUT(req, { params }) {
   try {
     await client.query('BEGIN');
 
-    // تأكيد ملكية الإعلان
-    const { rows: [own] } = await client.query(
+    // تحقق من وجود الإعلان وجلب معلوماته
+    const { rows: [ad] } = await client.query(
       'SELECT id, user_id, is_active FROM public.ads WHERE id = $1 LIMIT 1',
       [adId]
     );
-    if (!own) {
+    if (!ad) {
       await client.query('ROLLBACK');
       return NextResponse.json({ success: false, error: 'الإعلان غير موجود' }, { status: 404 });
     }
-    if (own.user_id !== auth.userId) {
+
+    // تحقق من صلاحيات المستخدم (مدير أو مالك الإعلان)
+    // Get user role
+    const { rows: users } = await client.query(
+      'SELECT role_id FROM public.users WHERE id = $1',
+      [auth.userId]
+    );
+    
+    if (users.length === 0) {
       await client.query('ROLLBACK');
-      return NextResponse.json({ success: false, error: 'غير مصرح' }, { status: 403 });
+      return NextResponse.json({ success: false, error: 'المستخدم غير موجود' }, { status: 404 });
+    }
+    
+    const user = users[0];
+    const isAdmin = user?.role_id === 'admin';
+    const isOwner = ad.user_id === auth.userId;
+    
+    if (!isAdmin && !isOwner) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ 
+        success: false, 
+        error: 'غير مصرح. يجب أن تكون مالك الإعلان أو مدير النظام' 
+      }, { status: 403 });
     }
 
     const { rows: [updated] } = await client.query(

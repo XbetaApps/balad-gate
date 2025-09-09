@@ -49,8 +49,8 @@ export default function LayoutClient({ children }) {
   return (
     <ThemeContext.Provider value={{ darkMode, toggleDarkMode }}>
       <AuthProvider>
-        {/* Onboarding Modal */}
-        <OnboardingWrapper key="onboarding-wrapper" />
+        {/* Onboarding Modal - Temporarily Disabled */}
+        {/* <OnboardingWrapper key="onboarding-wrapper" /> */}
         {/* Main Content */}
         {children}
       </AuthProvider>

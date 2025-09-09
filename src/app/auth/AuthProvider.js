@@ -72,9 +72,24 @@ export function AuthProvider({ children }) {
           if (data?.authenticated && data?.user) {
             console.log('User authenticated via session:', data.user);
             currentUser = data.user;
-            // Ensure onboarding_done is always a boolean
-            if (currentUser.onboarding_done === undefined || currentUser.onboarding_done === null) {
+            // تعيين قيمة افتراضية لحالة الإعداد إذا لم تكن محددة
+            if (currentUser.onboarding_done === undefined) {
+              console.log('Setting default onboarding_done to false');
               currentUser.onboarding_done = false;
+              // تحديث حالة المستخدم في الخادم
+              try {
+                const token = readToken();
+                await fetch('/api/onboarding?action=update-status', {
+                  method: 'POST',
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                  },
+                  body: JSON.stringify({ skip: true })
+                });
+              } catch (error) {
+                console.error('Error updating user onboarding status:', error);
+              }
             }
             setUser(currentUser);
             return currentUser;

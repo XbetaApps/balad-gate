@@ -96,15 +96,27 @@ export async function PUT(req, { params }) {
   const client = await pool.connect();
 
   try {
-    const { rows: owned } = await client.query(
+    // Check if ad exists and get owner info
+    const { rows: [existingAd] } = await client.query(
       `SELECT user_id FROM public.ads WHERE id = $1 LIMIT 1`,
       [adId]
     );
-    if (owned.length === 0) {
+    
+    if (!existingAd) {
       client.release();
       return NextResponse.json({ success: false, error: 'الإعلان غير موجود' }, { status: 404 });
     }
-    if (owned[0].user_id !== auth.userId) {
+    
+    // Check if user is admin or the ad owner
+    const { rows: [user] } = await client.query(
+      `SELECT role_id FROM public.users WHERE id = $1`,
+      [auth.userId]
+    );
+    
+    const isAdmin = user?.role_id === 'admin';
+    const isOwner = existingAd.user_id === auth.userId;
+    
+    if (!isAdmin && !isOwner) {
       client.release();
       return NextResponse.json({ success: false, error: 'غير مصرح' }, { status: 403 });
     }
@@ -233,10 +245,19 @@ export async function DELETE(req, { params }) {
   const pool = getPool();
 
   try {
-    const { rowCount } = await pool.query(
-      `DELETE FROM public.ads WHERE id = $1 AND user_id = $2`,
-      [adId, auth.userId]
+    // Allow deletion if user is admin, otherwise check ownership
+    const { rows: [user] } = await pool.query(
+      `SELECT role_id FROM public.users WHERE id = $1`,
+      [auth.userId]
     );
+    
+    const isAdmin = user?.role_id === 'admin';
+    
+    const { rowCount } = await pool.query(
+      `DELETE FROM public.ads WHERE id = $1 ${isAdmin ? '' : 'AND user_id = $2'}`,
+      isAdmin ? [adId] : [adId, auth.userId]
+    );
+    
     if (rowCount === 0) {
       return NextResponse.json({ success: false, error: 'غير موجود أو غير مصرح' }, { status: 404 });
     }

@@ -429,7 +429,7 @@ export default function OnboardingModal({ onDone, open: isOpen, onClose }) {
             </div>
             <div className="flex-1">
               <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-amber-200 tracking-tight">
-                أهلاً بك في منصّة بلد گيت!
+                أهلاً بك في منصّة سلامة
               </h2>
               <p className="text-gray-600 dark:text-gray-300 mt-1 text-sm sm:text-base">
                 خطوة سريعة نهيّئ بها حسابك — يمكنك تخطيها الآن أو إكمالها خلال ثوانٍ.

@@ -75,7 +75,7 @@ export async function PUT(req, { params }) {
   const client = await pool.connect();
 
   try {
-    // تحقق من الملكية وجلب الحالة الحالية
+    // تحقق من وجود الإعلان وجلب معلوماته
     const { rows: [ad] } = await client.query(
       `SELECT id, user_id, is_active, end_date FROM public.ads WHERE id = $1 LIMIT 1`,
       [adId]
@@ -84,7 +84,17 @@ export async function PUT(req, { params }) {
       client.release();
       return NextResponse.json({ success: false, error: 'الإعلان غير موجود' }, { status: 404 });
     }
-    if (ad.user_id !== auth.userId) {
+
+    // تحقق من صلاحيات المستخدم (مدير أو مالك الإعلان)
+    const { rows: [user] } = await client.query(
+      `SELECT role_id FROM public.users WHERE id = $1`,
+      [auth.userId]
+    );
+    
+    const isAdmin = user?.role_id === 'admin';
+    const isOwner = ad.user_id === auth.userId;
+    
+    if (!isAdmin && !isOwner) {
       client.release();
       return NextResponse.json({ success: false, error: 'غير مصرح' }, { status: 403 });
     }
