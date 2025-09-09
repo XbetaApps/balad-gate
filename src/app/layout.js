@@ -8,7 +8,7 @@ import { AuthProvider } from "./auth/AuthProvider";
 import { Providers } from "./providers";
 import { SessionProvider } from "../contexts/SessionContext";
 import AIChatWidget from "@/components/AI/ai";
-import Footer from "@/components/footer";
+import Footer from "@/components/Footer";
 import dynamic from 'next/dynamic';
 
 // Import the client-side version of AdsDisplayWrapper
