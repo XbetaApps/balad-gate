@@ -12,3 +12,5 @@ responsive front-end design, and Supabase (PostgreSQL) as the main
 database solution to ensure reliability and scalability. By combining smart 
 services and artificial intelligence, SLAMEH aims to be the intelligent guide 
 for the city, offering everything users need in just one step.
+
+https://balad-gate.vercel.app/
