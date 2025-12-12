@@ -1,4 +1,4 @@
-Abstract 
+Abstract :
 SLAMEH is a comprehensive local platform designed to simplify everyday 
 life through an integrated and user-friendly interface. The platform brings 
 together essential services in one place — from the latest local and 
