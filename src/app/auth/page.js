@@ -59,12 +59,12 @@ export default function AuthPage() {
       const data = await res.json();
 
       if (res.ok) {
-        setSignUpSuccess('تم إرسال رابط تأكيد إلى بريدك الإلكتروني. الرجاء فتح الإيميل وتأكيد الحساب ثم تسجيل الدخول.');
+        setSignUpSuccess(
+          'تم إرسال رابط تأكيد إلى بريدك الإلكتروني. الرجاء فتح الإيميل وتأكيد الحساب ثم تسجيل الدخول.'
+        );
 
-        // التحويل إلى قسم تسجيل الدخول داخل نفس الصفحة
         setIsSignIn(false);
 
-        // تنظيف حقول التسجيل فقط
         setSignUpName('');
         setSignUpEmail('');
         setSignUpPassword('');
@@ -125,9 +125,7 @@ export default function AuthPage() {
   return (
     <div className={`flex items-center justify-center min-h-screen px-4 ${isDark ? '' : ''}`}>
       <div className="relative w-full max-w-5xl h-[700px] rounded-xl shadow-2xl overflow-hidden bg-white">
-        {/* الحاوية الرئيسة للنموذجين */}
         <div className="flex h-full">
-          {/* --------- نموذج إنشاء حساب --------- */}
           <div
             className={`w-1/2 h-full flex justify-center items-center p-10 transition-transform duration-1000 ${
               isSignIn ? 'rotate-y-0' : 'rotate-y-180'
@@ -184,7 +182,6 @@ export default function AuthPage() {
             </div>
           </div>
 
-          {/* --------- نموذج تسجيل دخول --------- */}
           <div
             className={`w-1/2 h-full flex justify-center items-center p-10 transition-transform duration-1000 ${
               !isSignIn ? 'rotate-y-0' : 'rotate-y-180'
@@ -226,7 +223,6 @@ export default function AuthPage() {
           </div>
         </div>
 
-        {/* الشريط المتحرّك بين النموذجين */}
         <div
           className={`absolute top-0 h-full w-1/2 bg-gray-900 text-white transition-all duration-700 ease-in-out ${isSignIn ? 'left-0' : 'left-1/2'}`}
         >
