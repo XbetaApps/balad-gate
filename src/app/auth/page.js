@@ -59,9 +59,7 @@ export default function AuthPage() {
       const data = await res.json();
 
       if (res.ok) {
-        setSignUpSuccess(
-          'تم إرسال رابط تأكيد إلى بريدك الإلكتروني. الرجاء فتح الإيميل وتأكيد الحساب ثم تسجيل الدخول.'
-        );
+        alert('تم إرسال رابط تأكيد إلى بريدك الإلكتروني. الرجاء فتح الإيميل وتأكيد الحساب ثم تسجيل الدخول.');
 
         setIsSignIn(false);
 
@@ -69,6 +67,7 @@ export default function AuthPage() {
         setSignUpEmail('');
         setSignUpPassword('');
         setSignUpCity('');
+        setSignUpSuccess('');
       } else {
         setSignUpError(data.error || 'فشل التسجيل');
       }
