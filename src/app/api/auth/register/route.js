@@ -4,7 +4,6 @@ import { createClient } from '@supabase/supabase-js';
 
 const prisma = new PrismaClient();
 
-// 🔥 Supabase client
 const supabase = createClient(
   process.env.Project_URL,
   process.env.anon_public
@@ -12,62 +11,104 @@ const supabase = createClient(
 
 export async function POST(req) {
   try {
-    console.log('Register API called');
-
     const { email, password, name, city } = await req.json();
 
-    // Validation
     if (!email || !password || !name || !city) {
-      return new Response(JSON.stringify({ error: 'جميع الحقول مطلوبة.' }), { status: 400 });
+      return new Response(
+        JSON.stringify({ error: 'جميع الحقول مطلوبة.' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return new Response(
+        JSON.stringify({ error: 'صيغة البريد الإلكتروني غير صالحة.' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     if (password.length < 8) {
-      return new Response(JSON.stringify({ error: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.' }), { status: 400 });
+      return new Response(
+        JSON.stringify({ error: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
     }
 
-    // Check existing user (your DB)
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const existing = await prisma.user.findUnique({
+      where: { email },
+    });
+
     if (existing) {
-      return new Response(JSON.stringify({ error: 'البريد الإلكتروني مستخدم بالفعل.' }), { status: 409 });
+      return new Response(
+        JSON.stringify({ error: 'البريد الإلكتروني مستخدم بالفعل.' }),
+        {
+          status: 409,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
     }
 
-    // 🔥 أهم إضافة: Supabase Auth + verification email
-    const { data, error } = await supabase.auth.signUp({
+    const { error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: 'http://balad-gate.vercel.app/auth',
+        emailRedirectTo: 'https://balad-gate.vercel.app/auth',
       },
     });
 
-    if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 400 });
+    if (authError) {
+      return new Response(
+        JSON.stringify({ error: authError.message }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
     }
 
-    // Hash password (نظامك الحالي)
     const hashed = await bcrypt.hash(password, 10);
 
-    // Create user in your table (بدون تغيير)
     await prisma.user.create({
       data: {
         email,
         password: hashed,
         name,
         city,
-        role_id: 1,
-        supabase_id: data.user?.id || null, // ربط اختياري
-      }
+        role_id: 2,
+      },
     });
 
-    return new Response(JSON.stringify({
-      success: true,
-      message: 'تم التسجيل! تفقد بريدك لتفعيل الحساب'
-    }), { status: 201 });
-
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: 'تم إرسال رابط تأكيد إلى بريدك الإلكتروني. الرجاء فتح الإيميل وتأكيد الحساب ثم تسجيل الدخول.',
+      }),
+      {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   } catch (err) {
     console.error('Register error:', err);
-    return new Response(JSON.stringify({
-      error: 'حدث خطأ في الخادم'
-    }), { status: 500 });
+
+    return new Response(
+      JSON.stringify({
+        error: err.message || 'حدث خطأ في الخادم',
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
 }
