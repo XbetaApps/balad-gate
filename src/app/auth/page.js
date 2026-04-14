@@ -43,6 +43,7 @@ export default function AuthPage() {
       setSignUpLoading(false);
       return;
     }
+
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
@@ -58,20 +59,16 @@ export default function AuthPage() {
       const data = await res.json();
 
       if (res.ok) {
-        // 1️⃣ أظهر رسالة النجاح
-        setSignUpSuccess('تم التسجيل بنجاح! يمكنك تسجيل الدخول الآن.');
+        setSignUpSuccess('تم إرسال رابط تأكيد إلى بريدك الإلكتروني. الرجاء فتح الإيميل وتأكيد الحساب ثم تسجيل الدخول.');
 
-        // 2️⃣ انتقل إلى واجهة تسجيل الدخول (مثل زر SIGN IN اليدوي)
+        // التحويل إلى قسم تسجيل الدخول داخل نفس الصفحة
         setIsSignIn(false);
 
-        // 3️⃣ نظِّف الحقول بعد قليل (اختياري)
-        setTimeout(() => {
-          setSignUpName('');
-          setSignUpEmail('');
-          setSignUpPassword('');
-          setSignUpCity('');
-          setSignUpSuccess('');
-        }, 1500);
+        // تنظيف حقول التسجيل فقط
+        setSignUpName('');
+        setSignUpEmail('');
+        setSignUpPassword('');
+        setSignUpCity('');
       } else {
         setSignUpError(data.error || 'فشل التسجيل');
       }
@@ -105,14 +102,11 @@ export default function AuthPage() {
         setSignInSuccess('تم تسجيل الدخول بنجاح! جاري تحديث الصفحة...');
         if (typeof window !== 'undefined') {
           localStorage.setItem('token', data.token);
-          // التحقق من وجود مسار محفوظ للعودة إليه
           const redirectPath = sessionStorage.getItem('redirectAfterLogin');
           if (redirectPath) {
-            // حذف المسار المحفوظ بعد استخدامه
             sessionStorage.removeItem('redirectAfterLogin');
             window.location.href = redirectPath;
           } else {
-            // إذا لم يكن هناك مسار محفوظ، يتم التوجيه للصفحة الرئيسية
             window.location.href = '/';
           }
         }
@@ -225,8 +219,6 @@ export default function AuthPage() {
                   {signInLoading ? 'جاري الدخول...' : 'SIGN IN'}
                 </button>
 
-                {/* روابط تواصل اجتماعي تجريبية */}
-               
                 {signInError && <div className="text-red-600 font-bold text-center mt-2">{signInError}</div>}
                 {signInSuccess && <div className="text-green-600 font-bold text-center mt-2">{signInSuccess}</div>}
               </form>
