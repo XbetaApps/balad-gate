@@ -36,7 +36,7 @@ export async function POST(req) {
       email,
       password,
       options: {
-        emailRedirectTo: 'http://localhost:3000/auth/callback',
+        emailRedirectTo: 'http://balad-gate.vercel.app/auth/callback',
       },
     });
 
