@@ -59,7 +59,8 @@ export default function AuthPage() {
       const data = await res.json();
 
       if (res.ok) {
-        alert('تم إرسال رابط تأكيد إلى بريدك الإلكتروني. الرجاء فتح الإيميل وتأكيد الحساب ثم تسجيل الدخول.');
+        setSignUpSuccess(`تم إرسال رابط تأكيد إلى بريدك الإلكتروني.
+الرجاء فتح الإيميل وتأكيد الحساب ثم تسجيل الدخول.`);
 
         setIsSignIn(false);
 
@@ -67,7 +68,6 @@ export default function AuthPage() {
         setSignUpEmail('');
         setSignUpPassword('');
         setSignUpCity('');
-        setSignUpSuccess('');
       } else {
         setSignUpError(data.error || 'فشل التسجيل');
       }
@@ -176,7 +176,6 @@ export default function AuthPage() {
                   {signUpLoading ? 'جاري التسجيل...' : 'SIGN UP'}
                 </button>
                 {signUpError && <div className="text-red-600 font-bold text-center mt-2">{signUpError}</div>}
-                {signUpSuccess && <div className="text-green-600 font-bold text-center mt-2">{signUpSuccess}</div>}
               </form>
             </div>
           </div>
@@ -243,6 +242,44 @@ export default function AuthPage() {
             </div>
           </div>
         </div>
+
+        {signUpSuccess && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-[90%] text-center relative">
+              <div className="mx-auto mb-5 w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-10 h-10 text-blue-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+
+              <h3 className="text-3xl font-bold text-gray-800 mb-4">
+                Verify your email
+              </h3>
+
+              <p className="text-gray-600 leading-8 text-lg mb-6 whitespace-pre-line">
+                {signUpSuccess}
+              </p>
+
+              <button
+                onClick={() => setSignUpSuccess('')}
+                className="bg-yellow-500 hover:bg-yellow-600 text-white px-8 py-3 rounded-full font-bold transition-colors"
+              >
+                حسناً
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
