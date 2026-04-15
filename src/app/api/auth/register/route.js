@@ -62,7 +62,7 @@ export async function POST(req) {
       email,
       password,
       options: {
-        emailRedirectTo: 'https://balad-gate.vercel.app/auth',
+        emailRedirectTo: 'https://balad-gate.vercel.app/auth?mode=signin',
       },
     });
 
