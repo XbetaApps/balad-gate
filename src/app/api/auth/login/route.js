@@ -109,16 +109,19 @@ export async function POST(req) {
       { expiresIn: '7d' }
     );
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        token,
-      }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+   return new Response(
+  JSON.stringify({
+    success: true,
+    token,
+  }),
+  {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json',
+      'Set-Cookie': `token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800`,
+    },
+  }
+);
   } catch (err) {
     console.error('Login error:', err);
 
