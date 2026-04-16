@@ -55,7 +55,7 @@ export async function POST(req) {
       );
     }
 
-    // فحص هل هذا المستخدم موجود في Supabase Auth أم لا
+    // فحص هل المستخدم موجود في Supabase Auth
     const { data: usersData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
 
     if (listError) {
@@ -68,9 +68,11 @@ export async function POST(req) {
       );
     }
 
-    const authUser = usersData.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+    const authUser = usersData.users.find(
+      (u) => u.email?.toLowerCase() === email.toLowerCase()
+    );
 
-    // إذا كان مستخدم جديد موجود في Supabase Auth
+    // إذا كان موجودًا في Supabase Auth، امنع الدخول قبل تأكيد الإيميل
     if (authUser) {
       if (!authUser.email_confirmed_at) {
         return new Response(
@@ -101,6 +103,7 @@ export async function POST(req) {
     const token = jwt.sign(
       {
         id: user.id,
+        userId: user.id,
         email: user.email,
         role_id: user.role_id,
         name: user.name,
@@ -109,19 +112,19 @@ export async function POST(req) {
       { expiresIn: '7d' }
     );
 
-   return new Response(
-  JSON.stringify({
-    success: true,
-    token,
-  }),
-  {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      'Set-Cookie': `token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800`,
-    },
-  }
-);
+    return new Response(
+      JSON.stringify({
+        success: true,
+        token,
+      }),
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Set-Cookie': `token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800`,
+        },
+      }
+    );
   } catch (err) {
     console.error('Login error:', err);
 
